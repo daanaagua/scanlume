@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const SITE_NAME = "Scanlume";
-export const SITE_URL = "https://scanlume.com";
+export const SITE_URL = "https://www.scanlume.com";
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8787";
 
