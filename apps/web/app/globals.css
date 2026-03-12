@@ -253,6 +253,7 @@ main {
 .hero-grid,
 .split-content,
 .workspace-grid,
+.contact-page-grid,
 .footer-grid {
   display: grid;
   gap: 1.5rem;
@@ -261,6 +262,11 @@ main {
 .hero-grid,
 .workspace-grid {
   grid-template-columns: 1.15fr 0.85fr;
+  align-items: start;
+}
+
+.contact-page-grid {
+  grid-template-columns: 0.92fr 1.08fr;
   align-items: start;
 }
 
@@ -459,6 +465,165 @@ main {
 .result-panel {
   display: grid;
   gap: 1rem;
+}
+
+.support-desk {
+  display: grid;
+  gap: 1rem;
+  padding: 1.2rem;
+  border-radius: 24px;
+  background: rgba(255, 250, 240, 0.95);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.support-desk-head {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.support-desk-head h3 {
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-family: var(--font-display), sans-serif;
+}
+
+.support-desk-head p,
+.support-hint,
+.support-form-footer small,
+.support-profile-chip span,
+.support-message p,
+.support-status-message {
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.support-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.support-form,
+.support-fields-grid label,
+.support-form label {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.support-fields-grid span,
+.support-form span {
+  font-weight: 600;
+}
+
+.support-fields-grid input,
+.support-form textarea {
+  width: 100%;
+  border-radius: 18px;
+  border: 1px solid rgba(22, 42, 44, 0.14);
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--ink);
+  padding: 0.9rem 1rem;
+  outline: none;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.support-fields-grid input:focus,
+.support-form textarea:focus {
+  border-color: rgba(14, 124, 102, 0.7);
+  box-shadow: 0 0 0 4px rgba(14, 124, 102, 0.12);
+}
+
+.support-form textarea {
+  resize: vertical;
+  min-height: 132px;
+}
+
+.support-profile-chip {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.9rem 1rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(22, 42, 44, 0.08);
+}
+
+.support-messages {
+  display: grid;
+  gap: 0.8rem;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.support-message {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.9rem 1rem;
+  border-radius: 18px;
+  border: 1px solid rgba(22, 42, 44, 0.08);
+}
+
+.support-message-user {
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.support-message-assistant {
+  background: rgba(14, 124, 102, 0.08);
+}
+
+.support-form-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: center;
+}
+
+.support-status-message {
+  padding: 0.9rem 1rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(22, 42, 44, 0.08);
+}
+
+.support-widget-trigger {
+  position: fixed;
+  right: 1.1rem;
+  bottom: 1.1rem;
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0 1.1rem;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+  color: white;
+  box-shadow: 0 22px 44px rgba(7, 89, 76, 0.28);
+  cursor: pointer;
+}
+
+.support-widget-panel {
+  position: fixed;
+  right: 1.1rem;
+  bottom: 5rem;
+  z-index: 30;
+  width: min(420px, calc(100vw - 1.2rem));
+}
+
+.support-widget-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding: 0 0.2rem;
+}
+
+.support-widget-close {
+  min-height: 40px;
 }
 
 .upload-dropzone {
@@ -736,12 +901,14 @@ main {
   .hero-grid,
   .workspace-grid,
   .split-content,
+  .contact-page-grid,
   .footer-grid,
   .status-board,
   .timeline-grid,
   .check-grid,
   .related-grid,
-  .selected-file-grid {
+  .selected-file-grid,
+  .support-fields-grid {
     grid-template-columns: 1fr;
   }
 
@@ -800,5 +967,16 @@ main {
 
   .result-preview {
     min-height: 260px;
+  }
+
+  .support-widget-panel {
+    right: 0.5rem;
+    bottom: 4.5rem;
+    width: calc(100vw - 1rem);
+  }
+
+  .support-widget-trigger {
+    right: 0.5rem;
+    bottom: 0.5rem;
   }
 }

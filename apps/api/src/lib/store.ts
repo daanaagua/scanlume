@@ -19,6 +19,10 @@ export interface WorkerEnv {
   MAX_IMAGE_MB?: string;
   MAX_BATCH_FILES?: string;
   MAX_BATCH_TOTAL_MB?: string;
+  SUPPORT_N8N_WEBHOOK_URL?: string;
+  SUPPORT_N8N_WEBHOOK_SECRET?: string;
+  SUPPORT_N8N_TIMEOUT_MS?: string;
+  SUPPORT_SYNC_TOKEN?: string;
   RATE_LIMITS?: KVNamespace;
   DB?: D1Database;
   RESULTS?: R2Bucket;

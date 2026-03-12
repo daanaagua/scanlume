@@ -30,12 +30,29 @@ import {
   FORMATTED_PROMPT,
   FORMATTED_SYSTEM_PROMPT,
   SIMPLE_PROMPT,
+  SUPPORT_SYSTEM_PROMPT,
 } from "./lib/prompts";
 import {
   formattedBlocksEnvelopeSchema,
   formattedJsonSchema,
   ocrRequestSchema,
+  supportAssistantJsonSchema,
+  supportAssistantSchema,
+  supportChatRequestSchema,
+  type SupportAssistant,
 } from "./lib/schema";
+import {
+  appendSupportMessage,
+  ensureSupportConversation,
+  getSupportConversationForViewer,
+  listPendingSupportNotifications,
+  listSupportMessages,
+  markSupportNotificationAttempt,
+  markSupportNotificationSent,
+  queueSupportNotification,
+  toSupportNotificationPayload,
+  type SupportMessage,
+} from "./lib/support";
 import {
   getClientIp,
   persistUsageEvent,
@@ -73,12 +90,18 @@ type ViewerContext = {
   user: Awaited<ReturnType<typeof getSessionViewer>>;
 };
 
+type SupportReplyResult = {
+  assistant: SupportAssistant;
+  notificationSent: boolean;
+  source: "n8n" | "fallback";
+};
+
 const app = new Hono<AppBindings>();
 
 app.use("*", async (c, next) => {
   const middleware = cors({
     origin: (origin) => resolveCorsOrigin(c.env, origin),
-    allowHeaders: ["Content-Type"],
+    allowHeaders: ["Authorization", "Content-Type"],
     allowMethods: ["GET", "POST", "OPTIONS"],
     credentials: true,
   });
@@ -95,6 +118,7 @@ app.get("/", (c) =>
       "/v1/limits",
       "/v1/me",
       "/v1/auth/google/start",
+      "/v1/support/chat",
       "/v1/ocr",
     ],
   }),
@@ -109,6 +133,8 @@ app.get("/v1/health", (c) =>
     turnstileConfigured: Boolean(c.env.TURNSTILE_SECRET_KEY),
     d1Configured: Boolean(c.env.DB),
     kvConfigured: Boolean(c.env.RATE_LIMITS),
+    supportWebhookConfigured: Boolean(c.env.SUPPORT_N8N_WEBHOOK_URL),
+    supportSyncConfigured: Boolean(c.env.SUPPORT_SYNC_TOKEN),
   }),
 );
 
@@ -119,6 +145,159 @@ app.get("/v1/me", async (c) => {
     authenticated: Boolean(user),
     user,
   });
+});
+
+app.get("/v1/support/conversations/:conversationId", async (c) => {
+  const user = await getSessionViewer(c, c.env);
+  const browserId = c.req.query("browserId") ?? "anonymous-browser";
+  const conversation = await getSupportConversationForViewer(c.env, {
+    conversationId: c.req.param("conversationId"),
+    user,
+    browserId,
+  });
+
+  if (!conversation) {
+    return c.json({ error: "Conversation not found." }, 404);
+  }
+
+  const messages = await listSupportMessages(c.env, conversation.id, 40);
+  return c.json({
+    conversation,
+    messages,
+    viewer: {
+      authenticated: Boolean(user),
+      user,
+    },
+  });
+});
+
+app.post("/v1/support/chat", async (c) => {
+  const payload = await c.req.json().catch(() => null);
+  const parsed = supportChatRequestSchema.safeParse(payload);
+  if (!parsed.success) {
+    return c.json({ error: "Invalid support payload.", details: parsed.error.flatten() }, 400);
+  }
+
+  const user = await getSessionViewer(c, c.env);
+  const browserId = parsed.data.browserId ?? "anonymous-browser";
+  const name = (user?.name ?? parsed.data.name ?? "").trim();
+  const email = (user?.email ?? parsed.data.email ?? "").trim();
+
+  if (!email) {
+    return c.json({ error: "Email is required for anonymous support messages." }, 400);
+  }
+
+  const sourcePath = sanitizeRedirectPath(parsed.data.sourcePath ?? "/contato");
+  const createdAt = new Date().toISOString();
+  const conversation = await ensureSupportConversation(c.env, {
+    conversationId: parsed.data.conversationId,
+    user,
+    browserId,
+    name: name || email,
+    email,
+    sourcePath,
+    now: createdAt,
+  });
+
+  const priorMessages = await listSupportMessages(c.env, conversation.id, 10);
+  const userMessage = await appendSupportMessage(c.env, {
+    conversationId: conversation.id,
+    role: "user",
+    body: parsed.data.message,
+    createdAt,
+  });
+  const conversationHistory = [...priorMessages, userMessage].slice(-10);
+
+  const reply = await runSupportAssistant(c.env, {
+    conversation,
+    user,
+    messages: conversationHistory,
+  });
+
+  const assistantMessage = await appendSupportMessage(c.env, {
+    conversationId: conversation.id,
+    role: "assistant",
+    body: reply.assistant.reply_user,
+    category: reply.assistant.category,
+    priority: reply.assistant.priority,
+    needsHuman: reply.assistant.needs_human,
+    humanReason: reply.assistant.human_reason,
+    summaryForTeam: reply.assistant.summary_for_team,
+    createdAt: new Date().toISOString(),
+  });
+
+  const notificationId = await queueSupportNotification(c.env, {
+    conversationId: conversation.id,
+    userMessageId: userMessage.id,
+    assistantMessageId: assistantMessage.id,
+    payload: toSupportNotificationPayload({
+      conversation,
+      user,
+      userMessage,
+      assistantMessage,
+      assistant: reply.assistant,
+    }),
+    createdAt: assistantMessage.createdAt,
+  });
+
+  if (reply.notificationSent) {
+    await markSupportNotificationSent(c.env, notificationId, new Date().toISOString());
+  }
+
+  return c.json({
+    conversationId: conversation.id,
+    contactProfile: {
+      name: conversation.name,
+      email: conversation.email,
+    },
+    assistant: {
+      replyUser: reply.assistant.reply_user,
+      category: reply.assistant.category,
+      priority: reply.assistant.priority,
+      needsHuman: reply.assistant.needs_human,
+      humanReason: reply.assistant.human_reason,
+      summaryForTeam: reply.assistant.summary_for_team,
+      source: reply.source,
+    },
+    messages: [userMessage, assistantMessage],
+    viewer: {
+      authenticated: Boolean(user),
+      user,
+    },
+  });
+});
+
+app.get("/v1/support/pending-notifications", async (c) => {
+  if (!isSupportSyncAuthorized(c)) {
+    return c.json({ error: "Unauthorized." }, 401);
+  }
+
+  const limit = clampNumber(Number(c.req.query("limit") ?? 20), 1, 50);
+  const items = await listPendingSupportNotifications(c.env, limit);
+  return c.json({
+    items,
+    count: items.length,
+  });
+});
+
+app.post("/v1/support/pending-notifications/:notificationId/ack", async (c) => {
+  if (!isSupportSyncAuthorized(c)) {
+    return c.json({ error: "Unauthorized." }, 401);
+  }
+
+  const payload = await c.req.json().catch(() => null);
+  const delivered = Boolean(payload && typeof payload === "object" && Reflect.get(payload, "delivered") === true);
+  const error = payload && typeof payload === "object" ? String(Reflect.get(payload, "error") ?? "") : "";
+  const notificationId = c.req.param("notificationId");
+  const now = new Date().toISOString();
+
+  if (delivered) {
+    await markSupportNotificationSent(c.env, notificationId, now);
+    return c.json({ ok: true, status: "sent" });
+  }
+
+  await markSupportNotificationAttempt(c.env, notificationId, error || "delivery_failed", now);
+  return c.json({ ok: true, status: "pending" });
 });
 
 app.get("/v1/auth/google/start", async (c) => {
@@ -494,6 +673,266 @@ function resolveCorsOrigin(env: WorkerEnv, requestOrigin?: string) {
   }
 
   return getWebOrigin(env);
+}
+
+async function runSupportAssistant(
+  env: WorkerEnv,
+  input: {
+    conversation: {
+      id: string;
+      name: string;
+      email: string;
+      sourcePath: string;
+    };
+    user: Awaited<ReturnType<typeof getSessionViewer>>;
+    messages: SupportMessage[];
+  },
+): Promise<SupportReplyResult> {
+  const n8nReply = await runSupportViaN8n(env, input);
+  if (n8nReply) {
+    return n8nReply;
+  }
+
+  try {
+    return {
+      assistant: await runSupportViaArk(env, input),
+      notificationSent: false,
+      source: "fallback",
+    };
+  } catch {
+    return {
+      assistant: {
+        reply_user:
+          "Recebi sua mensagem e vou encaminhar para o time. Se puder, envie mais detalhes sobre o contexto e o resultado esperado.",
+        category: "other",
+        priority: "medium",
+        needs_human: true,
+        human_reason: "support_fallback_failed",
+        summary_for_team: "Mensagem recebida, mas o fluxo automatico de suporte falhou e exige acompanhamento humano.",
+        collected_user_profile: {
+          name: input.conversation.name,
+          email: input.conversation.email,
+        },
+      },
+      notificationSent: false,
+      source: "fallback",
+    };
+  }
+}
+
+async function runSupportViaN8n(
+  env: WorkerEnv,
+  input: {
+    conversation: {
+      id: string;
+      name: string;
+      email: string;
+      sourcePath: string;
+    };
+    user: Awaited<ReturnType<typeof getSessionViewer>>;
+    messages: SupportMessage[];
+  },
+) {
+  if (!env.SUPPORT_N8N_WEBHOOK_URL) {
+    return null;
+  }
+
+  const controller = new AbortController();
+  const timeout = readNumber(env.SUPPORT_N8N_TIMEOUT_MS, 12000);
+  const timer = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(env.SUPPORT_N8N_WEBHOOK_URL, {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        ...(env.SUPPORT_N8N_WEBHOOK_SECRET
+          ? { "x-scanlume-support-secret": env.SUPPORT_N8N_WEBHOOK_SECRET }
+          : {}),
+      },
+      body: JSON.stringify({
+        event: "support_chat_turn",
+        model: env.ARK_MODEL,
+        systemPrompt: SUPPORT_SYSTEM_PROMPT,
+        responseSchema: supportAssistantJsonSchema,
+        conversation: input.conversation,
+        viewer: {
+          authenticated: Boolean(input.user),
+          id: input.user?.id ?? null,
+          name: input.conversation.name,
+          email: input.conversation.email,
+        },
+        messages: input.messages.map((message) => ({
+          role: message.role,
+          content: message.body,
+          createdAt: message.createdAt,
+        })),
+      }),
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = (await response.json()) as Record<string, unknown>;
+    const assistant = parseSupportAssistantPayload(payload);
+    if (!assistant) {
+      return null;
+    }
+
+    return {
+      assistant,
+      notificationSent: Boolean(Reflect.get(payload, "notificationSent")),
+      source: "n8n",
+    } satisfies SupportReplyResult;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function runSupportViaArk(
+  env: WorkerEnv,
+  input: {
+    conversation: {
+      id: string;
+      name: string;
+      email: string;
+      sourcePath: string;
+    };
+    user: Awaited<ReturnType<typeof getSessionViewer>>;
+    messages: SupportMessage[];
+  },
+) {
+  if (!env.ARK_API_KEY || !env.ARK_MODEL) {
+    return {
+      reply_user:
+        "Recebi sua mensagem e vou encaminhar para o time. Se precisar de ajuda urgente, descreva o problema com o maximo de detalhes.",
+      category: "other",
+      priority: "medium",
+      needs_human: true,
+      human_reason: "support_model_not_configured",
+      summary_for_team: "Mensagem recebida, mas o assistente de suporte nao estava configurado no momento.",
+      collected_user_profile: {
+        name: input.conversation.name,
+        email: input.conversation.email,
+      },
+    } satisfies SupportAssistant;
+  }
+
+  const response = await fetch(`${env.ARK_API_BASE}/chat/completions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.ARK_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: env.ARK_MODEL,
+      thinking: { type: "disabled" },
+      messages: buildSupportModelMessages(input),
+      response_format: {
+        type: "json_schema",
+        json_schema: supportAssistantJsonSchema,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+
+  const payload = (await response.json()) as Record<string, unknown>;
+  const content = extractChatContent(payload);
+  const parsedJson = safeParseJson(content);
+  const validated = supportAssistantSchema.safeParse(parsedJson);
+  if (!validated.success) {
+    throw new Error("Support assistant output did not match the expected schema.");
+  }
+
+  return withSupportProfileFallback(validated.data, input.conversation.name, input.conversation.email);
+}
+
+function buildSupportModelMessages(input: {
+  conversation: {
+    name: string;
+    email: string;
+    sourcePath: string;
+  };
+  user: Awaited<ReturnType<typeof getSessionViewer>>;
+  messages: SupportMessage[];
+}) {
+  return [
+    {
+      role: "system",
+      content: SUPPORT_SYSTEM_PROMPT,
+    },
+    {
+      role: "system",
+      content: [
+        `Current support context:`,
+        `- authenticated: ${input.user ? "yes" : "no"}`,
+        `- name: ${input.conversation.name || "unknown"}`,
+        `- email: ${input.conversation.email || "unknown"}`,
+        `- source_path: ${input.conversation.sourcePath}`,
+        `- site language: pt-BR`,
+      ].join("\n"),
+    },
+    ...input.messages.map((message) => ({
+      role: message.role,
+      content: message.body,
+    })),
+  ];
+}
+
+function parseSupportAssistantPayload(payload: Record<string, unknown>) {
+  const direct = supportAssistantSchema.safeParse(payload);
+  if (direct.success) {
+    return withSupportProfileFallback(
+      direct.data,
+      direct.data.collected_user_profile.name,
+      direct.data.collected_user_profile.email,
+    );
+  }
+
+  const nested = Reflect.get(payload, "assistant");
+  const parsedNested = supportAssistantSchema.safeParse(nested);
+  if (!parsedNested.success) {
+    return null;
+  }
+
+  const fallbackName = typeof Reflect.get(payload, "name") === "string" ? String(Reflect.get(payload, "name")) : "";
+  const fallbackEmail = typeof Reflect.get(payload, "email") === "string" ? String(Reflect.get(payload, "email")) : "";
+  return withSupportProfileFallback(parsedNested.data, fallbackName, fallbackEmail);
+}
+
+function withSupportProfileFallback(assistant: SupportAssistant, name: string, email: string) {
+  return {
+    ...assistant,
+    collected_user_profile: {
+      name: assistant.collected_user_profile.name || name,
+      email: assistant.collected_user_profile.email || email,
+    },
+  } satisfies SupportAssistant;
+}
+
+function isSupportSyncAuthorized(c: Context<AppBindings>) {
+  if (!c.env.SUPPORT_SYNC_TOKEN) {
+    return false;
+  }
+
+  const header = c.req.header("authorization") ?? "";
+  const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
+  return token.length > 0 && token === c.env.SUPPORT_SYNC_TOKEN;
+}
+
+function clampNumber(value: number, min: number, max: number) {
+  if (!Number.isFinite(value)) {
+    return min;
+  }
+
+  return Math.min(max, Math.max(min, Math.round(value)));
 }
 
 function safeParseJson(value: string) {

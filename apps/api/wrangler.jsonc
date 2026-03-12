@@ -16,6 +16,8 @@
     "HARD_BUDGET_RMB": "20",
     "MAX_IMAGE_MB": "5",
     "MAX_BATCH_FILES": "10",
-    "MAX_BATCH_TOTAL_MB": "20"
+    "MAX_BATCH_TOTAL_MB": "20",
+    "SUPPORT_N8N_WEBHOOK_URL": "https://www.prayforkirk.top/feishu-webhook",
+    "SUPPORT_N8N_TIMEOUT_MS": "12000"
   }
 }

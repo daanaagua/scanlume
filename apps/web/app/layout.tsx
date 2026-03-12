@@ -4,6 +4,7 @@ import Script from "next/script";
 
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { SupportWidget } from "@/components/support-widget";
 import { DEFAULT_KEYWORDS, SITE_NAME, SITE_URL, SOCIAL_IMAGE_ALT, SOCIAL_IMAGE_PATH } from "@/lib/site";
 
 import "./globals.css";
@@ -82,6 +83,7 @@ export default function RootLayout({
           <SiteHeader />
           <main>{children}</main>
           <SiteFooter />
+          <SupportWidget />
         </div>
       </body>
     </html>
