@@ -78,6 +78,12 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
             <p className="eyebrow">{page.eyebrow}</p>
             <h1>{page.h1}</h1>
             <p className="hero-lead">{page.lead}</p>
+            <div className="hero-actions hero-inline-actions">
+              <a href={`#${OCR_WORKSPACE_ID}`} className="solid-button large-button hero-primary-cta">
+                Usar agora
+              </a>
+              <span className="hero-action-note">Teste gratis direto no navegador</span>
+            </div>
             <div className="hero-bullets">
               <span>Gratis para testar</span>
               <span>Sem instalar aplicativo</span>
@@ -102,6 +108,10 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
           </div>
         </div>
       </section>
+
+      <a href={`#${OCR_WORKSPACE_ID}`} className="mobile-quick-cta" aria-label="Abrir ferramenta agora">
+        Usar agora
+      </a>
 
       <section id={OCR_WORKSPACE_ID} className="section-band">
         <div className="container">
