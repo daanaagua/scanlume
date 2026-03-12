@@ -45,6 +45,13 @@ type SupportChatResponse = {
   messages: SupportMessage[];
 };
 
+type SupportErrorResponse = {
+  error?: string;
+  details?: {
+    fieldErrors?: Record<string, string[] | undefined>;
+  };
+};
+
 type SupportDeskProps = {
   embedded?: boolean;
   title?: string;
@@ -74,6 +81,21 @@ export function SupportDesk({
   const latestAssistantMessageRef = useRef<HTMLElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  async function fetchAuthState() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/v1/me`, {
+        credentials: "include",
+      });
+      const data = (await response.json()) as AuthResponse;
+      setAuth(data);
+      return data;
+    } catch {
+      const fallback = { authenticated: false, user: null } satisfies AuthResponse;
+      setAuth(fallback);
+      return fallback;
+    }
+  }
+
   useEffect(() => {
     const resolvedBrowserId = getOrCreateBrowserId();
     setBrowserId(resolvedBrowserId);
@@ -88,12 +110,7 @@ export function SupportDesk({
   }, []);
 
   useEffect(() => {
-    void fetch(`${API_BASE_URL}/v1/me`, {
-      credentials: "include",
-    })
-      .then((response) => response.json())
-      .then((data: AuthResponse) => setAuth(data))
-      .catch(() => setAuth({ authenticated: false }));
+    void fetchAuthState();
   }, []);
 
   useEffect(() => {
@@ -176,7 +193,12 @@ export function SupportDesk({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!canSubmit) {
+    const authState = auth ?? (await fetchAuthState());
+    const isAuthenticated = Boolean(authState.authenticated && authState.user);
+    const resolvedName = isAuthenticated ? authState.user?.name ?? "" : name.trim();
+    const resolvedEmail = isAuthenticated ? authState.user?.email ?? "" : email.trim();
+
+    if (!browserId || !message.trim() || (!isAuthenticated && (!resolvedName || !resolvedEmail))) {
       setStatusMessage("Preencha nome, email e mensagem para continuar.");
       return;
     }
@@ -194,15 +216,20 @@ export function SupportDesk({
         body: JSON.stringify({
           browserId,
           conversationId: conversationId ?? undefined,
-          name: auth?.authenticated ? undefined : name.trim(),
-          email: auth?.authenticated ? undefined : email.trim(),
+          name: isAuthenticated ? undefined : resolvedName,
+          email: isAuthenticated ? undefined : resolvedEmail,
           message: message.trim(),
           sourcePath: window.location.pathname,
         }),
       });
 
-      const data = (await response.json()) as SupportChatResponse & { error?: string };
+      const data = (await response.json()) as SupportChatResponse & SupportErrorResponse;
       if (!response.ok) {
+        const emailError = data.details?.fieldErrors?.email?.[0];
+        if (emailError) {
+          throw new Error("Informe um email valido para receber nossa resposta.");
+        }
+
         throw new Error(data.error || "Nao foi possivel enviar sua mensagem.");
       }
 
