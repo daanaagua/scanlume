@@ -1,34 +1,42 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
 
+import { getOrCreateBrowserId } from "@/lib/browser-id";
+import { fetchAccount, type AccountResponse } from "@/lib/account";
 import { API_BASE_URL } from "@/lib/site";
 
-type AuthResponse = {
-  authenticated: boolean;
-  user?: {
-    id: string;
-    email: string;
-    name: string;
-    avatarUrl: string | null;
-  } | null;
-};
-
 export function AuthControls() {
-  const [auth, setAuth] = useState<AuthResponse | null>(null);
+  const [account, setAccount] = useState<AccountResponse | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    void fetch(`${API_BASE_URL}/v1/me`, {
-      credentials: "include",
-    })
-      .then((response) => response.json())
-      .then((data: AuthResponse) => setAuth(data))
-      .catch(() => setAuth({ authenticated: false }));
+    const browserId = getOrCreateBrowserId();
+    void fetchAccount(browserId)
+      .then((data) => setAccount(data))
+      .catch(() => setAccount(null));
   }, []);
 
+  useEffect(() => {
+    if (!isMenuOpen) {
+      return;
+    }
+
+    function handlePointerDown(event: PointerEvent) {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    }
+
+    window.addEventListener("pointerdown", handlePointerDown);
+    return () => window.removeEventListener("pointerdown", handlePointerDown);
+  }, [isMenuOpen]);
+
   const initials = useMemo(() => {
-    const name = auth?.user?.name?.trim();
+    const name = account?.viewer.user?.name?.trim();
     if (!name) {
       return "S";
     }
@@ -38,7 +46,7 @@ export function AuthControls() {
       .slice(0, 2)
       .map((part) => part[0]?.toUpperCase() ?? "")
       .join("") || "S";
-  }, [auth?.user?.name]);
+  }, [account?.viewer.user?.name]);
 
   function handleGoogleLogin() {
     const redirectTo = `${window.location.pathname}${window.location.search}${window.location.hash}`;
@@ -59,7 +67,7 @@ export function AuthControls() {
     }
   }
 
-  if (!auth?.authenticated || !auth.user) {
+  if (!account?.viewer.authenticated || !account.viewer.user) {
     return (
       <button type="button" className="ghost-button auth-login-button" onClick={handleGoogleLogin}>
         Entrar com Google
@@ -67,23 +75,60 @@ export function AuthControls() {
     );
   }
 
+  const remainingCredits = account.usageToday.remainingCredits;
+  const dailyCredits = account.currentPlan.entitlements.dailyCredits;
+
   return (
-    <div className="auth-controls">
-      <div className="auth-chip" title={auth.user.email}>
-        {auth.user.avatarUrl ? (
+    <div ref={menuRef} className="auth-controls account-menu-shell">
+      <button type="button" className="account-trigger" onClick={() => setIsMenuOpen((current) => !current)}>
+        {account.viewer.user.avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={auth.user.avatarUrl} alt={auth.user.name} className="auth-avatar-image" />
+          <img src={account.viewer.user.avatarUrl} alt={account.viewer.user.name} className="auth-avatar-image" />
         ) : (
           <span className="auth-avatar-fallback">{initials}</span>
         )}
-        <span>
-          <strong>{auth.user.name}</strong>
-          <small>100 creditos por dia</small>
+
+        <span className="account-trigger-copy">
+          <strong>{account.viewer.user.name}</strong>
+          <small>{account.currentPlan.label}</small>
         </span>
-      </div>
-      <button type="button" className="ghost-button auth-logout-button" onClick={() => void handleLogout()} disabled={isLoggingOut}>
-        {isLoggingOut ? "Saindo..." : "Sair"}
+
+        <span className="account-usage-pill">{remainingCredits}/{dailyCredits} hoje</span>
       </button>
+
+      {isMenuOpen && (
+        <div className="account-dropdown">
+          <div className="account-dropdown-head">
+            <strong>{account.currentPlan.label}</strong>
+            <span>{account.viewer.user.email}</span>
+          </div>
+
+          <div className="account-dropdown-stats">
+            <div>
+              <span>Creditos</span>
+              <strong>{account.usageToday.remainingCredits}/{account.currentPlan.entitlements.dailyCredits}</strong>
+            </div>
+            <div>
+              <span>Imagens</span>
+              <strong>{account.usageToday.remainingImages}/{account.currentPlan.entitlements.dailyImages}</strong>
+            </div>
+          </div>
+
+          <div className="account-dropdown-links">
+            <Link href="/conta" onClick={() => setIsMenuOpen(false)}>Minha conta</Link>
+            <Link href="/contato" onClick={() => setIsMenuOpen(false)}>Falar com suporte</Link>
+          </div>
+
+          <button
+            type="button"
+            className="ghost-button auth-logout-button"
+            onClick={() => void handleLogout()}
+            disabled={isLoggingOut}
+          >
+            {isLoggingOut ? "Saindo..." : "Sair"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

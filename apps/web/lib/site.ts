@@ -30,6 +30,7 @@ export const NAV_LINKS = [
 ];
 
 export const TRUST_LINKS = [
+  { href: "/conta", label: "Conta" },
   { href: "/sobre", label: "Sobre" },
   { href: "/contato", label: "Contato" },
   { href: "/privacidade", label: "Privacidade" },

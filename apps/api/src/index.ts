@@ -1,6 +1,7 @@
 import { Hono, type Context } from "hono";
 import { cors } from "hono/cors";
 
+import { buildAccountSnapshot } from "./lib/account";
 import {
   buildGoogleAuthorizationUrl,
   clearOauthState,
@@ -117,6 +118,7 @@ app.get("/", (c) =>
       "/v1/health",
       "/v1/limits",
       "/v1/me",
+      "/v1/account",
       "/v1/auth/google/start",
       "/v1/support/chat",
       "/v1/ocr",
@@ -145,6 +147,12 @@ app.get("/v1/me", async (c) => {
     authenticated: Boolean(user),
     user,
   });
+});
+
+app.get("/v1/account", async (c) => {
+  const viewer = await resolveViewerContext(c, c.req.query("browserId") ?? undefined);
+  const account = await buildAccountSnapshot(c.env, viewer);
+  return c.json(account);
 });
 
 app.get("/v1/support/conversations/:conversationId", async (c) => {

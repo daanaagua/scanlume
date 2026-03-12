@@ -191,6 +191,93 @@ main {
   min-height: 44px;
 }
 
+.account-menu-shell {
+  position: relative;
+}
+
+.account-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 48px;
+  padding: 0.45rem 0.55rem 0.45rem 0.6rem;
+  border: 1px solid rgba(22, 42, 44, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+}
+
+.account-trigger-copy {
+  display: grid;
+  gap: 0.08rem;
+  text-align: left;
+}
+
+.account-trigger-copy small,
+.account-dropdown-head span,
+.account-dropdown-stats span,
+.account-card span,
+.plan-card-head span,
+.plan-card small,
+.account-card small {
+  color: var(--muted);
+}
+
+.account-usage-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  padding: 0 0.75rem;
+  border-radius: 999px;
+  background: rgba(14, 124, 102, 0.1);
+  color: var(--accent-strong);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.account-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.65rem);
+  width: min(320px, calc(100vw - 1.5rem));
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  border-radius: 22px;
+  background: rgba(255, 250, 240, 0.98);
+  border: 1px solid rgba(22, 42, 44, 0.1);
+  box-shadow: var(--shadow);
+  z-index: 35;
+}
+
+.account-dropdown-head,
+.account-dropdown-links,
+.account-card,
+.plan-card {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.account-dropdown-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.account-dropdown-stats > div {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.8rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(22, 42, 44, 0.08);
+}
+
+.account-dropdown-links a {
+  padding: 0.15rem 0;
+}
+
 .auth-chip,
 .login-promo {
   display: inline-flex;
@@ -250,6 +337,31 @@ main {
   padding: 4rem 0;
 }
 
+.account-panel-shell {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.account-hero-card,
+.account-card,
+.plan-card {
+  padding: 1.2rem;
+  border-radius: 24px;
+  background: rgba(255, 250, 240, 0.9);
+  border: 1px solid rgba(22, 42, 44, 0.08);
+  box-shadow: var(--shadow);
+}
+
+.account-hero-card {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.account-hero-card h1 {
+  font-size: clamp(2rem, 4vw, 3rem);
+  letter-spacing: -0.05em;
+}
+
 .hero-grid,
 .split-content,
 .workspace-grid,
@@ -268,6 +380,20 @@ main {
 .contact-page-grid {
   grid-template-columns: 0.92fr 1.08fr;
   align-items: start;
+}
+
+.account-grid,
+.plan-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.account-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.plan-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .hero-copy {
@@ -599,6 +725,34 @@ main {
   border: 1px solid rgba(22, 42, 44, 0.08);
 }
 
+.account-card strong,
+.plan-card strong,
+.account-dropdown-head strong,
+.account-dropdown-stats strong {
+  font-size: 1.05rem;
+}
+
+.plan-card-head,
+.plan-card-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.plan-card ul {
+  margin: 0;
+  padding-left: 1rem;
+  color: var(--muted);
+  display: grid;
+  gap: 0.3rem;
+}
+
+.plan-card.is-current {
+  border-color: rgba(14, 124, 102, 0.32);
+  background: rgba(242, 255, 251, 0.92);
+}
+
 .support-widget-trigger {
   position: fixed;
   right: 1.1rem;
@@ -914,6 +1068,8 @@ main {
   .workspace-grid,
   .split-content,
   .contact-page-grid,
+  .account-grid,
+  .plan-grid,
   .footer-grid,
   .status-board,
   .timeline-grid,
@@ -935,6 +1091,11 @@ main {
   .login-promo {
     width: 100%;
     flex-wrap: wrap;
+  }
+
+  .account-trigger {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .top-nav {
@@ -962,6 +1123,11 @@ main {
   .auth-chip,
   .login-promo {
     width: 100%;
+  }
+
+  .account-dropdown {
+    right: auto;
+    left: 0;
   }
 
   .mini-file-card {
