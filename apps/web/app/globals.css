@@ -482,6 +482,11 @@ main {
   gap: 0.5rem;
 }
 
+.support-head-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .support-desk-head h3 {
   font-size: clamp(1.6rem, 3vw, 2.2rem);
   line-height: 1;
@@ -536,8 +541,15 @@ main {
 }
 
 .support-form textarea {
-  resize: vertical;
-  min-height: 132px;
+  resize: none;
+  min-height: 92px;
+  max-height: 240px;
+  overflow-y: hidden;
+  line-height: 1.6;
+}
+
+.support-clear-button {
+  min-height: 40px;
 }
 
 .support-profile-chip {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { getOrCreateBrowserId } from "@/lib/browser-id";
 import { API_BASE_URL } from "@/lib/site";
@@ -52,6 +52,8 @@ type SupportDeskProps = {
 };
 
 const STORAGE_KEY = "scanlume-support-conversation";
+const TEXTAREA_MIN_HEIGHT = 92;
+const TEXTAREA_MAX_HEIGHT = 240;
 
 export function SupportDesk({
   embedded = false,
@@ -68,6 +70,9 @@ export function SupportDesk({
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
+  const latestAssistantMessageRef = useRef<HTMLElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const resolvedBrowserId = getOrCreateBrowserId();
@@ -135,6 +140,27 @@ export function SupportDesk({
       })
       .finally(() => setIsLoadingHistory(false));
   }, [browserId, conversationId]);
+
+  useEffect(() => {
+    resizeTextarea();
+  }, [message]);
+
+  useEffect(() => {
+    if (messages.length === 0 || messages[messages.length - 1]?.role !== "assistant") {
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      latestAssistantMessageRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+      messagesRef.current?.scrollTo({
+        top: messagesRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    });
+  }, [messages]);
 
   const canSubmit = useMemo(() => {
     if (isSubmitting || !browserId || !message.trim()) {
@@ -205,6 +231,31 @@ export function SupportDesk({
     }
   }
 
+  function handleClearConversation() {
+    setConversationId(null);
+    setMessages([]);
+    setMessage("");
+    setStatusMessage("Conversa limpa. Voce pode iniciar uma nova mensagem agora.");
+
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      return;
+    }
+  }
+
+  function resizeTextarea() {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      return;
+    }
+
+    textarea.style.height = `${TEXTAREA_MIN_HEIGHT}px`;
+    const nextHeight = Math.min(Math.max(textarea.scrollHeight, TEXTAREA_MIN_HEIGHT), TEXTAREA_MAX_HEIGHT);
+    textarea.style.height = `${nextHeight}px`;
+    textarea.style.overflowY = textarea.scrollHeight > TEXTAREA_MAX_HEIGHT ? "auto" : "hidden";
+  }
+
   return (
     <section className={embedded ? "support-desk support-desk-embedded" : "support-desk"}>
       <div className="support-desk-head">
@@ -213,6 +264,13 @@ export function SupportDesk({
           <h3>{title}</h3>
         </div>
         <p>{description}</p>
+        {(messages.length > 0 || conversationId) && (
+          <div className="support-head-actions">
+            <button type="button" className="ghost-button support-clear-button" onClick={handleClearConversation}>
+              Limpar conversa
+            </button>
+          </div>
+        )}
       </div>
 
       {auth?.authenticated && auth.user ? (
@@ -238,7 +296,7 @@ export function SupportDesk({
         </div>
       )}
 
-      <div className="support-messages" aria-live="polite">
+      <div ref={messagesRef} className="support-messages" aria-live="polite">
         {isLoadingHistory && <p className="support-hint">Carregando conversa recente...</p>}
         {!isLoadingHistory && messages.length === 0 && (
           <p className="support-hint">
@@ -246,8 +304,12 @@ export function SupportDesk({
           </p>
         )}
 
-        {messages.map((entry) => (
-          <article key={entry.id} className={`support-message support-message-${entry.role}`}>
+        {messages.map((entry, index) => (
+          <article
+            key={entry.id}
+            ref={index === messages.length - 1 && entry.role === "assistant" ? latestAssistantMessageRef : undefined}
+            className={`support-message support-message-${entry.role}`}
+          >
             <strong>{entry.role === "assistant" ? "Scanlume" : "Voce"}</strong>
             <p>{entry.body}</p>
           </article>
@@ -258,7 +320,8 @@ export function SupportDesk({
         <label>
           <span>Mensagem</span>
           <textarea
-            rows={embedded ? 6 : 5}
+            ref={textareaRef}
+            rows={3}
             value={message}
             onChange={(event) => setMessage(event.target.value)}
             placeholder="Explique sua duvida, problema ou sugestao..."
