@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { getOrCreateBrowserId } from "@/lib/browser-id";
@@ -61,16 +60,22 @@ function baseName(filename: string) {
   return filename.replace(/\.[^.]+$/, "") || "resultado";
 }
 
+function revokePreviewUrls(files: SelectedFile[]) {
+  files.forEach((file) => URL.revokeObjectURL(file.previewUrl));
+}
+
 export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode }) {
   const [mode, setMode] = useState<Mode>(defaultMode);
   const [activeFormat, setActiveFormat] = useState<FormatTab>("txt");
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
   const [results, setResults] = useState<Record<string, FileResult>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [limits, setLimits] = useState<LimitsResponse | null>(null);
   const [turnstileToken, setTurnstileToken] = useState("");
   const browserId = useRef("browser-id-pending");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const selectedFilesRef = useRef<SelectedFile[]>([]);
 
   useEffect(() => {
     browserId.current = getOrCreateBrowserId();
@@ -86,11 +91,15 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
     }
   }, [mode, activeFormat]);
 
+  useEffect(() => {
+    selectedFilesRef.current = selectedFiles;
+  }, [selectedFiles]);
+
   useEffect(
     () => () => {
-      selectedFiles.forEach((file) => URL.revokeObjectURL(file.previewUrl));
+      revokePreviewUrls(selectedFilesRef.current);
     },
-    [selectedFiles],
+    [],
   );
 
   const completedItems = useMemo(
@@ -129,67 +138,72 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
   }
 
   async function processFiles(files: SelectedFile[], selectedMode: Mode) {
+    setIsSubmitting(true);
     setGlobalError(null);
     setResults(
       Object.fromEntries(files.map((file) => [file.id, { status: "processing" as const }])),
     );
 
-    for (const item of files) {
-      try {
-        const dataUrl = await fileToDataUrl(item.file);
-        const response = await fetch(`${API_BASE_URL}/v1/ocr`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            mode: selectedMode,
-            browserId: browserId.current,
-            turnstileToken: turnstileToken || undefined,
-            image: {
-              name: item.file.name,
-              mimeType: item.file.type,
-              size: item.file.size,
-              dataUrl,
+    try {
+      for (const item of files) {
+        try {
+          const dataUrl = await fileToDataUrl(item.file);
+          const response = await fetch(`${API_BASE_URL}/v1/ocr`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
             },
-          }),
-        });
+            body: JSON.stringify({
+              mode: selectedMode,
+              browserId: browserId.current,
+              turnstileToken: turnstileToken || undefined,
+              image: {
+                name: item.file.name,
+                mimeType: item.file.type,
+                size: item.file.size,
+                dataUrl,
+              },
+            }),
+          });
 
-        const payload = (await response.json()) as {
-          error?: string;
-          result?: ResultPayload;
-        };
+          const payload = (await response.json()) as {
+            error?: string;
+            result?: ResultPayload;
+          };
 
-        if (!response.ok || !payload.result) {
-          throw new Error(payload.error || "Falha ao processar a imagem.");
+          if (!response.ok || !payload.result) {
+            throw new Error(payload.error || "Falha ao processar a imagem.");
+          }
+
+          setResults((current) => ({
+            ...current,
+            [item.id]: {
+              status: "success",
+              payload: payload.result,
+            },
+          }));
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Erro inesperado.";
+          setResults((current) => ({
+            ...current,
+            [item.id]: {
+              status: "error",
+              message,
+            },
+          }));
         }
-
-        setResults((current) => ({
-          ...current,
-          [item.id]: {
-            status: "success",
-            payload: payload.result,
-          },
-        }));
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Erro inesperado.";
-        setResults((current) => ({
-          ...current,
-          [item.id]: {
-            status: "error",
-            message,
-          },
-        }));
       }
-    }
 
-    void fetch(`${API_BASE_URL}/v1/limits`)
-      .then((response) => response.json())
-      .then((data: LimitsResponse) => setLimits(data))
-      .catch(() => null);
+      void fetch(`${API_BASE_URL}/v1/limits`)
+        .then((response) => response.json())
+        .then((data: LimitsResponse) => setLimits(data))
+        .catch(() => null);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
-  async function handleFiles(nextFiles: File[]) {
+  function handleFiles(nextFiles: File[]) {
     const validationError = validateFiles(nextFiles);
     if (validationError) {
       setGlobalError(validationError);
@@ -202,12 +216,22 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
       previewUrl: URL.createObjectURL(file),
     }));
 
+    revokePreviewUrls(selectedFilesRef.current);
     setSelectedFiles(mappedFiles);
-    await processFiles(mappedFiles, mode);
+    setResults(
+      Object.fromEntries(mappedFiles.map((file) => [file.id, { status: "idle" as const }])),
+    );
+    setGlobalError(null);
+    if (mode === "formatted") {
+      setActiveFormat("html");
+    } else {
+      setActiveFormat("txt");
+    }
   }
 
   function resetFiles() {
-    selectedFiles.forEach((file) => URL.revokeObjectURL(file.previewUrl));
+    revokePreviewUrls(selectedFilesRef.current);
+    selectedFilesRef.current = [];
     setSelectedFiles([]);
     setResults({});
     setGlobalError(null);
@@ -251,6 +275,10 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
 
   const primaryPreview = completedItems[0]?.result.payload;
   const primaryFile = completedItems[0]?.entry;
+  const hasQueuedFiles = selectedFiles.length > 0;
+  const hasCompletedResults = completedItems.length > 0;
+  const canStart = hasQueuedFiles && !isSubmitting;
+  const modeActionLabel = mode === "simple" ? "Iniciar Simple OCR" : "Iniciar Formatted Text";
 
   return (
     <section className="workspace-shell">
@@ -264,7 +292,7 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
         </div>
 
         <div className="limit-pills">
-          <span>Anonimo: 5 imagens por dia</span>
+          <span>Limite gratis diario: US$ 20</span>
           <span>Simple = 1 credito</span>
           <span>Formatted = 3 creditos</span>
         </div>
@@ -299,12 +327,12 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
               onChange={(event) => {
                 const files = Array.from(event.target.files ?? []);
                 if (files.length > 0) {
-                  void handleFiles(files);
+                  handleFiles(files);
                 }
               }}
             />
             <strong>Arraste imagens aqui ou clique para enviar</strong>
-            <span>1 imagem imediata ou ate 10 arquivos por lote</span>
+            <span>Envie primeiro e clique em iniciar quando estiver pronto</span>
             <small>Maximo de 5 MB por imagem e 20 MB por lote</small>
           </label>
 
@@ -319,16 +347,26 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
             <button className="ghost-button" type="button" onClick={resetFiles}>
               Limpar
             </button>
-            {selectedFiles.length > 0 && (
-              <button
-                className="solid-button"
-                type="button"
-                onClick={() => void processFiles(selectedFiles, mode)}
-              >
-                Processar novamente
-              </button>
-            )}
+            <button
+              className="solid-button"
+              type="button"
+              disabled={!canStart}
+              onClick={() => void processFiles(selectedFiles, mode)}
+            >
+              {isSubmitting ? "Reconhecendo..." : modeActionLabel}
+            </button>
           </div>
+
+          {hasQueuedFiles && (
+            <div className="queue-summary">
+              <strong>{selectedFiles.length} arquivo(s) pronto(s) para reconhecimento</strong>
+              <span>
+                {hasCompletedResults
+                  ? "Voce pode trocar o modo e clicar novamente para gerar outra saida."
+                  : "Os arquivos ficam na fila ate voce clicar em iniciar."}
+              </span>
+            </div>
+          )}
 
           <div className="turnstile-note">
             <strong>Turnstile:</strong>
@@ -346,16 +384,16 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
           {limits && (
             <div className="status-board">
               <div>
-                <span>Orcamento hoje</span>
-                <strong>R$ {limits.budget.totalCostRmb.toFixed(4)}</strong>
+                <span>Limite gratis diario</span>
+                <strong>US$ 20</strong>
               </div>
               <div>
-                <span>Soft stop</span>
-                <strong>R$ {limits.limits.softBudgetRmb}</strong>
+                <span>Cota anonima</span>
+                <strong>{limits.limits.dailyImages} imagens</strong>
               </div>
               <div>
-                <span>Hard stop</span>
-                <strong>R$ {limits.limits.hardBudgetRmb}</strong>
+                <span>Lote maximo</span>
+                <strong>{limits.limits.maxBatchFiles} imagens</strong>
               </div>
             </div>
           )}
@@ -369,30 +407,28 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
               </div>
             )}
 
+            <div className="selected-file-grid">
             {selectedFiles.map((item) => {
               const result = results[item.id];
               return (
                 <article key={item.id} className="mini-file-card">
-                  <Image
-                    src={item.previewUrl}
-                    alt={item.file.name}
-                    width={92}
-                    height={92}
-                    unoptimized
-                  />
-                  <div>
+                  {/* Local object URLs are not compatible with Next image optimization. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={item.previewUrl} alt={item.file.name} width={92} height={92} />
+                  <div className="mini-file-meta">
                     <strong>{item.file.name}</strong>
                     <span>{(item.file.size / 1024 / 1024).toFixed(2)} MB</span>
                     <p>
                       {result?.status === "processing" && "Processando..."}
                       {result?.status === "success" && "Pronto para copiar e baixar."}
                       {result?.status === "error" && result.message}
-                      {!result && "Na fila."}
+                      {(result?.status === "idle" || !result) && "Aguardando clique em iniciar."}
                     </p>
                   </div>
                 </article>
               );
             })}
+            </div>
           </div>
         </div>
 

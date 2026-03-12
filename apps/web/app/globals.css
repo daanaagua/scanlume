@@ -169,6 +169,16 @@ main {
   transform: translateY(-1px);
 }
 
+.solid-button:disabled,
+.ghost-button:disabled,
+.mode-toggle button:disabled,
+.format-tabs button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
+  box-shadow: none;
+}
+
 .hero-section,
 .section-band,
 .legal-band {
@@ -398,7 +408,8 @@ main {
 }
 
 .turnstile-note,
-.status-board {
+.status-board,
+.queue-summary {
   display: grid;
   gap: 0.75rem;
   padding: 1rem;
@@ -409,6 +420,10 @@ main {
 
 .status-board {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.queue-summary span {
+  color: var(--muted);
 }
 
 .status-board span {
@@ -433,6 +448,12 @@ main {
   align-items: center;
 }
 
+.selected-file-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
 .mini-file-card img {
   width: 92px;
   height: 92px;
@@ -443,6 +464,18 @@ main {
 .mini-file-card span,
 .mini-file-card p {
   color: var(--muted);
+}
+
+.mini-file-meta {
+  min-width: 0;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.mini-file-meta strong,
+.mini-file-meta span,
+.mini-file-meta p {
+  overflow-wrap: anywhere;
 }
 
 .result-head {
@@ -538,7 +571,8 @@ main {
   .status-board,
   .timeline-grid,
   .check-grid,
-  .related-grid {
+  .related-grid,
+  .selected-file-grid {
     grid-template-columns: 1fr;
   }
 
