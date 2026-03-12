@@ -1,0 +1,16 @@
+{
+  "name": "scanlume",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.30.3",
+  "scripts": {
+    "dev": "concurrently \"pnpm --dir apps/api dev\" \"pnpm --dir apps/web dev\"",
+    "dev:web": "pnpm --dir apps/web dev",
+    "dev:api": "pnpm --dir apps/api dev",
+    "build": "pnpm --dir apps/web build && pnpm --dir apps/api typecheck",
+    "lint": "pnpm --dir apps/web lint && pnpm --dir apps/api typecheck"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

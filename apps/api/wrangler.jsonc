@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "scanlume-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-03-12",
+  "vars": {
+    "APP_NAME": "scanlume",
+    "ARK_API_BASE": "https://ark.cn-beijing.volces.com/api/v3",
+    "DAILY_IMAGE_LIMIT": "5",
+    "DAILY_CREDIT_LIMIT": "5",
+    "SOFT_BUDGET_RMB": "18",
+    "HARD_BUDGET_RMB": "20",
+    "MAX_IMAGE_MB": "5",
+    "MAX_BATCH_FILES": "10",
+    "MAX_BATCH_TOTAL_MB": "20"
+  }
+}
