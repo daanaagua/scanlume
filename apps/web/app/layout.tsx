@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Sans, Syne } from "next/font/google";
+import Script from "next/script";
 
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
@@ -45,6 +46,18 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={`${bodyFont.variable} ${displayFont.variable}`}>
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-ST57ZKSQZJ"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-ST57ZKSQZJ');
+          `}
+        </Script>
         <div className="site-shell">
           <SiteHeader />
           <main>{children}</main>
