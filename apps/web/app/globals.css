@@ -1141,6 +1141,10 @@ main {
     width: min(100vw - 1rem, 1120px);
   }
 
+  .top-nav {
+    display: none;
+  }
+
   .hero-grid {
     gap: 1rem;
   }
