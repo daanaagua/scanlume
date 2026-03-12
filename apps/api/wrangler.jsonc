@@ -3,6 +3,21 @@
   "name": "scanlume-api",
   "main": "src/index.ts",
   "compatibility_date": "2026-03-12",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "scanlume",
+      "database_id": "b3efa35c-7326-4f1d-b1d9-4a4303660be6",
+      "preview_database_id": "b3efa35c-7326-4f1d-b1d9-4a4303660be6"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "RATE_LIMITS",
+      "id": "be49f8d9de7944029a9ff0226d1b7b44",
+      "preview_id": "be49f8d9de7944029a9ff0226d1b7b44"
+    }
+  ],
   "vars": {
     "APP_NAME": "scanlume",
     "ARK_API_BASE": "https://ark.cn-beijing.volces.com/api/v3",
