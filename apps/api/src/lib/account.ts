@@ -32,6 +32,13 @@ export type BillingSummary = {
   cancelAtPeriodEnd: boolean;
 };
 
+export type PlanEntitlements = AccountPlan["entitlements"];
+
+export type ResolvedPlanContext = {
+  currentPlan: AccountPlan;
+  billing: BillingSummary;
+};
+
 export type AccountSnapshot = {
   viewer: {
     authenticated: boolean;
@@ -51,6 +58,8 @@ export type AccountSnapshot = {
     subscriptions: string;
   };
 };
+
+type EntitlementOverrides = Partial<Pick<PlanEntitlements, "dailyImages" | "dailyCredits">>;
 
 type SubscriptionRow = {
   plan_id: string;
@@ -74,11 +83,16 @@ type AccountViewerInput = {
 };
 
 export async function buildAccountSnapshot(env: WorkerEnv, viewer: AccountViewerInput): Promise<AccountSnapshot> {
+  const resolvedPlan = await resolveCurrentPlan(env, {
+    type: viewer.type,
+    user: viewer.user,
+    overrides: {
+      dailyImages: viewer.dailyImageLimit,
+      dailyCredits: viewer.dailyCreditLimit,
+    },
+  });
   const catalog = getPlanCatalog(env);
-  const subscription = viewer.user ? await readUserSubscription(env, viewer.user.id) : null;
-  const currentPlan = viewer.type === "user"
-    ? withCurrentFlag(resolveUserPlan(catalog, viewer, subscription), true)
-    : withCurrentFlag(catalog.anonymous, true);
+  const currentPlan = resolvedPlan.currentPlan;
 
   return {
     viewer: {
@@ -92,14 +106,7 @@ export async function buildAccountSnapshot(env: WorkerEnv, viewer: AccountViewer
       remainingImages: Math.max(viewer.dailyImageLimit - viewer.usage.usedImages, 0),
       remainingCredits: Math.max(viewer.dailyCreditLimit - viewer.usage.usedCredits, 0),
     },
-    billing: {
-      status: normalizeBillingStatus(subscription?.status),
-      provider: subscription?.provider ?? null,
-      billingEmail: subscription?.billing_email ?? viewer.user?.email ?? null,
-      currentPeriodStart: subscription?.current_period_start ?? null,
-      currentPeriodEnd: subscription?.current_period_end ?? null,
-      cancelAtPeriodEnd: Boolean(subscription?.cancel_at_period_end),
-    },
+    billing: resolvedPlan.billing,
     availablePlans: [
       withCurrentFlag(catalog.free, currentPlan.id === "free"),
       withCurrentFlag(catalog.starter, currentPlan.id === "starter"),
@@ -108,6 +115,44 @@ export async function buildAccountSnapshot(env: WorkerEnv, viewer: AccountViewer
     notes: {
       replyWindow: "Respondemos em ate 1 dia.",
       subscriptions: "Assinaturas pagas e cobranca recorrente entram na proxima fase do produto.",
+    },
+  };
+}
+
+export async function resolveCurrentPlan(
+  env: WorkerEnv,
+  input: {
+    type: "anonymous" | "user";
+    user: SessionViewer | null;
+    overrides?: EntitlementOverrides;
+  },
+): Promise<ResolvedPlanContext> {
+  const catalog = getPlanCatalog(env);
+
+  if (input.type !== "user" || !input.user) {
+    return {
+      currentPlan: withCurrentFlag(applyEntitlementOverrides(catalog.anonymous, input.overrides), true),
+      billing: {
+        status: "inactive",
+        provider: null,
+        billingEmail: null,
+        currentPeriodStart: null,
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
+      },
+    };
+  }
+
+  const subscription = await readUserSubscription(env, input.user.id);
+  return {
+    currentPlan: withCurrentFlag(resolveUserPlan(catalog, subscription, input.overrides), true),
+    billing: {
+      status: normalizeBillingStatus(subscription?.status),
+      provider: subscription?.provider ?? null,
+      billingEmail: subscription?.billing_email ?? input.user.email ?? null,
+      currentPeriodStart: subscription?.current_period_start ?? null,
+      currentPeriodEnd: subscription?.current_period_end ?? null,
+      cancelAtPeriodEnd: Boolean(subscription?.cancel_at_period_end),
     },
   };
 }
@@ -214,31 +259,17 @@ async function readUserSubscription(env: WorkerEnv, userId: string) {
 
 function resolveUserPlan(
   catalog: ReturnType<typeof getPlanCatalog>,
-  viewer: AccountViewerInput,
   subscription: SubscriptionRow | null,
+  overrides?: EntitlementOverrides,
 ) {
   if (subscription && ["active", "trialing"].includes(subscription.status)) {
     const plan = catalog[normalizePlanId(subscription.plan_id)];
     if (plan) {
-      return {
-        ...plan,
-        entitlements: {
-          ...plan.entitlements,
-          dailyImages: Math.max(plan.entitlements.dailyImages, viewer.dailyImageLimit),
-          dailyCredits: Math.max(plan.entitlements.dailyCredits, viewer.dailyCreditLimit),
-        },
-      } satisfies AccountPlan;
+      return applyEntitlementOverrides(plan, overrides);
     }
   }
 
-  return {
-    ...catalog.free,
-    entitlements: {
-      ...catalog.free.entitlements,
-      dailyImages: viewer.dailyImageLimit,
-      dailyCredits: viewer.dailyCreditLimit,
-    },
-  } satisfies AccountPlan;
+  return applyEntitlementOverrides(catalog.free, overrides);
 }
 
 function normalizePlanId(value: string | null | undefined): AccountPlanId {
@@ -261,5 +292,20 @@ function withCurrentFlag(plan: AccountPlan, isCurrent: boolean) {
   return {
     ...plan,
     isCurrent,
+  } satisfies AccountPlan;
+}
+
+function applyEntitlementOverrides(plan: AccountPlan, overrides?: EntitlementOverrides) {
+  if (!overrides) {
+    return plan;
+  }
+
+  return {
+    ...plan,
+    entitlements: {
+      ...plan.entitlements,
+      dailyImages: overrides.dailyImages ? Math.max(plan.entitlements.dailyImages, overrides.dailyImages) : plan.entitlements.dailyImages,
+      dailyCredits: overrides.dailyCredits ? Math.max(plan.entitlements.dailyCredits, overrides.dailyCredits) : plan.entitlements.dailyCredits,
+    },
   } satisfies AccountPlan;
 }

@@ -1,7 +1,7 @@
 import { Hono, type Context } from "hono";
 import { cors } from "hono/cors";
 
-import { buildAccountSnapshot } from "./lib/account";
+import { buildAccountSnapshot, resolveCurrentPlan, type AccountPlan } from "./lib/account";
 import {
   buildGoogleAuthorizationUrl,
   clearOauthState,
@@ -10,8 +10,6 @@ import {
   exchangeGoogleCode,
   fetchGoogleUser,
   getGoogleRedirectUri,
-  getLoggedInDailyCreditLimit,
-  getLoggedInDailyImageLimit,
   getSessionViewer,
   getWebOrigin,
   isGoogleAuthConfigured,
@@ -80,6 +78,7 @@ type AppBindings = {
 type ViewerContext = {
   browserId: string;
   clientIp: string;
+  currentPlan: AccountPlan;
   dailyCreditLimit: number;
   dailyImageLimit: number;
   rateKey: string | null;
@@ -366,12 +365,17 @@ app.get("/v1/limits", async (c) => {
       type: viewer.type,
       user: viewer.user,
     },
+    plan: {
+      id: viewer.currentPlan.id,
+      label: viewer.currentPlan.label,
+      shortLabel: viewer.currentPlan.shortLabel,
+    },
     limits: {
       dailyImages: viewer.dailyImageLimit,
       dailyCredits: viewer.dailyCreditLimit,
-      maxImageMb: readNumber(c.env.MAX_IMAGE_MB, 5),
-      maxBatchFiles: readNumber(c.env.MAX_BATCH_FILES, 10),
-      maxBatchTotalMb: readNumber(c.env.MAX_BATCH_TOTAL_MB, 20),
+      maxImageMb: viewer.currentPlan.entitlements.maxImageMb,
+      maxBatchFiles: viewer.currentPlan.entitlements.maxBatchFiles,
+      maxBatchTotalMb: viewer.currentPlan.entitlements.maxBatchTotalMb,
       softBudgetRmb,
       hardBudgetRmb,
     },
@@ -406,12 +410,11 @@ app.post("/v1/ocr", async (c) => {
   }
 
   const { image, mode, browserId, turnstileToken } = parsed.data;
-  const imageLimitBytes = readNumber(c.env.MAX_IMAGE_MB, 5) * 1024 * 1024;
-  if (image.size > imageLimitBytes) {
-    return c.json({ error: "The selected image exceeds the 5 MB limit." }, 413);
-  }
-
   const viewer = await resolveViewerContext(c, browserId);
+  const imageLimitBytes = viewer.currentPlan.entitlements.maxImageMb * 1024 * 1024;
+  if (image.size > imageLimitBytes) {
+    return c.json({ error: `The selected image exceeds the ${viewer.currentPlan.entitlements.maxImageMb} MB limit.` }, 413);
+  }
   const ipHash = await sha256Hex(viewer.clientIp);
   const date = todayKey();
   const budgetState = await readBudgetState(c.env, date);
@@ -495,6 +498,11 @@ app.post("/v1/ocr", async (c) => {
       authenticated: viewer.type === "user",
       type: viewer.type,
       user: viewer.user,
+    },
+    plan: {
+      id: viewer.currentPlan.id,
+      label: viewer.currentPlan.label,
+      shortLabel: viewer.currentPlan.shortLabel,
     },
     result: result.payload,
     usage: {
@@ -632,6 +640,10 @@ async function resolveViewerContext(c: Context<AppBindings>, browserId?: string)
 
   if (user) {
     const usage = await readUserDailyUsage(c.env, user.id, date);
+    const resolvedPlan = await resolveCurrentPlan(c.env, {
+      type: "user",
+      user,
+    });
     return {
       type: "user",
       user,
@@ -639,14 +651,19 @@ async function resolveViewerContext(c: Context<AppBindings>, browserId?: string)
       clientIp,
       browserId: browserId ?? "logged-in-user",
       rateKey: null,
-      dailyImageLimit: getLoggedInDailyImageLimit(c.env),
-      dailyCreditLimit: getLoggedInDailyCreditLimit(c.env),
+      currentPlan: resolvedPlan.currentPlan,
+      dailyImageLimit: resolvedPlan.currentPlan.entitlements.dailyImages,
+      dailyCreditLimit: resolvedPlan.currentPlan.entitlements.dailyCredits,
     };
   }
 
   const resolvedBrowserId = browserId ?? "anonymous-browser";
   const rateKey = await sha256Hex(`${clientIp}:${resolvedBrowserId}`);
   const usage = await readRateState(c.env, rateKey, date);
+  const resolvedPlan = await resolveCurrentPlan(c.env, {
+    type: "anonymous",
+    user: null,
+  });
 
   return {
     type: "anonymous",
@@ -655,8 +672,9 @@ async function resolveViewerContext(c: Context<AppBindings>, browserId?: string)
     clientIp,
     browserId: resolvedBrowserId,
     rateKey,
-    dailyImageLimit: readNumber(c.env.DAILY_IMAGE_LIMIT, 5),
-    dailyCreditLimit: readNumber(c.env.DAILY_CREDIT_LIMIT, 5),
+    currentPlan: resolvedPlan.currentPlan,
+    dailyImageLimit: resolvedPlan.currentPlan.entitlements.dailyImages,
+    dailyCreditLimit: resolvedPlan.currentPlan.entitlements.dailyCredits,
   };
 }
 

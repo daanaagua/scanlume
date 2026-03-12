@@ -74,6 +74,11 @@ type LimitsResponse = {
       avatarUrl: string | null;
     } | null;
   };
+  plan: {
+    id: string;
+    label: string;
+    shortLabel: string;
+  };
   limits: {
     dailyImages: number;
     dailyCredits: number;
@@ -606,8 +611,8 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
           {limits && !limits.viewer.authenticated && (
             <div className="login-promo">
               <div className="login-promo-copy">
-                <strong>Entre com Google para liberar 100 creditos por dia</strong>
-                <small>Usuarios conectados recebem uma cota diaria maior para OCR simples e formatado.</small>
+                <strong>Entre com Google para transformar seu teste em uma conta gratuita</strong>
+                <small>Usuarios conectados recebem uma cota diaria maior e um espaco de conta proprio.</small>
               </div>
               <button type="button" className="solid-button" onClick={startGoogleLogin}>
                 Entrar agora
@@ -623,6 +628,11 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
                 <div className="mini-progress-track" aria-hidden="true">
                   <div className="mini-progress-fill" style={{ width: `${budgetUsagePercent}%` }} />
                 </div>
+              </div>
+              <div>
+                <span>Plano</span>
+                <strong>{limits.plan.label}</strong>
+                <small>{limits.plan.shortLabel}</small>
               </div>
               <div>
                 <span>{limits.viewer.authenticated ? "Creditos restantes" : "Cota anonima"}</span>
