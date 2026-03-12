@@ -1,6 +1,25 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { cors } from "hono/cors";
 
+import {
+  buildGoogleAuthorizationUrl,
+  clearOauthState,
+  createUserSession,
+  destroyUserSession,
+  exchangeGoogleCode,
+  fetchGoogleUser,
+  getGoogleRedirectUri,
+  getLoggedInDailyCreditLimit,
+  getLoggedInDailyImageLimit,
+  getSessionViewer,
+  getWebOrigin,
+  isGoogleAuthConfigured,
+  randomToken,
+  readOauthState,
+  sanitizeRedirectPath,
+  setOauthState,
+  upsertGoogleViewer,
+} from "./lib/auth";
 import {
   blocksToHtml,
   blocksToMarkdown,
@@ -23,11 +42,13 @@ import {
   readBudgetState,
   readNumber,
   readRateState,
+  readUserDailyUsage,
   sha256Hex,
   todayKey,
   type WorkerEnv,
   writeBudgetState,
   writeRateState,
+  writeUserDailyUsage,
 } from "./lib/store";
 
 const INPUT_PRICE_PER_M = 0.8;
@@ -38,15 +59,44 @@ type AppBindings = {
   Bindings: WorkerEnv;
 };
 
+type ViewerContext = {
+  browserId: string;
+  clientIp: string;
+  dailyCreditLimit: number;
+  dailyImageLimit: number;
+  rateKey: string | null;
+  type: "anonymous" | "user";
+  usage: {
+    usedCredits: number;
+    usedImages: number;
+  };
+  user: Awaited<ReturnType<typeof getSessionViewer>>;
+};
+
 const app = new Hono<AppBindings>();
 
-app.use("*", cors());
+app.use("*", async (c, next) => {
+  const middleware = cors({
+    origin: (origin) => resolveCorsOrigin(c.env, origin),
+    allowHeaders: ["Content-Type"],
+    allowMethods: ["GET", "POST", "OPTIONS"],
+    credentials: true,
+  });
+
+  return middleware(c, next);
+});
 
 app.get("/", (c) =>
   c.json({
     app: c.env.APP_NAME ?? "scanlume",
     status: "ok",
-    docs: ["/v1/health", "/v1/limits", "/v1/ocr"],
+    docs: [
+      "/v1/health",
+      "/v1/limits",
+      "/v1/me",
+      "/v1/auth/google/start",
+      "/v1/ocr",
+    ],
   }),
 );
 
@@ -55,27 +105,94 @@ app.get("/v1/health", (c) =>
     status: "ok",
     provider: "ark",
     modelConfigured: Boolean(c.env.ARK_MODEL),
+    googleAuthConfigured: isGoogleAuthConfigured(c.env),
     turnstileConfigured: Boolean(c.env.TURNSTILE_SECRET_KEY),
     d1Configured: Boolean(c.env.DB),
     kvConfigured: Boolean(c.env.RATE_LIMITS),
   }),
 );
 
+app.get("/v1/me", async (c) => {
+  const user = await getSessionViewer(c, c.env);
+
+  return c.json({
+    authenticated: Boolean(user),
+    user,
+  });
+});
+
+app.get("/v1/auth/google/start", async (c) => {
+  if (!isGoogleAuthConfigured(c.env)) {
+    return c.redirect(buildWebRedirect(c.env, "/imagem-para-texto", "google_not_configured"), 302);
+  }
+
+  const redirectTo = sanitizeRedirectPath(c.req.query("redirectTo") ?? "/imagem-para-texto");
+  const state = randomToken(24);
+  setOauthState(c, c.env, state, redirectTo);
+
+  return c.redirect(buildGoogleAuthorizationUrl(c.env, new URL(c.req.url).origin, state), 302);
+});
+
+app.get("/v1/auth/google/callback", async (c) => {
+  const code = c.req.query("code");
+  const state = c.req.query("state");
+  const stored = readOauthState(c);
+  clearOauthState(c, c.env);
+
+  if (!code || !state || !stored.state || state !== stored.state) {
+    return c.redirect(buildWebRedirect(c.env, stored.redirectTo, "google_state_invalid"), 302);
+  }
+
+  try {
+    const accessToken = await exchangeGoogleCode(
+      c.env,
+      code,
+      getGoogleRedirectUri(c.env, new URL(c.req.url).origin),
+    );
+    const googleProfile = await fetchGoogleUser(accessToken);
+    const user = await upsertGoogleViewer(c.env, googleProfile);
+
+    await createUserSession(c, c.env, user.id);
+
+    return c.redirect(buildWebRedirect(c.env, stored.redirectTo, "google_connected"), 302);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "google_auth_failed";
+    return c.redirect(buildWebRedirect(c.env, stored.redirectTo, "google_auth_failed", message), 302);
+  }
+});
+
+app.post("/v1/auth/logout", async (c) => {
+  await destroyUserSession(c, c.env);
+  return c.json({ ok: true });
+});
+
 app.get("/v1/limits", async (c) => {
   const date = todayKey();
   const budget = await readBudgetState(c.env, date);
   const softBudgetRmb = readNumber(c.env.SOFT_BUDGET_RMB, 18);
   const hardBudgetRmb = readNumber(c.env.HARD_BUDGET_RMB, 20);
+  const viewer = await resolveViewerContext(c, c.req.query("browserId") ?? undefined);
 
   return c.json({
+    viewer: {
+      authenticated: viewer.type === "user",
+      type: viewer.type,
+      user: viewer.user,
+    },
     limits: {
-      dailyImages: readNumber(c.env.DAILY_IMAGE_LIMIT, 5),
-      dailyCredits: readNumber(c.env.DAILY_CREDIT_LIMIT, 5),
+      dailyImages: viewer.dailyImageLimit,
+      dailyCredits: viewer.dailyCreditLimit,
       maxImageMb: readNumber(c.env.MAX_IMAGE_MB, 5),
       maxBatchFiles: readNumber(c.env.MAX_BATCH_FILES, 10),
       maxBatchTotalMb: readNumber(c.env.MAX_BATCH_TOTAL_MB, 20),
       softBudgetRmb,
       hardBudgetRmb,
+    },
+    usage: {
+      usedImages: viewer.usage.usedImages,
+      usedCredits: viewer.usage.usedCredits,
+      remainingImages: Math.max(viewer.dailyImageLimit - viewer.usage.usedImages, 0),
+      remainingCredits: Math.max(viewer.dailyCreditLimit - viewer.usage.usedCredits, 0),
     },
     budget,
     status: {
@@ -107,26 +224,21 @@ app.post("/v1/ocr", async (c) => {
     return c.json({ error: "The selected image exceeds the 5 MB limit." }, 413);
   }
 
-  const clientIp = getClientIp(c.req.raw);
-  const resolvedBrowserId = browserId ?? "anonymous-browser";
-  const rateKey = await sha256Hex(`${clientIp}:${resolvedBrowserId}`);
-  const ipHash = await sha256Hex(clientIp);
+  const viewer = await resolveViewerContext(c, browserId);
+  const ipHash = await sha256Hex(viewer.clientIp);
   const date = todayKey();
-  const rateState = await readRateState(c.env, rateKey, date);
   const budgetState = await readBudgetState(c.env, date);
 
   const requestedCredits = mode === "formatted" ? 3 : 1;
-  const dailyImageLimit = readNumber(c.env.DAILY_IMAGE_LIMIT, 5);
-  const dailyCreditLimit = readNumber(c.env.DAILY_CREDIT_LIMIT, 5);
   const softBudgetRmb = readNumber(c.env.SOFT_BUDGET_RMB, 18);
   const hardBudgetRmb = readNumber(c.env.HARD_BUDGET_RMB, 20);
   const preflightEstimate = estimatePreflightCost(mode, image.size);
 
-  if (rateState.usedImages + 1 > dailyImageLimit) {
+  if (viewer.usage.usedImages + 1 > viewer.dailyImageLimit) {
     return c.json({ error: "Daily image limit reached.", code: "daily_image_limit" }, 429);
   }
 
-  if (rateState.usedCredits + requestedCredits > dailyCreditLimit) {
+  if (viewer.usage.usedCredits + requestedCredits > viewer.dailyCreditLimit) {
     return c.json({ error: "Daily credits exhausted.", code: "daily_credit_limit" }, 429);
   }
 
@@ -138,7 +250,7 @@ app.post("/v1/ocr", async (c) => {
     return c.json({ error: "This request would exceed the hard daily budget.", code: "budget_preflight_stop" }, 429);
   }
 
-  const turnstileOk = await verifyTurnstile(c.env, turnstileToken, clientIp);
+  const turnstileOk = await verifyTurnstile(c.env, turnstileToken, viewer.clientIp);
   if (!turnstileOk) {
     return c.json({ error: "Turnstile validation failed.", code: "turnstile_failed" }, 400);
   }
@@ -153,24 +265,29 @@ app.post("/v1/ocr", async (c) => {
   }
 
   const actualCost = calcCost(result.usage);
-  const nextRateState = {
-    usedImages: rateState.usedImages + 1,
-    usedCredits: rateState.usedCredits + requestedCredits,
+  const nextUsageState = {
+    usedImages: viewer.usage.usedImages + 1,
+    usedCredits: viewer.usage.usedCredits + requestedCredits,
   };
   const nextBudgetState = {
     totalCostRmb: round8(budgetState.totalCostRmb + actualCost.total_rmb),
     totalRequests: budgetState.totalRequests + 1,
     totalImages: budgetState.totalImages + 1,
   };
+  const createdAt = new Date().toISOString();
 
-  await writeRateState(c.env, rateKey, date, nextRateState);
+  if (viewer.type === "user" && viewer.user) {
+    await writeUserDailyUsage(c.env, viewer.user.id, date, nextUsageState, createdAt);
+  } else if (viewer.rateKey) {
+    await writeRateState(c.env, viewer.rateKey, date, nextUsageState);
+  }
   await writeBudgetState(c.env, date, nextBudgetState);
 
-  const createdAt = new Date().toISOString();
   await persistUsageEvent(c.env, {
     id: crypto.randomUUID(),
     ipHash,
-    browserId: resolvedBrowserId,
+    browserId: viewer.browserId,
+    userId: viewer.user?.id ?? null,
     mode,
     imageCount: 1,
     inputTokens: result.usage.input_tokens,
@@ -178,15 +295,20 @@ app.post("/v1/ocr", async (c) => {
     costRmb: actualCost.total_rmb,
     createdAt,
     date,
-    rateKey,
-    usedImages: nextRateState.usedImages,
-    usedCredits: nextRateState.usedCredits,
+    rateKey: viewer.rateKey ?? undefined,
+    usedImages: nextUsageState.usedImages,
+    usedCredits: nextUsageState.usedCredits,
     softStopped: nextBudgetState.totalCostRmb >= softBudgetRmb,
     hardStopped: nextBudgetState.totalCostRmb >= hardBudgetRmb,
   });
 
   return c.json({
     mode,
+    viewer: {
+      authenticated: viewer.type === "user",
+      type: viewer.type,
+      user: viewer.user,
+    },
     result: result.payload,
     usage: {
       ...result.usage,
@@ -194,11 +316,13 @@ app.post("/v1/ocr", async (c) => {
       elapsed_ms: Date.now() - startedAt,
     },
     limits: {
-      remainingImages: Math.max(dailyImageLimit - nextRateState.usedImages, 0),
-      remainingCredits: Math.max(dailyCreditLimit - nextRateState.usedCredits, 0),
+      remainingImages: Math.max(viewer.dailyImageLimit - nextUsageState.usedImages, 0),
+      remainingCredits: Math.max(viewer.dailyCreditLimit - nextUsageState.usedCredits, 0),
       softBudgetReached: nextBudgetState.totalCostRmb >= softBudgetRmb,
       hardBudgetReached: nextBudgetState.totalCostRmb >= hardBudgetRmb,
       totalBudgetRmb: nextBudgetState.totalCostRmb,
+      dailyImageLimit: viewer.dailyImageLimit,
+      dailyCreditLimit: viewer.dailyCreditLimit,
     },
   });
 });
@@ -312,6 +436,64 @@ async function runFormattedOcr(env: WorkerEnv, imageUrl: string) {
     },
     usage: normalizeUsage(data),
   };
+}
+
+async function resolveViewerContext(c: Context<AppBindings>, browserId?: string): Promise<ViewerContext> {
+  const date = todayKey();
+  const clientIp = getClientIp(c.req.raw);
+  const user = await getSessionViewer(c, c.env);
+
+  if (user) {
+    const usage = await readUserDailyUsage(c.env, user.id, date);
+    return {
+      type: "user",
+      user,
+      usage,
+      clientIp,
+      browserId: browserId ?? "logged-in-user",
+      rateKey: null,
+      dailyImageLimit: getLoggedInDailyImageLimit(c.env),
+      dailyCreditLimit: getLoggedInDailyCreditLimit(c.env),
+    };
+  }
+
+  const resolvedBrowserId = browserId ?? "anonymous-browser";
+  const rateKey = await sha256Hex(`${clientIp}:${resolvedBrowserId}`);
+  const usage = await readRateState(c.env, rateKey, date);
+
+  return {
+    type: "anonymous",
+    user: null,
+    usage,
+    clientIp,
+    browserId: resolvedBrowserId,
+    rateKey,
+    dailyImageLimit: readNumber(c.env.DAILY_IMAGE_LIMIT, 5),
+    dailyCreditLimit: readNumber(c.env.DAILY_CREDIT_LIMIT, 5),
+  };
+}
+
+function buildWebRedirect(env: WorkerEnv, redirectTo: string, status: string, error?: string) {
+  const url = new URL(sanitizeRedirectPath(redirectTo), getWebOrigin(env));
+  url.searchParams.set("auth", status);
+  if (error) {
+    url.searchParams.set("error", error.slice(0, 120));
+  }
+  return url.toString();
+}
+
+function resolveCorsOrigin(env: WorkerEnv, requestOrigin?: string) {
+  const allowedOrigins = new Set([
+    getWebOrigin(env),
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+  ]);
+
+  if (requestOrigin && allowedOrigins.has(requestOrigin)) {
+    return requestOrigin;
+  }
+
+  return getWebOrigin(env);
 }
 
 function safeParseJson(value: string) {

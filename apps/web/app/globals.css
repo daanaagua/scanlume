@@ -169,6 +169,61 @@ main {
   transform: translateY(-1px);
 }
 
+.header-actions,
+.auth-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.auth-login-button,
+.auth-logout-button {
+  min-height: 44px;
+}
+
+.auth-chip,
+.login-promo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(22, 42, 44, 0.1);
+}
+
+.auth-chip > span,
+.login-promo-copy {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.auth-chip small,
+.login-promo-copy small {
+  color: var(--muted);
+}
+
+.auth-avatar-image,
+.auth-avatar-fallback {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.auth-avatar-image {
+  object-fit: cover;
+}
+
+.auth-avatar-fallback {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+  color: white;
+  font-weight: 700;
+}
+
 .solid-button:disabled,
 .ghost-button:disabled,
 .mode-toggle button:disabled,
@@ -409,7 +464,8 @@ main {
 
 .progress-card,
 .status-board,
-.queue-summary {
+.queue-summary,
+.login-promo {
   display: grid;
   gap: 0.75rem;
   padding: 1rem;
@@ -424,6 +480,11 @@ main {
 
 .queue-summary span {
   color: var(--muted);
+}
+
+.login-promo {
+  grid-template-columns: 1fr auto;
+  align-items: center;
 }
 
 .status-board span {
@@ -619,6 +680,13 @@ main {
     padding: 0.8rem 0;
   }
 
+  .header-actions,
+  .auth-controls,
+  .login-promo {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
   .top-nav {
     justify-content: flex-start;
   }
@@ -639,6 +707,11 @@ main {
 
   .container {
     width: min(100vw - 1rem, 1120px);
+  }
+
+  .auth-chip,
+  .login-promo {
+    width: 100%;
   }
 
   .mini-file-card {

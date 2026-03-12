@@ -37,6 +37,16 @@ type ProgressSummary = {
 };
 
 type LimitsResponse = {
+  viewer: {
+    authenticated: boolean;
+    type: "anonymous" | "user";
+    user?: {
+      id: string;
+      email: string;
+      name: string;
+      avatarUrl: string | null;
+    } | null;
+  };
   limits: {
     dailyImages: number;
     dailyCredits: number;
@@ -49,11 +59,25 @@ type LimitsResponse = {
   budget: {
     totalCostRmb: number;
   };
+  usage: {
+    usedImages: number;
+    usedCredits: number;
+    remainingImages: number;
+    remainingCredits: number;
+  };
   status: {
     softStopped: boolean;
     hardStopped: boolean;
   };
 };
+
+async function fetchLimits(browserId: string) {
+  const response = await fetch(`${API_BASE_URL}/v1/limits?browserId=${encodeURIComponent(browserId)}`, {
+    credentials: "include",
+  });
+
+  return response.json() as Promise<LimitsResponse>;
+}
 
 function fileToDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
@@ -86,9 +110,8 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
 
   useEffect(() => {
     browserId.current = getOrCreateBrowserId();
-    void fetch(`${API_BASE_URL}/v1/limits`)
-      .then((response) => response.json())
-      .then((data: LimitsResponse) => setLimits(data))
+    void fetchLimits(browserId.current)
+      .then((data) => setLimits(data))
       .catch(() => null);
   }, []);
 
@@ -196,6 +219,7 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
           const dataUrl = await fileToDataUrl(item.file);
           const response = await fetch(`${API_BASE_URL}/v1/ocr`, {
             method: "POST",
+            credentials: "include",
             headers: {
               "Content-Type": "application/json",
             },
@@ -239,9 +263,8 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
         }
       }
 
-      void fetch(`${API_BASE_URL}/v1/limits`)
-        .then((response) => response.json())
-        .then((data: LimitsResponse) => setLimits(data))
+      void fetchLimits(browserId.current)
+        .then((data) => setLimits(data))
         .catch(() => null);
     } finally {
       setIsSubmitting(false);
@@ -283,6 +306,11 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+  }
+
+  function startGoogleLogin() {
+    const redirectTo = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    window.location.href = `${API_BASE_URL}/v1/auth/google/start?redirectTo=${encodeURIComponent(redirectTo)}`;
   }
 
   function handleDownload(file: SelectedFile, payload: ResultPayload) {
@@ -433,6 +461,18 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
             </div>
           )}
 
+          {limits && !limits.viewer.authenticated && (
+            <div className="login-promo">
+              <div className="login-promo-copy">
+                <strong>Entre com Google para liberar 100 creditos por dia</strong>
+                <small>Usuarios conectados recebem uma cota diaria maior para OCR simples e formatado.</small>
+              </div>
+              <button type="button" className="solid-button" onClick={startGoogleLogin}>
+                Entrar agora
+              </button>
+            </div>
+          )}
+
           {limits && (
             <div className="status-board">
               <div>
@@ -440,12 +480,20 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
                 <strong>US$ 20</strong>
               </div>
               <div>
-                <span>Cota anonima</span>
-                <strong>{limits.limits.dailyImages} imagens</strong>
+                <span>{limits.viewer.authenticated ? "Creditos restantes" : "Cota anonima"}</span>
+                <strong>
+                  {limits.viewer.authenticated
+                    ? `${limits.usage.remainingCredits} / ${limits.limits.dailyCredits}`
+                    : `${limits.limits.dailyImages} imagens`}
+                </strong>
               </div>
               <div>
-                <span>Lote maximo</span>
-                <strong>{limits.limits.maxBatchFiles} imagens</strong>
+                <span>{limits.viewer.authenticated ? "Imagens restantes" : "Lote maximo"}</span>
+                <strong>
+                  {limits.viewer.authenticated
+                    ? `${limits.usage.remainingImages} / ${limits.limits.dailyImages}`
+                    : `${limits.limits.maxBatchFiles} imagens`}
+                </strong>
               </div>
             </div>
           )}

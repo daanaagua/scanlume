@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { AuthControls } from "@/components/auth-controls";
 import { NAV_LINKS, SITE_NAME } from "@/lib/site";
 
 export function SiteHeader() {
@@ -22,9 +23,12 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        <Link href="/imagem-para-texto" className="header-cta">
-          Testar gratis
-        </Link>
+        <div className="header-actions">
+          <AuthControls />
+          <Link href="/imagem-para-texto" className="header-cta">
+            Testar gratis
+          </Link>
+        </div>
       </div>
     </header>
   );

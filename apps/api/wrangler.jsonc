@@ -6,8 +6,12 @@
   "vars": {
     "APP_NAME": "scanlume",
     "ARK_API_BASE": "https://ark.cn-beijing.volces.com/api/v3",
+    "WEB_ORIGIN": "https://www.scanlume.com",
+    "COOKIE_DOMAIN": ".scanlume.com",
     "DAILY_IMAGE_LIMIT": "5",
     "DAILY_CREDIT_LIMIT": "5",
+    "LOGGED_IN_DAILY_IMAGE_LIMIT": "100",
+    "LOGGED_IN_DAILY_CREDIT_LIMIT": "100",
     "SOFT_BUDGET_RMB": "18",
     "HARD_BUDGET_RMB": "20",
     "MAX_IMAGE_MB": "5",
