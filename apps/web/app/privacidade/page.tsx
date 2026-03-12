@@ -20,7 +20,7 @@ export default function PrivacyPage() {
           Arquivos de imagem nao sao usados para treinar modelos proprios. O armazenamento persistente de resultados em R2 esta reservado para lotes futuros; na versao inicial, a exportacao pode ser feita direto no navegador.
         </p>
         <p>
-          Se a integracao com Turnstile estiver ativa, o token e usado apenas para verificar trafego legitimo e reforcar o controle de abuso.
+          Mecanismos adicionais de protecao podem ser ativados para verificar trafego legitimo e reforcar o controle de abuso sem mudar o fluxo principal da ferramenta.
         </p>
       </div>
     </section>

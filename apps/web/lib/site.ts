@@ -4,6 +4,20 @@ export const SITE_NAME = "Scanlume";
 export const SITE_URL = "https://www.scanlume.com";
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8787";
+export const OCR_WORKSPACE_ID = "ocr-workspace";
+
+export const DEFAULT_KEYWORDS = [
+  "imagem para texto",
+  "converter imagem em texto",
+  "imagem em texto",
+  "ocr online",
+  "ocr com ia",
+  "imagem para word",
+  "jpg para texto",
+  "png para texto",
+  "extrair texto de imagem",
+  "imagem para texto online",
+];
 
 export const NAV_LINKS = [
   { href: "/imagem-para-texto", label: "Imagem para texto" },
@@ -50,49 +64,84 @@ export const homeFaqs = [
 
 export const toolPageContent = {
   "imagem-para-texto": {
-    title: "Imagem para texto online | OCR simples e formatado | Scanlume",
+    title: "Imagem para texto online com IA | OCR simples e formatado | Scanlume",
     description:
-      "Converta imagem em texto online com OCR simples ou formatado. Copie ou baixe em TXT, Markdown e HTML sem instalar app.",
-    h1: "Imagem para texto online com OCR simples e formatado",
+      "Converta imagem para texto com IA em pt-BR. Use OCR online para transformar JPG, PNG e screenshots em texto puro ou formatado e baixar em TXT, Markdown ou HTML.",
+    keywords: [
+      "imagem para texto",
+      "converter imagem em texto",
+      "imagem em texto",
+      "ocr online",
+      "ocr com ia",
+    ],
+    h1: "Imagem para texto online com OCR simples, formatado e IA",
     eyebrow: "Principal pagina transacional para imagem para texto",
     lead:
-      "Use o modo rapido para texto puro ou escolha a saida formatada para preservar titulos, paragrafos e a ordem de leitura principal.",
+      "Use o modo rapido para texto puro ou escolha a saida formatada com IA para preservar titulos, paragrafos e a ordem de leitura principal.",
   },
   "imagem-para-word": {
-    title: "Imagem para Word online com estrutura limpa | Scanlume",
+    title: "Imagem para Word com IA e estrutura limpa | Scanlume",
     description:
-      "Transforme imagem em texto pronto para Word. Preserve a estrutura principal e copie em TXT, Markdown ou HTML.",
-    h1: "Imagem para Word com texto mais organizado",
+      "Transforme imagem em texto com IA e leve para o Word com menos retrabalho. OCR online para JPG, PNG e screenshots com saida em TXT, Markdown e HTML.",
+    keywords: [
+      "imagem para word",
+      "converter imagem em texto",
+      "imagem em texto",
+      "ocr online",
+      "ocr com ia",
+    ],
+    h1: "Imagem para Word com texto mais organizado e OCR com IA",
     eyebrow: "Ideal para colar no Word sem reformatar tudo do zero",
     lead:
-      "O modo Formatted Text entrega um layout mais legivel para screenshots de paginas, app screens e materiais de marketing.",
+      "O modo Formatted Text usa OCR com IA para entregar um layout mais legivel em screenshots de paginas, app screens e materiais de marketing.",
   },
   "ocr-online": {
-    title: "OCR online gratis para imagens e screenshots | Scanlume",
+    title: "OCR online com IA para imagens e screenshots | Scanlume",
     description:
-      "OCR online para converter screenshots, posters e fotos em texto editavel. Teste gratis e baixe em TXT, Markdown ou HTML.",
-    h1: "OCR online gratis para capturas, JPG e PNG",
+      "OCR online com IA para converter imagem em texto em pt-BR. Extraia texto de screenshots, JPG e PNG com modo simples ou formatado.",
+    keywords: [
+      "ocr online",
+      "imagem para texto",
+      "converter imagem em texto",
+      "imagem em texto",
+      "ocr com ia",
+    ],
+    h1: "OCR online com IA para capturas, JPG e PNG",
     eyebrow: "Ferramenta OCR em pt-BR com foco em velocidade",
     lead:
-      "Scanlume combina um fluxo simples para texto puro e uma opcao formatada para manter a leitura mais clara.",
+      "Scanlume combina um fluxo simples para texto puro e uma opcao formatada com IA para manter a leitura mais clara.",
   },
   "jpg-para-texto": {
-    title: "JPG para texto online com OCR rapido | Scanlume",
+    title: "JPG para texto com IA e OCR rapido | Scanlume",
     description:
-      "Converta JPG para texto online em segundos. Extraia texto puro ou formato legivel para copiar em Word, Markdown ou HTML.",
-    h1: "JPG para texto sem instalar aplicativo",
+      "Converta JPG para texto com IA em segundos. OCR online em pt-BR para extrair texto puro ou estruturado de posters, prints e fotos.",
+    keywords: [
+      "jpg para texto",
+      "imagem para texto",
+      "converter imagem em texto",
+      "ocr online",
+      "ocr com ia",
+    ],
+    h1: "JPG para texto sem instalar aplicativo e com IA",
     eyebrow: "Boa opcao para posters, prints e fotos do celular",
     lead:
-      "Envie arquivos JPG e receba texto puro ou uma versao com estrutura principal preservada para edicao posterior.",
+      "Envie arquivos JPG e receba texto puro ou uma versao com estrutura principal preservada por IA para edicao posterior.",
   },
   "png-para-texto": {
-    title: "PNG para texto online com OCR em pt-BR | Scanlume",
+    title: "PNG para texto com IA em pt-BR | Scanlume",
     description:
-      "Extraia texto de arquivos PNG online. OCR simples para rapidez ou OCR formatado para preservar a leitura principal.",
-    h1: "PNG para texto com leitura mais limpa",
+      "Extraia texto de arquivos PNG com IA. OCR online em pt-BR para converter screenshots e layouts em texto puro ou com leitura mais limpa.",
+    keywords: [
+      "png para texto",
+      "imagem para texto",
+      "imagem em texto",
+      "ocr online",
+      "ocr com ia",
+    ],
+    h1: "PNG para texto com leitura mais limpa e IA",
     eyebrow: "Perfeito para screenshots de pagina, app ou landing page",
     lead:
-      "O modo formatado ajuda a transformar PNG em blocos mais organizados para colar no Word, Markdown ou HTML.",
+      "O modo formatado usa IA para transformar PNG em blocos mais organizados para colar no Word, Markdown ou HTML.",
   },
 } as const;
 
@@ -101,17 +150,26 @@ export type ToolPageSlug = keyof typeof toolPageContent;
 export function buildMetadata({
   title,
   description,
+  keywords = DEFAULT_KEYWORDS,
   pathname,
 }: {
   title: string;
   description: string;
+  keywords?: readonly string[];
   pathname: string;
 }): Metadata {
   return {
     title,
     description,
+    keywords: [...keywords],
+    applicationName: SITE_NAME,
+    category: "OCR",
     alternates: {
       canonical: `${SITE_URL}${pathname}`,
+    },
+    robots: {
+      index: true,
+      follow: true,
     },
     openGraph: {
       title,

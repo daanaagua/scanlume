@@ -3,7 +3,14 @@ import Link from "next/link";
 import { FaqList } from "@/components/faq-list";
 import { JsonLd } from "@/components/json-ld";
 import { OcrWorkspace } from "@/components/ocr-workspace";
-import { homeFaqs, SITE_NAME, SITE_URL, toolPageContent, type ToolPageSlug } from "@/lib/site";
+import {
+  homeFaqs,
+  OCR_WORKSPACE_ID,
+  SITE_NAME,
+  SITE_URL,
+  toolPageContent,
+  type ToolPageSlug,
+} from "@/lib/site";
 
 export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
   const page = toolPageContent[slug];
@@ -21,6 +28,13 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
           operatingSystem: "Any",
           url: canonical,
           inLanguage: "pt-BR",
+          description: page.description,
+          featureList: [
+            "OCR com IA em pt-BR",
+            "Simple OCR para texto puro",
+            "Formatted Text com estrutura principal preservada",
+            "Download em TXT, Markdown e HTML",
+          ],
         }}
       />
       <JsonLd
@@ -82,11 +96,14 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
               <h2>Formatted Text</h2>
               <p>Preserva a estrutura principal com headings, paragraphs e uma leitura mais clara.</p>
             </div>
+            <a href={`#${OCR_WORKSPACE_ID}`} className="solid-button large-button">
+              Teste gratis agora
+            </a>
           </div>
         </div>
       </section>
 
-      <section className="section-band">
+      <section id={OCR_WORKSPACE_ID} className="section-band">
         <div className="container">
           <OcrWorkspace defaultMode={slug === "imagem-para-word" ? "formatted" : "simple"} />
         </div>

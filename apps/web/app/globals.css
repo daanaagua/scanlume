@@ -407,7 +407,7 @@ main {
   display: none;
 }
 
-.turnstile-note,
+.progress-card,
 .status-board,
 .queue-summary {
   display: grid;
@@ -432,13 +432,50 @@ main {
   margin-bottom: 0.35rem;
 }
 
-.token-input {
-  width: 100%;
-  min-height: 48px;
-  border-radius: 16px;
-  border: 1px solid rgba(22, 42, 44, 0.12);
-  padding: 0.9rem 1rem;
-  background: white;
+.progress-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.progress-meta span,
+.progress-card small {
+  color: var(--muted);
+}
+
+.progress-track {
+  position: relative;
+  overflow: hidden;
+  height: 0.8rem;
+  border-radius: 999px;
+  background: rgba(22, 42, 44, 0.08);
+}
+
+.progress-fill {
+  position: relative;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--highlight) 100%);
+  transition: width 240ms ease;
+}
+
+.progress-fill.is-processing::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  animation: progress-sheen 1.2s linear infinite;
+}
+
+@keyframes progress-sheen {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(100%);
+  }
 }
 
 .mini-file-card {

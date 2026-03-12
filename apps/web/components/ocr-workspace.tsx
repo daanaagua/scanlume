@@ -28,6 +28,14 @@ type FileResult = {
   payload?: ResultPayload;
 };
 
+type ProgressSummary = {
+  activeFileNumber: number;
+  completedCount: number;
+  label: string;
+  percent: number;
+  totalCount: number;
+};
+
 type LimitsResponse = {
   limits: {
     dailyImages: number;
@@ -72,7 +80,6 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [limits, setLimits] = useState<LimitsResponse | null>(null);
-  const [turnstileToken, setTurnstileToken] = useState("");
   const browserId = useRef("browser-id-pending");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const selectedFilesRef = useRef<SelectedFile[]>([]);
@@ -109,6 +116,45 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
         .filter((entry) => entry.result?.status === "success" && entry.result.payload),
     [results, selectedFiles],
   );
+
+  const progressSummary = useMemo<ProgressSummary | null>(() => {
+    if (selectedFiles.length === 0) {
+      return null;
+    }
+
+    const statuses = selectedFiles.map((file) => results[file.id]?.status ?? "idle");
+    const completedCount = statuses.filter((status) => status === "success" || status === "error").length;
+    const processingIndex = statuses.findIndex((status) => status === "processing");
+    const totalCount = selectedFiles.length;
+
+    if (isSubmitting && processingIndex >= 0) {
+      return {
+        activeFileNumber: processingIndex + 1,
+        completedCount,
+        totalCount,
+        percent: Math.max(10, Math.min(96, Math.round(((completedCount + 0.35) / totalCount) * 100))),
+        label: `Reconhecendo imagem ${processingIndex + 1} de ${totalCount}...`,
+      };
+    }
+
+    if (completedCount === totalCount && totalCount > 0) {
+      return {
+        activeFileNumber: totalCount,
+        completedCount,
+        totalCount,
+        percent: 100,
+        label: `${completedCount} de ${totalCount} imagem(ns) concluida(s).`,
+      };
+    }
+
+    return {
+      activeFileNumber: 0,
+      completedCount,
+      totalCount,
+      percent: completedCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0,
+      label: `${totalCount} imagem(ns) pronta(s). Clique em iniciar para processar.`,
+    };
+  }, [isSubmitting, results, selectedFiles]);
 
   function validateFiles(files: File[]) {
     const maxFiles = limits?.limits.maxBatchFiles ?? 10;
@@ -156,7 +202,6 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
             body: JSON.stringify({
               mode: selectedMode,
               browserId: browserId.current,
-              turnstileToken: turnstileToken || undefined,
               image: {
                 name: item.file.name,
                 mimeType: item.file.type,
@@ -364,22 +409,29 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
                 {hasCompletedResults
                   ? "Voce pode trocar o modo e clicar novamente para gerar outra saida."
                   : "Os arquivos ficam na fila ate voce clicar em iniciar."}
-              </span>
+                </span>
             </div>
           )}
 
-          <div className="turnstile-note">
-            <strong>Turnstile:</strong>
-            <span>
-              O componente visual pode ser conectado depois com `NEXT_PUBLIC_TURNSTILE_SITE_KEY`. O worker ja aceita o token quando a chave secreta estiver configurada.
-            </span>
-            <input
-              className="token-input"
-              value={turnstileToken}
-              onChange={(event) => setTurnstileToken(event.target.value)}
-              placeholder="Cole o token Turnstile aqui em ambiente de teste, se necessario"
-            />
-          </div>
+          {progressSummary && (
+            <div className="progress-card" aria-live="polite">
+              <div className="progress-meta">
+                <strong>{progressSummary.label}</strong>
+                <span>{progressSummary.percent}%</span>
+              </div>
+              <div className="progress-track" aria-hidden="true">
+                <div
+                  className={`progress-fill${isSubmitting ? " is-processing" : ""}`}
+                  style={{ width: `${progressSummary.percent}%` }}
+                />
+              </div>
+              <small>
+                {isSubmitting
+                  ? "O reconhecimento continua em segundo plano. Aguarde alguns segundos para ver o resultado."
+                  : "O progresso total aparece aqui durante o OCR e ajuda a acompanhar lotes maiores."}
+              </small>
+            </div>
+          )}
 
           {limits && (
             <div className="status-board">

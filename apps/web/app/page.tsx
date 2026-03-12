@@ -3,12 +3,26 @@ import Link from "next/link";
 import { FaqList } from "@/components/faq-list";
 import { JsonLd } from "@/components/json-ld";
 import { OcrWorkspace } from "@/components/ocr-workspace";
-import { buildMetadata, homeFaqs, NAV_LINKS, SITE_NAME, SITE_URL } from "@/lib/site";
+import {
+  buildMetadata,
+  homeFaqs,
+  NAV_LINKS,
+  OCR_WORKSPACE_ID,
+  SITE_NAME,
+  SITE_URL,
+} from "@/lib/site";
 
 export const metadata = buildMetadata({
-  title: "Imagem para texto online com OCR simples e formatado",
+  title: "Imagem para texto online com IA | OCR simples e formatado",
   description:
-    "Converter imagem em texto online com OCR simples e formatado. Gratis para testar, sem instalar aplicativo e com download em TXT, Markdown e HTML.",
+    "Converta imagem para texto com IA em pt-BR. OCR online gratis para screenshots, JPG e PNG com exportacao em TXT, Markdown e HTML.",
+  keywords: [
+    "imagem para texto",
+    "converter imagem em texto",
+    "imagem em texto",
+    "ocr online",
+    "ocr com ia",
+  ],
   pathname: "/",
 });
 
@@ -24,6 +38,14 @@ export default function Home() {
           applicationCategory: "BusinessApplication",
           operatingSystem: "Any",
           inLanguage: "pt-BR",
+          description:
+            "Ferramenta OCR com IA para converter imagem em texto em pt-BR com saida simples ou formatada.",
+          featureList: [
+            "OCR com IA em pt-BR",
+            "Simple OCR para texto puro",
+            "Formatted Text para leitura principal organizada",
+            "Exportacao em TXT, Markdown e HTML",
+          ],
         }}
       />
       <JsonLd
@@ -47,7 +69,7 @@ export default function Home() {
             <p className="eyebrow">Converter imagem em texto online</p>
             <h1>OCR simples e formatado para screenshots, JPG e PNG.</h1>
             <p className="hero-lead">
-              Scanlume ajuda o mercado pt-BR a extrair texto rapido, copiar com menos limpeza manual e baixar em TXT, Markdown ou HTML sem instalar app.
+              Scanlume ajuda o mercado pt-BR a converter imagem em texto com IA, copiar com menos limpeza manual e baixar em TXT, Markdown ou HTML sem instalar app.
             </p>
             <div className="hero-bullets">
               <span>Gratis para testar</span>
@@ -75,11 +97,14 @@ export default function Home() {
               <h2>Formatted Text</h2>
               <p>Preserva a estrutura principal com headings, paragraphs e uma ordem de leitura melhor para Word e Markdown.</p>
             </div>
+            <a href={`#${OCR_WORKSPACE_ID}`} className="solid-button large-button">
+              Teste gratis agora
+            </a>
           </div>
         </div>
       </section>
 
-      <section className="section-band">
+      <section id={OCR_WORKSPACE_ID} className="section-band">
         <div className="container">
           <OcrWorkspace defaultMode="simple" />
         </div>

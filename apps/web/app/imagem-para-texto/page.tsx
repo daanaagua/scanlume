@@ -4,6 +4,7 @@ import { buildMetadata, toolPageContent } from "@/lib/site";
 export const metadata = buildMetadata({
   title: toolPageContent["imagem-para-texto"].title,
   description: toolPageContent["imagem-para-texto"].description,
+  keywords: toolPageContent["imagem-para-texto"].keywords,
   pathname: "/imagem-para-texto",
 });
 
