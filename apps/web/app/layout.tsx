@@ -4,7 +4,7 @@ import Script from "next/script";
 
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
-import { DEFAULT_KEYWORDS, SITE_NAME, SITE_URL } from "@/lib/site";
+import { DEFAULT_KEYWORDS, SITE_NAME, SITE_URL, SOCIAL_IMAGE_ALT, SOCIAL_IMAGE_PATH } from "@/lib/site";
 
 import "./globals.css";
 
@@ -27,6 +27,13 @@ export const metadata: Metadata = {
     "Converta imagem para texto com IA em pt-BR. OCR online para JPG, PNG e screenshots com saida simples ou formatada em TXT, Markdown e HTML.",
   keywords: DEFAULT_KEYWORDS,
   applicationName: SITE_NAME,
+  icons: {
+    icon: [
+      { url: "/icon.png", type: "image/png" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    apple: [{ url: "/apple-icon.png", type: "image/png" }],
+  },
   openGraph: {
     title: `${SITE_NAME} | Imagem para texto com IA em pt-BR`,
     description:
@@ -35,6 +42,19 @@ export const metadata: Metadata = {
     siteName: SITE_NAME,
     locale: "pt_BR",
     type: "website",
+    images: [
+      {
+        url: SOCIAL_IMAGE_PATH,
+        alt: SOCIAL_IMAGE_ALT,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SITE_NAME} | Imagem para texto com IA em pt-BR`,
+    description:
+      "Converta imagem para texto com IA em pt-BR. OCR online para JPG, PNG e screenshots com saida simples ou formatada em TXT, Markdown e HTML.",
+    images: [SOCIAL_IMAGE_PATH],
   },
 };
 

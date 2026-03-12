@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 
 export const SITE_NAME = "Scanlume";
 export const SITE_URL = "https://www.scanlume.com";
+export const SOCIAL_IMAGE_PATH = "/opengraph-image.png";
+export const SOCIAL_IMAGE_ALT = "Preview da homepage do Scanlume com OCR simples e formatado em pt-BR";
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8787";
 export const OCR_WORKSPACE_ID = "ocr-workspace";
@@ -178,11 +180,18 @@ export function buildMetadata({
       siteName: SITE_NAME,
       type: "website",
       locale: "pt_BR",
+      images: [
+        {
+          url: SOCIAL_IMAGE_PATH,
+          alt: SOCIAL_IMAGE_ALT,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
+      images: [SOCIAL_IMAGE_PATH],
     },
   };
 }

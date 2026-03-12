@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { AuthControls } from "@/components/auth-controls";
+import { LogoMark } from "@/components/logo-mark";
 import { NAV_LINKS, SITE_NAME } from "@/lib/site";
 
 export function SiteHeader() {
@@ -8,7 +9,9 @@ export function SiteHeader() {
     <header className="site-header">
       <div className="container header-inner">
         <Link href="/" className="brand-lockup" aria-label={`${SITE_NAME} homepage`}>
-          <span className="brand-mark">S</span>
+          <span className="brand-mark">
+            <LogoMark />
+          </span>
           <span>
             <strong>{SITE_NAME}</strong>
             <small>OCR em pt-BR</small>

@@ -36,6 +36,33 @@ type ProgressSummary = {
   totalCount: number;
 };
 
+type ProcessingState = {
+  fileId: string;
+  startedAt: number;
+};
+
+const DISPLAY_DAILY_BUDGET_USD = 20;
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function getCurrentFileProgress(elapsedMs: number) {
+  if (elapsedMs <= 0) {
+    return 0.04;
+  }
+
+  if (elapsedMs <= 1800) {
+    return 0.04 + ((0.35 - 0.04) * elapsedMs) / 1800;
+  }
+
+  if (elapsedMs <= 11000) {
+    return 0.35 + ((0.9 - 0.35) * (elapsedMs - 1800)) / 9200;
+  }
+
+  return Math.min(0.99, 0.9 + ((0.99 - 0.9) * (elapsedMs - 11000)) / 20000);
+}
+
 type LimitsResponse = {
   viewer: {
     authenticated: boolean;
@@ -104,15 +131,25 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [limits, setLimits] = useState<LimitsResponse | null>(null);
+  const [processingState, setProcessingState] = useState<ProcessingState | null>(null);
+  const [progressTick, setProgressTick] = useState(() => Date.now());
+  const [animatedPercent, setAnimatedPercent] = useState(0);
   const browserId = useRef("browser-id-pending");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const selectedFilesRef = useRef<SelectedFile[]>([]);
 
+  async function refreshLimits() {
+    try {
+      const data = await fetchLimits(browserId.current);
+      setLimits(data);
+    } catch {
+      return null;
+    }
+  }
+
   useEffect(() => {
     browserId.current = getOrCreateBrowserId();
-    void fetchLimits(browserId.current)
-      .then((data) => setLimits(data))
-      .catch(() => null);
+    void refreshLimits();
   }, []);
 
   useEffect(() => {
@@ -132,6 +169,18 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
     [],
   );
 
+  useEffect(() => {
+    if (!isSubmitting || !processingState) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setProgressTick(Date.now());
+    }, 120);
+
+    return () => window.clearInterval(timer);
+  }, [isSubmitting, processingState]);
+
   const completedItems = useMemo(
     () =>
       selectedFiles
@@ -147,18 +196,7 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
 
     const statuses = selectedFiles.map((file) => results[file.id]?.status ?? "idle");
     const completedCount = statuses.filter((status) => status === "success" || status === "error").length;
-    const processingIndex = statuses.findIndex((status) => status === "processing");
     const totalCount = selectedFiles.length;
-
-    if (isSubmitting && processingIndex >= 0) {
-      return {
-        activeFileNumber: processingIndex + 1,
-        completedCount,
-        totalCount,
-        percent: Math.max(10, Math.min(96, Math.round(((completedCount + 0.35) / totalCount) * 100))),
-        label: `Reconhecendo imagem ${processingIndex + 1} de ${totalCount}...`,
-      };
-    }
 
     if (completedCount === totalCount && totalCount > 0) {
       return {
@@ -170,6 +208,23 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
       };
     }
 
+    const processingIndex = processingState
+      ? selectedFiles.findIndex((file) => file.id === processingState.fileId)
+      : statuses.findIndex((status) => status === "processing");
+
+    if (isSubmitting && processingIndex >= 0) {
+      const elapsedMs = Math.max(progressTick - (processingState?.startedAt ?? progressTick), 0);
+      const perFileProgress = getCurrentFileProgress(elapsedMs);
+
+      return {
+        activeFileNumber: processingIndex + 1,
+        completedCount,
+        totalCount,
+        percent: clamp(Math.round(((completedCount + perFileProgress) / totalCount) * 100), 3, 99),
+        label: `Reconhecendo imagem ${processingIndex + 1} de ${totalCount}...`,
+      };
+    }
+
     return {
       activeFileNumber: 0,
       completedCount,
@@ -177,7 +232,37 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
       percent: completedCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0,
       label: `${totalCount} imagem(ns) pronta(s). Clique em iniciar para processar.`,
     };
-  }, [isSubmitting, results, selectedFiles]);
+  }, [isSubmitting, processingState, progressTick, results, selectedFiles]);
+
+  useEffect(() => {
+    if (!progressSummary || progressSummary.percent === 0) {
+      setAnimatedPercent(0);
+      return;
+    }
+
+    if (progressSummary.percent >= 100) {
+      setAnimatedPercent(100);
+      return;
+    }
+
+    const target = progressSummary.percent;
+    const timer = window.setInterval(() => {
+      setAnimatedPercent((current) => {
+        if (current > target) {
+          return target;
+        }
+
+        if (target - current < 0.4) {
+          return target;
+        }
+
+        const step = target - current > 16 ? 2.4 : target - current > 7 ? 1.2 : 0.55;
+        return Math.min(target, Number((current + step).toFixed(2)));
+      });
+    }, 90);
+
+    return () => window.clearInterval(timer);
+  }, [progressSummary?.percent]);
 
   function validateFiles(files: File[]) {
     const maxFiles = limits?.limits.maxBatchFiles ?? 10;
@@ -209,12 +294,20 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
   async function processFiles(files: SelectedFile[], selectedMode: Mode) {
     setIsSubmitting(true);
     setGlobalError(null);
-    setResults(
-      Object.fromEntries(files.map((file) => [file.id, { status: "processing" as const }])),
-    );
+    setAnimatedPercent(0);
+    setProgressTick(Date.now());
+    setResults(Object.fromEntries(files.map((file) => [file.id, { status: "idle" as const }])));
 
     try {
-      for (const item of files) {
+      for (const [index, item] of files.entries()) {
+        const startedAt = Date.now();
+        setProcessingState({ fileId: item.id, startedAt });
+        setProgressTick(startedAt);
+        setResults((current) => ({
+          ...current,
+          [item.id]: { status: "processing" },
+        }));
+
         try {
           const dataUrl = await fileToDataUrl(item.file);
           const response = await fetch(`${API_BASE_URL}/v1/ocr`, {
@@ -261,39 +354,49 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
             },
           }));
         }
-      }
 
-      void fetchLimits(browserId.current)
-        .then((data) => setLimits(data))
-        .catch(() => null);
+        setProcessingState(index < files.length - 1 ? null : { fileId: item.id, startedAt });
+        await refreshLimits();
+      }
     } finally {
+      setProcessingState(null);
+      setProgressTick(Date.now());
       setIsSubmitting(false);
     }
   }
 
   function handleFiles(nextFiles: File[]) {
-    const validationError = validateFiles(nextFiles);
-    if (validationError) {
-      setGlobalError(validationError);
-      return;
-    }
-
     const mappedFiles = nextFiles.map((file) => ({
       id: `${file.name}-${file.lastModified}-${Math.random().toString(36).slice(2, 8)}`,
       file,
       previewUrl: URL.createObjectURL(file),
     }));
+    const combinedFiles = [...selectedFilesRef.current, ...mappedFiles];
+    const validationError = validateFiles(combinedFiles.map((entry) => entry.file));
+    if (validationError) {
+      revokePreviewUrls(mappedFiles);
+      setGlobalError(validationError);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      return;
+    }
 
-    revokePreviewUrls(selectedFilesRef.current);
-    setSelectedFiles(mappedFiles);
-    setResults(
-      Object.fromEntries(mappedFiles.map((file) => [file.id, { status: "idle" as const }])),
-    );
+    setSelectedFiles(combinedFiles);
+    setResults((current) => ({
+      ...current,
+      ...Object.fromEntries(mappedFiles.map((file) => [file.id, { status: "idle" as const }])),
+    }));
     setGlobalError(null);
+    setAnimatedPercent(0);
     if (mode === "formatted") {
       setActiveFormat("html");
     } else {
       setActiveFormat("txt");
+    }
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   }
 
@@ -303,8 +406,39 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
     setSelectedFiles([]);
     setResults({});
     setGlobalError(null);
+    setProcessingState(null);
+    setAnimatedPercent(0);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
+    }
+  }
+
+  function removeFile(fileId: string) {
+    if (isSubmitting) {
+      return;
+    }
+
+    const removed = selectedFilesRef.current.find((file) => file.id === fileId);
+    if (!removed) {
+      return;
+    }
+
+    URL.revokeObjectURL(removed.previewUrl);
+    const nextFiles = selectedFilesRef.current.filter((file) => file.id !== fileId);
+    selectedFilesRef.current = nextFiles;
+    setSelectedFiles(nextFiles);
+    setResults((current) => {
+      if (nextFiles.length === 0) {
+        return {};
+      }
+
+      const next = { ...current };
+      delete next[fileId];
+      return next;
+    });
+    setGlobalError(null);
+    if (nextFiles.length === 0) {
+      setAnimatedPercent(0);
     }
   }
 
@@ -352,6 +486,10 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
   const hasCompletedResults = completedItems.length > 0;
   const canStart = hasQueuedFiles && !isSubmitting;
   const modeActionLabel = mode === "simple" ? "Iniciar Simple OCR" : "Iniciar Formatted Text";
+  const budgetUsed = limits?.budget.totalCostRmb ?? 0;
+  const budgetLimit = limits?.limits.hardBudgetRmb ?? DISPLAY_DAILY_BUDGET_USD;
+  const budgetUsagePercent = clamp((budgetUsed / Math.max(budgetLimit, 1)) * 100, 0, 100);
+  const budgetUsageLabel = `USD$ ${budgetUsed.toFixed(2)}/${DISPLAY_DAILY_BUDGET_USD}`;
 
   return (
     <section className="workspace-shell">
@@ -366,9 +504,13 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
 
         <div className="limit-pills">
           <span>Limite gratis diario: US$ 20</span>
+          <span>Uso hoje: {budgetUsageLabel}</span>
           <span>Simple = 1 credito</span>
           <span>Formatted = 3 creditos</span>
         </div>
+        <p className="workspace-note">
+          Teste gratis agora. Assinaturas para lotes maiores entram em lancamento por volta de 2026/04/01.
+        </p>
       </div>
 
       <div className="mode-toggle" role="tablist" aria-label="Modo OCR">
@@ -445,17 +587,17 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
             <div className="progress-card" aria-live="polite">
               <div className="progress-meta">
                 <strong>{progressSummary.label}</strong>
-                <span>{progressSummary.percent}%</span>
+                <span>{Math.round(animatedPercent)}%</span>
               </div>
               <div className="progress-track" aria-hidden="true">
                 <div
                   className={`progress-fill${isSubmitting ? " is-processing" : ""}`}
-                  style={{ width: `${progressSummary.percent}%` }}
+                  style={{ width: `${animatedPercent}%` }}
                 />
               </div>
               <small>
                 {isSubmitting
-                  ? "O reconhecimento continua em segundo plano. Aguarde alguns segundos para ver o resultado."
+                  ? "O indicador sobe de forma gradual durante o OCR e fecha imediatamente quando o arquivo termina."
                   : "O progresso total aparece aqui durante o OCR e ajuda a acompanhar lotes maiores."}
               </small>
             </div>
@@ -475,9 +617,12 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
 
           {limits && (
             <div className="status-board">
-              <div>
-                <span>Limite gratis diario</span>
-                <strong>US$ 20</strong>
+              <div className="budget-status-card">
+                <span>Uso diario em tempo real</span>
+                <strong>{budgetUsageLabel}</strong>
+                <div className="mini-progress-track" aria-hidden="true">
+                  <div className="mini-progress-fill" style={{ width: `${budgetUsagePercent}%` }} />
+                </div>
               </div>
               <div>
                 <span>{limits.viewer.authenticated ? "Creditos restantes" : "Cota anonima"}</span>
@@ -495,6 +640,11 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
                     : `${limits.limits.maxBatchFiles} imagens`}
                 </strong>
               </div>
+              <div>
+                <span>Lotes maiores</span>
+                <strong>Abr. 2026</strong>
+                <small>Assinatura em preparacao para batches recorrentes.</small>
+              </div>
             </div>
           )}
 
@@ -508,26 +658,35 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
             )}
 
             <div className="selected-file-grid">
-            {selectedFiles.map((item) => {
-              const result = results[item.id];
-              return (
-                <article key={item.id} className="mini-file-card">
-                  {/* Local object URLs are not compatible with Next image optimization. */}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={item.previewUrl} alt={item.file.name} width={92} height={92} />
-                  <div className="mini-file-meta">
-                    <strong>{item.file.name}</strong>
-                    <span>{(item.file.size / 1024 / 1024).toFixed(2)} MB</span>
-                    <p>
-                      {result?.status === "processing" && "Processando..."}
-                      {result?.status === "success" && "Pronto para copiar e baixar."}
-                      {result?.status === "error" && result.message}
-                      {(result?.status === "idle" || !result) && "Aguardando clique em iniciar."}
-                    </p>
-                  </div>
-                </article>
-              );
-            })}
+              {selectedFiles.map((item) => {
+                const result = results[item.id];
+                return (
+                  <article key={item.id} className="mini-file-card">
+                    <button
+                      className="mini-file-remove"
+                      type="button"
+                      aria-label={`Remover ${item.file.name}`}
+                      disabled={isSubmitting}
+                      onClick={() => removeFile(item.id)}
+                    >
+                      x
+                    </button>
+                    {/* Local object URLs are not compatible with Next image optimization. */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={item.previewUrl} alt={item.file.name} width={92} height={92} />
+                    <div className="mini-file-meta">
+                      <strong>{item.file.name}</strong>
+                      <span>{(item.file.size / 1024 / 1024).toFixed(2)} MB</span>
+                      <p>
+                        {result?.status === "processing" && "Processando..."}
+                        {result?.status === "success" && "Pronto para copiar e baixar."}
+                        {result?.status === "error" && result.message}
+                        {(result?.status === "idle" || !result) && "Aguardando clique em iniciar."}
+                      </p>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </div>
         </div>
