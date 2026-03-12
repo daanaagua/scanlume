@@ -502,20 +502,10 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
         <div>
           <p className="eyebrow">Ferramenta principal</p>
           <h2>Upload instantaneo com preview e download.</h2>
-          <p>
+          <p className="workspace-intro">
             Simple OCR entrega texto puro. Formatted Text reorganiza titulos, paragrafos e a estrutura principal para Word, Markdown e HTML.
           </p>
         </div>
-
-        <div className="limit-pills">
-          <span>Limite gratis diario: US$ 20</span>
-          <span>Uso hoje: {budgetUsageLabel}</span>
-          <span>Simple = 1 credito</span>
-          <span>Formatted = 3 creditos</span>
-        </div>
-        <p className="workspace-note">
-          Teste gratis agora. Assinaturas para lotes maiores entram em lancamento por volta de 2026/04/01.
-        </p>
       </div>
 
       <div className="mode-toggle" role="tablist" aria-label="Modo OCR">
@@ -555,6 +545,18 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
             <span>Envie primeiro e clique em iniciar quando estiver pronto</span>
             <small>Maximo de 5 MB por imagem e 20 MB por lote</small>
           </label>
+
+          <div className="workspace-meta-stack">
+            <div className="limit-pills">
+              <span>Limite gratis diario: US$ 20</span>
+              <span>Uso hoje: {budgetUsageLabel}</span>
+              <span>Simple = 1 credito</span>
+              <span>Formatted = 3 creditos</span>
+            </div>
+            <p className="workspace-note">
+              Teste gratis agora. Assinaturas para lotes maiores entram em lancamento por volta de 2026/04/01.
+            </p>
+          </div>
 
           <div className="upload-actions">
             <button

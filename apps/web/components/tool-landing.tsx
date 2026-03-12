@@ -109,10 +109,6 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
         </div>
       </section>
 
-      <a href={`#${OCR_WORKSPACE_ID}`} className="mobile-quick-cta" aria-label="Abrir ferramenta agora">
-        Usar agora
-      </a>
-
       <section id={OCR_WORKSPACE_ID} className="section-band">
         <div className="container">
           <OcrWorkspace defaultMode={slug === "imagem-para-word" ? "formatted" : "simple"} />
