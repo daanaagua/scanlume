@@ -39,6 +39,13 @@ export type ResolvedPlanContext = {
   billing: BillingSummary;
 };
 
+export type WaitlistSummary = {
+  joined: boolean;
+  count: number;
+  joinedAt: string | null;
+  canJoin: boolean;
+};
+
 export type AccountSnapshot = {
   viewer: {
     authenticated: boolean;
@@ -52,6 +59,7 @@ export type AccountSnapshot = {
     remainingCredits: number;
   };
   billing: BillingSummary;
+  waitlist: WaitlistSummary;
   availablePlans: AccountPlan[];
   notes: {
     replyWindow: string;
@@ -69,6 +77,10 @@ type SubscriptionRow = {
   current_period_start: string | null;
   current_period_end: string | null;
   cancel_at_period_end: number;
+};
+
+type WaitlistRow = {
+  created_at: string;
 };
 
 type AccountViewerInput = {
@@ -107,6 +119,7 @@ export async function buildAccountSnapshot(env: WorkerEnv, viewer: AccountViewer
       remainingCredits: Math.max(viewer.dailyCreditLimit - viewer.usage.usedCredits, 0),
     },
     billing: resolvedPlan.billing,
+    waitlist: await readWaitlistSummary(env, viewer.user),
     availablePlans: [
       withCurrentFlag(catalog.free, currentPlan.id === "free"),
       withCurrentFlag(catalog.starter, currentPlan.id === "starter"),
@@ -117,6 +130,29 @@ export async function buildAccountSnapshot(env: WorkerEnv, viewer: AccountViewer
       subscriptions: "Assinaturas pagas e cobranca recorrente entram na proxima fase do produto.",
     },
   };
+}
+
+export async function joinWaitlist(
+  env: WorkerEnv,
+  input: { user: SessionViewer; source?: string; now: string },
+) {
+  if (!env.DB) {
+    throw new Error("D1 binding is required for the waitlist.");
+  }
+
+  await env.DB.prepare(
+    `INSERT INTO waitlist_signups (user_id, email, source, status, created_at, updated_at)
+     VALUES (?, ?, ?, 'active', ?, ?)
+     ON CONFLICT(user_id) DO UPDATE SET
+       email = excluded.email,
+       source = excluded.source,
+       status = 'active',
+       updated_at = excluded.updated_at;`,
+  )
+    .bind(input.user.id, input.user.email, input.source ?? "account", input.now, input.now)
+    .run();
+
+  return readWaitlistSummary(env, input.user);
 }
 
 export async function resolveCurrentPlan(
@@ -308,4 +344,44 @@ function applyEntitlementOverrides(plan: AccountPlan, overrides?: EntitlementOve
       dailyCredits: overrides.dailyCredits ? Math.max(plan.entitlements.dailyCredits, overrides.dailyCredits) : plan.entitlements.dailyCredits,
     },
   } satisfies AccountPlan;
+}
+
+async function readWaitlistSummary(env: WorkerEnv, user: SessionViewer | null): Promise<WaitlistSummary> {
+  if (!env.DB) {
+    return {
+      joined: false,
+      count: 0,
+      joinedAt: null,
+      canJoin: Boolean(user),
+    };
+  }
+
+  try {
+    const [countRow, joinedRow] = await Promise.all([
+      env.DB.prepare(
+        `SELECT COUNT(*) as total FROM waitlist_signups WHERE status = 'active';`,
+      ).first<{ total: number | string }>(),
+      user
+        ? env.DB.prepare(
+            `SELECT created_at FROM waitlist_signups WHERE user_id = ? AND status = 'active' LIMIT 1;`,
+          )
+            .bind(user.id)
+            .first<WaitlistRow>()
+        : Promise.resolve(null),
+    ]);
+
+    return {
+      joined: Boolean(joinedRow),
+      count: Number(countRow?.total ?? 0),
+      joinedAt: joinedRow?.created_at ?? null,
+      canJoin: Boolean(user),
+    };
+  } catch {
+    return {
+      joined: false,
+      count: 0,
+      joinedAt: null,
+      canJoin: Boolean(user),
+    };
+  }
 }

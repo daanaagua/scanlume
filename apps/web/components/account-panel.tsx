@@ -3,11 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { getOrCreateBrowserId } from "@/lib/browser-id";
-import { fetchAccount, type AccountResponse } from "@/lib/account";
+import { fetchAccount, joinWaitlist, type AccountResponse } from "@/lib/account";
 
 export function AccountPanel() {
   const [account, setAccount] = useState<AccountResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [waitlistError, setWaitlistError] = useState<string | null>(null);
+  const [isJoiningWaitlist, setIsJoiningWaitlist] = useState(false);
 
   useEffect(() => {
     const browserId = getOrCreateBrowserId();
@@ -28,6 +30,29 @@ export function AccountPanel() {
 
     return `${account.usageToday.remainingCredits}/${account.currentPlan.entitlements.dailyCredits} creditos disponiveis hoje`;
   }, [account]);
+
+  async function handleJoinWaitlist() {
+    setIsJoiningWaitlist(true);
+    setWaitlistError(null);
+
+    try {
+      const result = await joinWaitlist();
+      setAccount((current) => {
+        if (!current) {
+          return current;
+        }
+
+        return {
+          ...current,
+          waitlist: result.waitlist,
+        };
+      });
+    } catch (reason) {
+      setWaitlistError(reason instanceof Error ? reason.message : "Nao foi possivel entrar na lista de espera.");
+    } finally {
+      setIsJoiningWaitlist(false);
+    }
+  }
 
   if (error) {
     return (
@@ -94,6 +119,32 @@ export function AccountPanel() {
           <strong>{account.billing.status === "inactive" ? "Ainda sem assinatura" : account.billing.status}</strong>
           <p>{account.notes.subscriptions}</p>
           <small>{account.notes.replyWindow}</small>
+        </article>
+
+        <article className="account-card waitlist-card">
+          <span>Versao paga de abril</span>
+          <strong>{account.waitlist.count} pessoa(s) na fila</strong>
+          <p>
+            {account.viewer.authenticated
+              ? account.waitlist.joined
+                ? "Voce ja entrou na lista de espera. Quando a versao paga abrir, enviaremos aviso por email."
+                : "Quer prioridade quando os planos pagos forem liberados? Entre na lista de espera."
+              : "Entre com Google para entrar na lista de espera e receber aviso por email quando a cobranca abrir."}
+          </p>
+          {account.viewer.authenticated ? (
+            <button
+              type="button"
+              className="solid-button waitlist-button"
+              disabled={account.waitlist.joined || isJoiningWaitlist}
+              onClick={() => void handleJoinWaitlist()}
+            >
+              {account.waitlist.joined ? "Voce ja entrou na fila" : isJoiningWaitlist ? "Entrando..." : "Entrar na lista de espera"}
+            </button>
+          ) : (
+            <small>Login necessario para reservar seu lugar.</small>
+          )}
+          {account.waitlist.joinedAt && <small>Entrou em {new Date(account.waitlist.joinedAt).toLocaleDateString("pt-BR")}</small>}
+          {waitlistError && <small>{waitlistError}</small>}
         </article>
       </div>
 

@@ -283,6 +283,16 @@ export function SupportDesk({
     textarea.style.overflowY = textarea.scrollHeight > TEXTAREA_MAX_HEIGHT ? "auto" : "hidden";
   }
 
+  function revealFocusedField(event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) {
+    const target = event.currentTarget;
+    window.setTimeout(() => {
+      target.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 120);
+  }
+
   return (
     <section className={embedded ? "support-desk support-desk-embedded" : "support-desk"}>
       <div className="support-desk-head">
@@ -309,7 +319,12 @@ export function SupportDesk({
         <div className="support-fields-grid">
           <label>
             <span>Nome</span>
-            <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Seu nome" />
+            <input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              onFocus={revealFocusedField}
+              placeholder="Seu nome"
+            />
           </label>
           <label>
             <span>Email</span>
@@ -317,6 +332,7 @@ export function SupportDesk({
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
+              onFocus={revealFocusedField}
               placeholder="voce@empresa.com"
             />
           </label>
@@ -351,6 +367,7 @@ export function SupportDesk({
             rows={3}
             value={message}
             onChange={(event) => setMessage(event.target.value)}
+            onFocus={revealFocusedField}
             placeholder="Explique sua duvida, problema ou sugestao..."
           />
         </label>

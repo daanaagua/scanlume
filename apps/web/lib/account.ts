@@ -44,6 +44,12 @@ export type AccountResponse = {
     currentPeriodEnd: string | null;
     cancelAtPeriodEnd: boolean;
   };
+  waitlist: {
+    joined: boolean;
+    count: number;
+    joinedAt: string | null;
+    canJoin: boolean;
+  };
   availablePlans: Array<{
     id: string;
     label: string;
@@ -83,4 +89,24 @@ export async function fetchAccount(browserId?: string) {
   }
 
   return (await response.json()) as AccountResponse;
+}
+
+export async function joinWaitlist() {
+  const response = await fetch(`${API_BASE_URL}/v1/waitlist/join`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ source: "account" }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Nao foi possivel entrar na lista de espera.");
+  }
+
+  return (await response.json()) as {
+    ok: true;
+    waitlist: AccountResponse["waitlist"];
+  };
 }

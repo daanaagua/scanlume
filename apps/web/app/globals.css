@@ -750,6 +750,14 @@ main {
   font-size: 1.05rem;
 }
 
+.waitlist-card {
+  align-content: start;
+}
+
+.waitlist-button {
+  width: fit-content;
+}
+
 .plan-card-head,
 .plan-card-meta {
   display: flex;
@@ -795,6 +803,8 @@ main {
   bottom: 5rem;
   z-index: 30;
   width: min(420px, calc(100vw - 1.2rem));
+  display: flex;
+  flex-direction: column;
 }
 
 .support-widget-toolbar {
@@ -808,6 +818,16 @@ main {
 
 .support-widget-close {
   min-height: 40px;
+}
+
+.support-widget-panel .support-desk {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.support-widget-panel .support-messages {
+  min-height: 0;
 }
 
 .upload-dropzone {
@@ -1284,6 +1304,8 @@ main {
     right: 0.5rem;
     bottom: 3.45rem;
     width: calc(100vw - 1rem);
+    left: 0.5rem;
+    max-height: calc(100dvh - 4rem);
   }
 
   .support-widget-trigger {
@@ -1293,5 +1315,22 @@ main {
     padding: 0 0.58rem;
     font-size: 0.74rem;
     box-shadow: 0 12px 20px rgba(7, 89, 76, 0.16);
+  }
+
+  .support-widget-panel .support-desk {
+    padding: 0.9rem;
+    border-radius: 20px;
+  }
+
+  .support-widget-panel .support-desk-head {
+    gap: 0.35rem;
+  }
+
+  .support-widget-panel .support-messages {
+    max-height: 180px;
+  }
+
+  .support-widget-panel .support-fields-grid {
+    gap: 0.6rem;
   }
 }

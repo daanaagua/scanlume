@@ -1,7 +1,7 @@
 import { Hono, type Context } from "hono";
 import { cors } from "hono/cors";
 
-import { buildAccountSnapshot, resolveCurrentPlan, type AccountPlan } from "./lib/account";
+import { buildAccountSnapshot, joinWaitlist, resolveCurrentPlan, type AccountPlan } from "./lib/account";
 import {
   buildGoogleAuthorizationUrl,
   clearOauthState,
@@ -118,6 +118,7 @@ app.get("/", (c) =>
       "/v1/limits",
       "/v1/me",
       "/v1/account",
+      "/v1/waitlist/join",
       "/v1/auth/google/start",
       "/v1/support/chat",
       "/v1/ocr",
@@ -152,6 +153,30 @@ app.get("/v1/account", async (c) => {
   const viewer = await resolveViewerContext(c, c.req.query("browserId") ?? undefined);
   const account = await buildAccountSnapshot(c.env, viewer);
   return c.json(account);
+});
+
+app.post("/v1/waitlist/join", async (c) => {
+  const user = await getSessionViewer(c, c.env);
+  if (!user) {
+    return c.json({ error: "Authentication required." }, 401);
+  }
+
+  const payload = await c.req.json().catch(() => null);
+  const source =
+    payload && typeof payload === "object" && typeof Reflect.get(payload, "source") === "string"
+      ? String(Reflect.get(payload, "source")).slice(0, 60)
+      : "account";
+
+  const waitlist = await joinWaitlist(c.env, {
+    user,
+    source,
+    now: new Date().toISOString(),
+  });
+
+  return c.json({
+    ok: true,
+    waitlist,
+  });
 });
 
 app.get("/v1/support/conversations/:conversationId", async (c) => {
