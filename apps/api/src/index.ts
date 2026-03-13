@@ -689,7 +689,7 @@ function buildWebRedirect(env: WorkerEnv, redirectTo: string, status: string, er
 
 function resolveCorsOrigin(env: WorkerEnv, requestOrigin?: string) {
   const allowedOrigins = new Set([
-    getWebOrigin(env),
+    ...getAllowedWebOrigins(env),
     "http://localhost:3000",
     "http://127.0.0.1:3000",
   ]);
@@ -699,6 +699,24 @@ function resolveCorsOrigin(env: WorkerEnv, requestOrigin?: string) {
   }
 
   return getWebOrigin(env);
+}
+
+function getAllowedWebOrigins(env: WorkerEnv) {
+  const primaryOrigin = getWebOrigin(env);
+  const allowed = new Set([primaryOrigin]);
+
+  try {
+    const url = new URL(primaryOrigin);
+    if (url.hostname.startsWith("www.")) {
+      allowed.add(`${url.protocol}//${url.hostname.slice(4)}`);
+    } else if (!url.hostname.startsWith("localhost") && !url.hostname.startsWith("127.0.0.1")) {
+      allowed.add(`${url.protocol}//www.${url.hostname}`);
+    }
+  } catch {
+    return Array.from(allowed);
+  }
+
+  return Array.from(allowed);
 }
 
 async function runSupportAssistant(
