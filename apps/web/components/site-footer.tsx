@@ -34,6 +34,19 @@ export function SiteFooter() {
               </li>
             ))}
           </ul>
+
+          <a
+            className="footer-badge-link"
+            href="https://toolsaiapp.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <img
+              src="https://toolsaiapp.com/wp-content/uploads/2025/12/badge.png"
+              alt="Featured on Tools AI App"
+              height={54}
+            />
+          </a>
         </div>
       </div>
 

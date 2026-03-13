@@ -1127,6 +1127,17 @@ main {
   padding: 0;
 }
 
+.footer-badge-link {
+  display: inline-flex;
+  margin-top: 1rem;
+}
+
+.footer-badge-link img {
+  height: 54px;
+  width: auto;
+  display: block;
+}
+
 .footer-bottom {
   display: flex;
   flex-wrap: wrap;
