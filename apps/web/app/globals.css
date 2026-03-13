@@ -1132,6 +1132,12 @@ main {
   margin-top: 1rem;
 }
 
+.footer-badges {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
 .footer-badge-link img {
   height: 54px;
   width: auto;

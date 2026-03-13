@@ -35,18 +35,34 @@ export function SiteFooter() {
             ))}
           </ul>
 
-          <a
-            className="footer-badge-link"
-            href="https://toolsaiapp.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <img
-              src="https://toolsaiapp.com/wp-content/uploads/2025/12/badge.png"
-              alt="Featured on Tools AI App"
-              height={54}
-            />
-          </a>
+          <div className="footer-badges">
+            <a
+              className="footer-badge-link"
+              href="https://toolsaiapp.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                src="https://toolsaiapp.com/wp-content/uploads/2025/12/badge.png"
+                alt="Featured on Tools AI App"
+                height={54}
+              />
+            </a>
+
+            <a
+              className="footer-badge-link"
+              href="https://deeplaunch.io"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                src="https://deeplaunch.io/badge/badge_transparent.svg"
+                alt="Featured on DeepLaunch.io"
+                width={200}
+                height={54}
+              />
+            </a>
+          </div>
         </div>
       </div>
 
