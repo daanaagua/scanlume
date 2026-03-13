@@ -1131,21 +1131,40 @@ main {
   padding: 0;
 }
 
-.footer-badge-link {
-  display: inline-flex;
-  margin-top: 1rem;
+.featured-page-shell {
+  display: grid;
+  gap: 1.25rem;
 }
 
-.footer-badges {
+.featured-page-copy {
+  max-width: 820px;
+}
+
+.featured-badge-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.featured-badge-card {
   display: grid;
   gap: 0.85rem;
-  margin-top: 1rem;
+  align-content: start;
+  padding: 1.15rem;
+  border-radius: 22px;
+  background: rgba(255, 250, 240, 0.9);
+  border: 1px solid rgba(22, 42, 44, 0.08);
+  box-shadow: var(--shadow);
 }
 
-.footer-badge-link img {
+.featured-badge-card img {
   height: 54px;
   width: auto;
   display: block;
+}
+
+.featured-badge-card span {
+  color: var(--muted);
 }
 
 .footer-bottom {
