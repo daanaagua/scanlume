@@ -49,6 +49,11 @@ export function AuthControls() {
       .join("") || "S";
   }, [account?.viewer.user?.name]);
 
+  const firstName = useMemo(() => {
+    const name = account?.viewer.user?.name?.trim();
+    return name ? name.split(/\s+/)[0] : "Conta";
+  }, [account?.viewer.user?.name]);
+
   function handleGoogleLogin() {
     const redirectTo = `${window.location.pathname}${window.location.search}${window.location.hash}`;
     window.location.href = `${API_BASE_URL}/v1/auth/google/start?redirectTo=${encodeURIComponent(redirectTo)}`;
@@ -91,7 +96,8 @@ export function AuthControls() {
   if (!account?.viewer.authenticated || !account.viewer.user) {
     return (
       <button type="button" className="ghost-button auth-login-button" onClick={handleGoogleLogin}>
-        Entrar com Google
+        <span className="label-full">Entrar com Google</span>
+        <span className="label-short">Google</span>
       </button>
     );
   }
@@ -112,7 +118,12 @@ export function AuthControls() {
           disabled={account.waitlist.joined || isJoiningWaitlist}
           aria-describedby="waitlist-tooltip"
         >
-          {account.waitlist.joined ? "Na lista" : isJoiningWaitlist ? "Entrando..." : "Entrar na lista"}
+          <span className="label-full">
+            {account.waitlist.joined ? "Na lista" : isJoiningWaitlist ? "Entrando..." : "Entrar na lista"}
+          </span>
+          <span className="label-short">
+            {account.waitlist.joined ? "Fila" : isJoiningWaitlist ? "..." : "Lista"}
+          </span>
         </button>
         <span id="waitlist-tooltip" className="waitlist-tooltip" role="tooltip">
           {waitlistTooltip}
@@ -128,7 +139,7 @@ export function AuthControls() {
         )}
 
         <span className="account-trigger-copy">
-          <strong>{account.viewer.user.name}</strong>
+          <strong>{firstName}</strong>
           <small>{account.currentPlan.label}</small>
         </span>
 

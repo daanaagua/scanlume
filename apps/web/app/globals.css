@@ -191,6 +191,10 @@ main {
   min-height: 44px;
 }
 
+.label-short {
+  display: none;
+}
+
 .account-menu-shell {
   position: relative;
 }
@@ -1178,32 +1182,64 @@ main {
   }
 
   .header-inner {
-    grid-template-columns: 1fr;
-    justify-items: start;
+    grid-template-columns: minmax(0, 1fr) auto;
+    justify-items: stretch;
+    align-items: center;
+    gap: 0.7rem;
     padding: 0.8rem 0;
   }
 
   .header-actions,
-  .auth-controls,
+  .auth-controls {
+    width: auto;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    min-width: 0;
+  }
+
   .login-promo {
     width: 100%;
     flex-wrap: wrap;
   }
 
   .waitlist-cta-shell {
-    width: 100%;
+    width: auto;
+    flex: 0 0 auto;
   }
 
   .waitlist-header-button {
-    width: 100%;
+    width: auto;
+    min-height: 40px;
+    padding: 0 0.8rem;
+    font-size: 0.84rem;
+    white-space: nowrap;
   }
 
   .account-trigger {
-    width: 100%;
-    justify-content: space-between;
+    width: auto;
+    max-width: min(42vw, 240px);
+    justify-content: flex-start;
+    gap: 0.5rem;
+    min-height: 40px;
+    padding: 0.35rem 0.45rem 0.35rem 0.45rem;
+  }
+
+  .account-trigger-copy strong {
+    font-size: 0.92rem;
+  }
+
+  .account-trigger-copy small {
+    font-size: 0.72rem;
+  }
+
+  .account-usage-pill {
+    min-height: 1.75rem;
+    padding: 0 0.55rem;
+    font-size: 0.78rem;
   }
 
   .top-nav {
+    grid-column: 1 / -1;
     justify-content: flex-start;
   }
 
@@ -1231,6 +1267,105 @@ main {
 
   .top-nav {
     display: none;
+  }
+
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 25;
+  }
+
+  .header-inner {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.5rem;
+  }
+
+  .brand-lockup {
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .brand-mark {
+    width: 2.2rem;
+    height: 2.2rem;
+  }
+
+  .brand-lockup strong {
+    font-size: 0.98rem;
+  }
+
+  .brand-lockup small {
+    font-size: 0.7rem;
+  }
+
+  .header-actions,
+  .auth-controls {
+    gap: 0.34rem;
+  }
+
+  .auth-login-button {
+    min-height: 38px;
+    padding: 0 0.66rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .label-full {
+    display: none;
+  }
+
+  .label-short {
+    display: inline;
+  }
+
+  .waitlist-header-button {
+    min-height: 38px;
+    padding: 0 0.6rem;
+    font-size: 0.74rem;
+  }
+
+  .waitlist-tooltip {
+    right: 0;
+    left: auto;
+    width: min(220px, calc(100vw - 1rem));
+    font-size: 0.78rem;
+  }
+
+  .account-trigger {
+    max-width: min(46vw, 170px);
+    gap: 0.34rem;
+    min-height: 38px;
+    padding: 0.28rem 0.34rem 0.28rem 0.32rem;
+  }
+
+  .auth-avatar-image,
+  .auth-avatar-fallback {
+    width: 1.68rem;
+    height: 1.68rem;
+  }
+
+  .account-trigger-copy {
+    gap: 0;
+    min-width: 0;
+  }
+
+  .account-trigger-copy strong {
+    max-width: 5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.82rem;
+  }
+
+  .account-trigger-copy small {
+    display: none;
+  }
+
+  .account-usage-pill {
+    min-height: 1.5rem;
+    padding: 0 0.38rem;
+    font-size: 0.7rem;
+    white-space: nowrap;
   }
 
   .hero-grid {
