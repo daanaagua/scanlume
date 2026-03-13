@@ -97,7 +97,7 @@ export function AuthControls() {
     return (
       <button type="button" className="ghost-button auth-login-button" onClick={handleGoogleLogin}>
         <span className="label-full">Entrar com Google</span>
-        <span className="label-short">Login Google</span>
+        <span className="label-short">Entrar Google</span>
       </button>
     );
   }
