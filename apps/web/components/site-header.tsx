@@ -28,9 +28,6 @@ export function SiteHeader() {
 
         <div className="header-actions">
           <AuthControls />
-          <Link href="/imagem-para-texto" className="header-cta">
-            Testar gratis
-          </Link>
         </div>
       </div>
     </header>

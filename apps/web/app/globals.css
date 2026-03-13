@@ -195,6 +195,48 @@ main {
   position: relative;
 }
 
+.waitlist-cta-shell {
+  position: relative;
+  display: inline-flex;
+}
+
+.waitlist-header-button {
+  min-height: 44px;
+  padding: 0 0.95rem;
+  white-space: nowrap;
+}
+
+.waitlist-header-button.is-joined {
+  background: rgba(14, 124, 102, 0.12);
+  color: var(--accent-strong);
+  box-shadow: none;
+}
+
+.waitlist-tooltip {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.6rem);
+  width: min(260px, calc(100vw - 2rem));
+  padding: 0.75rem 0.85rem;
+  border-radius: 16px;
+  background: rgba(22, 42, 44, 0.94);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.84rem;
+  line-height: 1.5;
+  box-shadow: 0 18px 34px rgba(22, 42, 44, 0.24);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 160ms ease, transform 160ms ease;
+  z-index: 36;
+}
+
+.waitlist-cta-shell:hover .waitlist-tooltip,
+.waitlist-cta-shell:focus-within .waitlist-tooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .account-trigger {
   display: inline-flex;
   align-items: center;
@@ -1131,6 +1173,14 @@ main {
     flex-wrap: wrap;
   }
 
+  .waitlist-cta-shell {
+    width: 100%;
+  }
+
+  .waitlist-header-button {
+    width: 100%;
+  }
+
   .account-trigger {
     width: 100%;
     justify-content: space-between;
@@ -1258,6 +1308,12 @@ main {
   .account-dropdown {
     right: auto;
     left: 0;
+  }
+
+  .waitlist-tooltip {
+    right: auto;
+    left: 0;
+    width: min(280px, calc(100vw - 2rem));
   }
 
   .mini-file-card {
