@@ -361,10 +361,13 @@ app.post("/v1/auth/register", async (c) => {
     await createUserSession(c, c.env, user.id);
     const verification = user.emailVerified
       ? { emailDeliveryConfigured: Boolean(c.env.RESEND_API_KEY && c.env.AUTH_EMAIL_FROM), emailSent: false }
-      : await requestEmailVerification(c.env, user).catch(() => ({
-          emailDeliveryConfigured: Boolean(c.env.RESEND_API_KEY && c.env.AUTH_EMAIL_FROM),
-          emailSent: false,
-        }));
+      : await requestEmailVerification(c.env, user).catch((error) => {
+          logAuthError(c, "register.send_verification", error, { emailHint: maskEmail(parsed.data.email) });
+          return {
+            emailDeliveryConfigured: Boolean(c.env.RESEND_API_KEY && c.env.AUTH_EMAIL_FROM),
+            emailSent: false,
+          };
+        });
 
     return c.json({
       ok: true,
@@ -375,6 +378,7 @@ app.post("/v1/auth/register", async (c) => {
       verification,
     });
   } catch (error) {
+    logAuthError(c, "register", error, { emailHint: maskEmail(parsed.data.email) });
     return c.json(toAuthErrorPayload(error), toAuthErrorStatus(error));
   }
 });
@@ -398,6 +402,7 @@ app.post("/v1/auth/login", async (c) => {
       },
     });
   } catch (error) {
+    logAuthError(c, "login", error, { emailHint: maskEmail(parsed.data.email) });
     return c.json(toAuthErrorPayload(error), toAuthErrorStatus(error));
   }
 });
@@ -420,6 +425,7 @@ app.post("/v1/auth/forgot-password", async (c) => {
           : "O fluxo foi preparado, mas o envio de email ainda nao esta configurado no ambiente.",
     });
   } catch (error) {
+    logAuthError(c, "forgot_password", error, { emailHint: maskEmail(parsed.data.email) });
     return c.json(toAuthErrorPayload(error), toAuthErrorStatus(error));
   }
 });
@@ -435,6 +441,7 @@ app.post("/v1/auth/verify-email", async (c) => {
     const user = await verifyEmailToken(c.env, parsed.data.token);
     return c.json({ ok: true, user });
   } catch (error) {
+    logAuthError(c, "verify_email", error);
     return c.json(toAuthErrorPayload(error), toAuthErrorStatus(error));
   }
 });
@@ -457,6 +464,7 @@ app.post("/v1/auth/resend-verification", async (c) => {
       emailDeliveryConfigured: result.emailDeliveryConfigured,
     });
   } catch (error) {
+    logAuthError(c, "resend_verification", error, { userId: user.id, emailHint: maskEmail(user.email) });
     return c.json(toAuthErrorPayload(error), toAuthErrorStatus(error));
   }
 });
@@ -473,6 +481,7 @@ app.post("/v1/auth/reset-password", async (c) => {
     await createUserSession(c, c.env, user.id);
     return c.json({ ok: true, viewer: { authenticated: true, user } });
   } catch (error) {
+    logAuthError(c, "reset_password", error);
     return c.json(toAuthErrorPayload(error), toAuthErrorStatus(error));
   }
 });
@@ -513,6 +522,7 @@ app.get("/v1/auth/google/callback", async (c) => {
     return c.redirect(buildWebRedirect(c.env, stored.redirectTo, "google_connected"), 302);
   } catch (error) {
     const message = error instanceof Error ? error.message : "google_auth_failed";
+    logAuthError(c, "google_callback", error, { redirectTo: stored.redirectTo });
     return c.redirect(buildWebRedirect(c.env, stored.redirectTo, "google_auth_failed", message), 302);
   }
 });
@@ -1139,6 +1149,34 @@ function isSupportSyncAuthorized(c: Context<AppBindings>) {
   const header = c.req.header("authorization") ?? "";
   const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
   return token.length > 0 && token === c.env.SUPPORT_SYNC_TOKEN;
+}
+
+function logAuthError(
+  c: Context<AppBindings>,
+  action: string,
+  error: unknown,
+  extra: Record<string, string | undefined> = {},
+) {
+  const reason = error instanceof Error ? error : new Error(String(error));
+  console.error("[auth]", {
+    action,
+    method: c.req.method,
+    path: new URL(c.req.url).pathname,
+    ...extra,
+    message: reason.message,
+    stack: reason.stack,
+  });
+}
+
+function maskEmail(email: string) {
+  const normalized = email.trim().toLowerCase();
+  const [localPart, domain] = normalized.split("@");
+  if (!localPart || !domain) {
+    return normalized;
+  }
+
+  const visible = localPart.slice(0, 2);
+  return `${visible}${"*".repeat(Math.max(localPart.length - visible.length, 1))}@${domain}`;
 }
 
 function toAuthErrorStatus(error: unknown) {
