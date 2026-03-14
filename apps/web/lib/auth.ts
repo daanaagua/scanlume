@@ -19,6 +19,16 @@ export type AuthResult = {
   };
 };
 
+export type RegisterResult = {
+  ok: true;
+  requiresEmailVerification: boolean;
+  emailHint: string;
+  verification: {
+    emailDeliveryConfigured: boolean;
+    emailSent: boolean;
+  };
+};
+
 export type AuthActionResult = {
   ok: true;
   message?: string;
@@ -42,7 +52,7 @@ export async function loginWithPassword(input: { email: string; password: string
 }
 
 export async function registerWithPassword(input: { name: string; email: string; password: string }) {
-  return postAuthRequest("/v1/auth/register", input);
+  return postAuthRequest<RegisterResult>("/v1/auth/register", input);
 }
 
 export async function requestPasswordReset(input: { email: string }) {
@@ -54,7 +64,7 @@ export async function resetPassword(input: { token: string; password: string }) 
 }
 
 export async function verifyEmail(input: { token: string }) {
-  return postAuthRequest<AuthActionResult>("/v1/auth/verify-email", input);
+  return postAuthRequest<AuthResult>("/v1/auth/verify-email", input);
 }
 
 export async function resendVerificationEmail() {

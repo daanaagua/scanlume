@@ -358,7 +358,6 @@ app.post("/v1/auth/register", async (c) => {
 
   try {
     const user = await registerPasswordViewer(c.env, parsed.data);
-    await createUserSession(c, c.env, user.id);
     const verification = user.emailVerified
       ? { emailDeliveryConfigured: Boolean(c.env.RESEND_API_KEY && c.env.AUTH_EMAIL_FROM), emailSent: false }
       : await requestEmailVerification(c.env, user).catch((error) => {
@@ -371,10 +370,8 @@ app.post("/v1/auth/register", async (c) => {
 
     return c.json({
       ok: true,
-      viewer: {
-        authenticated: true,
-        user,
-      },
+      requiresEmailVerification: !user.emailVerified,
+      emailHint: maskEmail(parsed.data.email),
       verification,
     });
   } catch (error) {
@@ -439,7 +436,8 @@ app.post("/v1/auth/verify-email", async (c) => {
 
   try {
     const user = await verifyEmailToken(c.env, parsed.data.token);
-    return c.json({ ok: true, user });
+    await createUserSession(c, c.env, user.id);
+    return c.json({ ok: true, viewer: { authenticated: true, user } });
   } catch (error) {
     logAuthError(c, "verify_email", error);
     return c.json(toAuthErrorPayload(error), toAuthErrorStatus(error));
@@ -447,7 +445,7 @@ app.post("/v1/auth/verify-email", async (c) => {
 });
 
 app.post("/v1/auth/resend-verification", async (c) => {
-  const user = await getSessionViewer(c, c.env);
+  const user = await getSessionViewer(c, c.env, { allowUnverified: true });
   if (!user) {
     return c.json({ error: "Authentication required." }, 401);
   }
@@ -1190,6 +1188,10 @@ function toAuthErrorStatus(error: unknown) {
     return 401;
   }
 
+  if (message === "email_not_verified") {
+    return 403;
+  }
+
   if (message === "password_too_short") {
     return 400;
   }
@@ -1218,6 +1220,10 @@ function toAuthErrorPayload(error: unknown) {
 
   if (message === "invalid_credentials") {
     return { error: "Email or password is incorrect." };
+  }
+
+  if (message === "email_not_verified") {
+    return { error: "Please confirm your email before signing in." };
   }
 
   if (message === "password_too_short") {

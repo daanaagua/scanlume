@@ -14,6 +14,9 @@ export function EmailVerificationStatus({ token }: { token: string }) {
       .then(() => {
         if (!cancelled) {
           setStatus("Email confirmado com sucesso. Voce ja pode seguir usando sua conta normalmente.");
+          window.setTimeout(() => {
+            window.location.href = "/conta";
+          }, 1200);
         }
       })
       .catch((reason) => {

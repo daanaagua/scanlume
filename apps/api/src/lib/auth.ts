@@ -14,7 +14,8 @@ const OAUTH_REDIRECT_COOKIE_NAME = "scanlume_post_auth_redirect";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 const OAUTH_STATE_TTL_SECONDS = 60 * 10;
 const PASSWORD_HASH_PREFIX = "pbkdf2_sha256";
-const PASSWORD_HASH_ITERATIONS = 310_000;
+// Cloudflare Workers Web Crypto caps PBKDF2 iterations at 100k.
+const PASSWORD_HASH_ITERATIONS = 100_000;
 const PASSWORD_HASH_BYTES = 32;
 const PASSWORD_MIN_LENGTH = 8;
 const VERIFY_EMAIL_TOKEN_TTL_SECONDS = 60 * 60 * 24;
@@ -127,7 +128,11 @@ export async function destroyUserSession(c: AppContext, env: WorkerEnv) {
   deleteCookie(c, SESSION_COOKIE_NAME, buildCookieOptions(c, env, 0));
 }
 
-export async function getSessionViewer(c: AppContext, env: WorkerEnv) {
+export async function getSessionViewer(
+  c: AppContext,
+  env: WorkerEnv,
+  options: { allowUnverified?: boolean } = {},
+) {
   if (!env.DB) {
     return null;
   }
@@ -154,7 +159,12 @@ export async function getSessionViewer(c: AppContext, env: WorkerEnv) {
     return null;
   }
 
-  return readViewerById(env, row.id);
+  const viewer = await readViewerById(env, row.id);
+  if (!options.allowUnverified && viewer.hasPassword && !viewer.emailVerified) {
+    return null;
+  }
+
+  return viewer;
 }
 
 export async function registerPasswordViewer(
@@ -245,7 +255,12 @@ export async function authenticatePasswordViewer(env: WorkerEnv, email: string, 
     .bind(new Date().toISOString(), new Date().toISOString(), row.id)
     .run();
 
-  return readViewerById(env, row.id);
+  const viewer = await readViewerById(env, row.id);
+  if (!viewer.emailVerified) {
+    throw new Error("email_not_verified");
+  }
+
+  return viewer;
 }
 
 export async function requestEmailVerification(env: WorkerEnv, user: SessionViewer) {

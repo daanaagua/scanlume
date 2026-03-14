@@ -23,6 +23,7 @@ export function AuthDialog({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -32,6 +33,7 @@ export function AuthDialog({
 
     setMode(defaultMode);
     setError(null);
+    setNotice(null);
   }, [defaultMode, open]);
 
   useEffect(() => {
@@ -62,17 +64,24 @@ export function AuthDialog({
     event.preventDefault();
     setIsSubmitting(true);
     setError(null);
+    setNotice(null);
 
     try {
       if (mode === "login") {
         await loginWithPassword({ email, password });
+        onSuccess?.();
+        onClose();
+        window.location.reload();
       } else {
-        await registerWithPassword({ name, email, password });
+        const result = await registerWithPassword({ name, email, password });
+        setNotice(
+          result.verification.emailDeliveryConfigured
+            ? `Conta criada. Enviamos um link de verificacao para ${result.emailHint}. Confirme o email para liberar o login.`
+            : `Conta criada para ${result.emailHint}, mas o envio de email ainda nao esta configurado neste ambiente.`,
+        );
+        setMode("login");
+        setPassword("");
       }
-
-      onSuccess?.();
-      onClose();
-      window.location.reload();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Nao foi possivel autenticar agora.");
     } finally {
@@ -169,6 +178,7 @@ export function AuthDialog({
           </label>
 
           {error && <p className="auth-form-error">{error}</p>}
+          {notice && <p className="auth-modal-note auth-form-success">{notice}</p>}
 
           <button type="submit" className="solid-button auth-submit-button" disabled={isSubmitting}>
             {isSubmitting
