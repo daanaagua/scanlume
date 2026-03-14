@@ -115,6 +115,19 @@ export const authLoginSchema = z.object({
   password: authPasswordSchema,
 });
 
+export const authForgotPasswordSchema = z.object({
+  email: authEmailSchema,
+});
+
+export const authVerifyEmailSchema = z.object({
+  token: z.string().min(20).max(255),
+});
+
+export const authResetPasswordSchema = z.object({
+  token: z.string().min(20).max(255),
+  password: authPasswordSchema,
+});
+
 export const formattedBlockSchema = z.object({
   type: z.enum(["h1", "h2", "p", "br"]),
   text: z.string().default(""),
@@ -165,5 +178,8 @@ export type SupportAssistant = z.infer<typeof supportAssistantSchema>;
 export type SupportCategory = z.infer<typeof supportCategorySchema>;
 export type SupportChatRequest = z.infer<typeof supportChatRequestSchema>;
 export type SupportPriority = z.infer<typeof supportPrioritySchema>;
+export type AuthForgotPasswordRequest = z.infer<typeof authForgotPasswordSchema>;
 export type AuthLoginRequest = z.infer<typeof authLoginSchema>;
 export type AuthRegisterRequest = z.infer<typeof authRegisterSchema>;
+export type AuthResetPasswordRequest = z.infer<typeof authResetPasswordSchema>;
+export type AuthVerifyEmailRequest = z.infer<typeof authVerifyEmailSchema>;

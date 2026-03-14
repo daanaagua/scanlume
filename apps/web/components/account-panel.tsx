@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { AuthDialog } from "@/components/auth-dialog";
 import { getOrCreateBrowserId } from "@/lib/browser-id";
+import { requestPasswordReset, resendVerificationEmail } from "@/lib/auth";
 import { fetchAccount, joinWaitlist, type AccountResponse } from "@/lib/account";
 
 export function AccountPanel() {
@@ -12,6 +13,9 @@ export function AccountPanel() {
   const [waitlistError, setWaitlistError] = useState<string | null>(null);
   const [isJoiningWaitlist, setIsJoiningWaitlist] = useState(false);
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
+  const [authActionMessage, setAuthActionMessage] = useState<string | null>(null);
+  const [isSendingVerification, setIsSendingVerification] = useState(false);
+  const [isSendingResetLink, setIsSendingResetLink] = useState(false);
 
   useEffect(() => {
     const browserId = getOrCreateBrowserId();
@@ -53,6 +57,64 @@ export function AccountPanel() {
       setWaitlistError(reason instanceof Error ? reason.message : "Nao foi possivel entrar na lista de espera.");
     } finally {
       setIsJoiningWaitlist(false);
+    }
+  }
+
+  async function handleResendVerification() {
+    setIsSendingVerification(true);
+    setAuthActionMessage(null);
+
+    try {
+      const result = await resendVerificationEmail();
+      setAuthActionMessage(
+        result.alreadyVerified
+          ? "Seu email ja esta confirmado."
+          : result.emailDeliveryConfigured
+            ? "Enviamos um novo link de confirmacao para seu email."
+            : "O envio de email ainda nao esta configurado neste ambiente.",
+      );
+      const verifiedUser = result.user;
+      if (verifiedUser) {
+        setAccount((current) => {
+          if (!current) {
+            return current;
+          }
+
+          return {
+            ...current,
+            viewer: {
+              ...current.viewer,
+              user: verifiedUser,
+            },
+          };
+        });
+      }
+    } catch (reason) {
+      setAuthActionMessage(reason instanceof Error ? reason.message : "Nao foi possivel reenviar o email agora.");
+    } finally {
+      setIsSendingVerification(false);
+    }
+  }
+
+  async function handlePasswordResetLink() {
+    if (!account?.viewer.user?.email) {
+      return;
+    }
+
+    setIsSendingResetLink(true);
+    setAuthActionMessage(null);
+
+    try {
+      const result = await requestPasswordReset({ email: account.viewer.user.email });
+      setAuthActionMessage(
+        result.emailDeliveryConfigured
+          ? "Enviamos um link para definir ou trocar sua senha."
+          : "O fluxo de redefinicao existe, mas o envio de email ainda nao esta configurado.",
+      );
+    } catch (reason) {
+      setAuthActionMessage(reason instanceof Error ? reason.message : "Nao foi possivel enviar o link agora.");
+    } finally {
+      setIsSendingResetLink(false);
     }
   }
 
@@ -129,6 +191,44 @@ export function AccountPanel() {
           <p>{account.notes.subscriptions}</p>
           <small>{account.notes.replyWindow}</small>
         </article>
+
+        {account.viewer.authenticated && account.viewer.user && (
+          <article className="account-card">
+            <span>Seguranca da conta</span>
+            <strong>{account.viewer.user.emailVerified ? "Email confirmado" : "Confirmacao pendente"}</strong>
+            <p>
+              {account.viewer.user.hasPassword
+                ? "Sua conta aceita login com email e senha."
+                : "Sua conta ainda nao tem senha local. Voce pode criar uma pelo link de redefinicao."}
+            </p>
+            <small>
+              {account.viewer.user.authProviders.length > 0
+                ? `Provedores conectados: ${account.viewer.user.authProviders.join(", ")}`
+                : "Sem provedores externos conectados."}
+            </small>
+            <div className="hero-actions">
+              {!account.viewer.user.emailVerified && (
+                <button
+                  type="button"
+                  className="ghost-button"
+                  onClick={() => void handleResendVerification()}
+                  disabled={isSendingVerification}
+                >
+                  {isSendingVerification ? "Enviando..." : "Reenviar confirmacao"}
+                </button>
+              )}
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={() => void handlePasswordResetLink()}
+                disabled={isSendingResetLink}
+              >
+                {isSendingResetLink ? "Enviando..." : account.viewer.user.hasPassword ? "Trocar senha" : "Definir senha"}
+              </button>
+            </div>
+            {authActionMessage && <small>{authActionMessage}</small>}
+          </article>
+        )}
 
         <article className="account-card waitlist-card">
           <span>Versao paga de abril</span>

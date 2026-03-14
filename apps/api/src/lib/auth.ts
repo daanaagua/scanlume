@@ -1,6 +1,11 @@
 import type { Context } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 
+import {
+  isAuthEmailConfigured,
+  sendPasswordResetEmail,
+  sendVerificationEmail,
+} from "./mailer";
 import { readNumber, sha256Hex, type WorkerEnv } from "./store";
 
 const SESSION_COOKIE_NAME = "scanlume_session";
@@ -12,6 +17,8 @@ const PASSWORD_HASH_PREFIX = "pbkdf2_sha256";
 const PASSWORD_HASH_ITERATIONS = 310_000;
 const PASSWORD_HASH_BYTES = 32;
 const PASSWORD_MIN_LENGTH = 8;
+const VERIFY_EMAIL_TOKEN_TTL_SECONDS = 60 * 60 * 24;
+const RESET_PASSWORD_TOKEN_TTL_SECONDS = 60 * 60;
 
 type AppContext = Context<{ Bindings: WorkerEnv }>;
 
@@ -40,6 +47,10 @@ export type SessionViewer = {
   email: string;
   name: string;
   avatarUrl: string | null;
+  emailVerified: boolean;
+  emailVerifiedAt: string | null;
+  hasPassword: boolean;
+  authProviders: string[];
 };
 
 export function getWebOrigin(env: WorkerEnv) {
@@ -129,26 +140,21 @@ export async function getSessionViewer(c: AppContext, env: WorkerEnv) {
   const tokenHash = await sha256Hex(token);
   const now = new Date().toISOString();
   const row = await env.DB.prepare(
-    `SELECT users.id, users.email, users.name, users.avatar_url
+    `SELECT users.id
      FROM sessions
      INNER JOIN users ON users.id = sessions.user_id
      WHERE sessions.token_hash = ? AND sessions.expires_at > ?
      LIMIT 1;`,
   )
     .bind(tokenHash, now)
-    .first<{ id: string; email: string; name: string; avatar_url: string | null }>();
+    .first<{ id: string }>();
 
   if (!row) {
     deleteCookie(c, SESSION_COOKIE_NAME, buildCookieOptions(c, env, 0));
     return null;
   }
 
-  return {
-    id: row.id,
-    email: row.email,
-    name: row.name,
-    avatarUrl: row.avatar_url,
-  } satisfies SessionViewer;
+  return readViewerById(env, row.id);
 }
 
 export async function registerPasswordViewer(
@@ -193,10 +199,10 @@ export async function registerPasswordViewer(
       .run();
   } else {
     await env.DB.prepare(
-      `INSERT INTO users (id, email, name, avatar_url, created_at, updated_at, last_login_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?);`,
+      `INSERT INTO users (id, email, name, avatar_url, email_verified_at, created_at, updated_at, last_login_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
     )
-      .bind(userId, email, name, null, now, now, now)
+      .bind(userId, email, name, null, null, now, now, now)
       .run();
   }
 
@@ -220,14 +226,14 @@ export async function authenticatePasswordViewer(env: WorkerEnv, email: string, 
 
   const normalizedEmail = normalizeEmail(email);
   const row = await env.DB.prepare(
-    `SELECT users.id, users.email, users.name, users.avatar_url, password_credentials.password_hash
+    `SELECT users.id, password_credentials.password_hash
      FROM users
      INNER JOIN password_credentials ON password_credentials.user_id = users.id
      WHERE users.email = ?
      LIMIT 1;`,
   )
     .bind(normalizedEmail)
-    .first<{ id: string; email: string; name: string; avatar_url: string | null; password_hash: string }>();
+    .first<{ id: string; password_hash: string }>();
 
   if (!row || !(await verifyPassword(password, row.password_hash))) {
     throw new Error("invalid_credentials");
@@ -239,12 +245,129 @@ export async function authenticatePasswordViewer(env: WorkerEnv, email: string, 
     .bind(new Date().toISOString(), new Date().toISOString(), row.id)
     .run();
 
+  return readViewerById(env, row.id);
+}
+
+export async function requestEmailVerification(env: WorkerEnv, user: SessionViewer) {
+  const token = await issueAuthToken(env, {
+    userId: user.id,
+    email: user.email,
+    purpose: "verify_email",
+    ttlSeconds: VERIFY_EMAIL_TOKEN_TTL_SECONDS,
+  });
+
+  if (!isAuthEmailConfigured(env)) {
+    return {
+      emailDeliveryConfigured: false,
+      emailSent: false,
+    };
+  }
+
+  await sendVerificationEmail(env, {
+    email: user.email,
+    name: user.name,
+    token,
+  });
+
   return {
-    id: row.id,
+    emailDeliveryConfigured: true,
+    emailSent: true,
+  };
+}
+
+export async function requestPasswordReset(env: WorkerEnv, email: string) {
+  if (!env.DB) {
+    throw new Error("D1 binding is required for user accounts.");
+  }
+
+  const normalizedEmail = normalizeEmail(email);
+  const row = await env.DB.prepare(
+    `SELECT id, email, name FROM users WHERE email = ? LIMIT 1;`,
+  )
+    .bind(normalizedEmail)
+    .first<{ id: string; email: string; name: string }>();
+
+  if (!row) {
+    return {
+      emailDeliveryConfigured: isAuthEmailConfigured(env),
+      emailSent: false,
+    };
+  }
+
+  const token = await issueAuthToken(env, {
+    userId: row.id,
+    email: row.email,
+    purpose: "reset_password",
+    ttlSeconds: RESET_PASSWORD_TOKEN_TTL_SECONDS,
+  });
+
+  if (!isAuthEmailConfigured(env)) {
+    return {
+      emailDeliveryConfigured: false,
+      emailSent: false,
+    };
+  }
+
+  await sendPasswordResetEmail(env, {
     email: row.email,
     name: row.name,
-    avatarUrl: row.avatar_url,
-  } satisfies SessionViewer;
+    token,
+  });
+
+  return {
+    emailDeliveryConfigured: true,
+    emailSent: true,
+  };
+}
+
+export async function verifyEmailToken(env: WorkerEnv, token: string) {
+  if (!env.DB) {
+    throw new Error("D1 binding is required for user accounts.");
+  }
+
+  const record = await consumeAuthToken(env, token, "verify_email");
+  const now = new Date().toISOString();
+
+  await env.DB.prepare(
+    `UPDATE users
+     SET email_verified_at = COALESCE(email_verified_at, ?), updated_at = ?
+     WHERE id = ?;`,
+  )
+    .bind(now, now, record.userId)
+    .run();
+
+  return readViewerById(env, record.userId);
+}
+
+export async function resetPasswordWithToken(env: WorkerEnv, token: string, password: string) {
+  if (!env.DB) {
+    throw new Error("D1 binding is required for user accounts.");
+  }
+
+  validatePassword(password);
+  const record = await consumeAuthToken(env, token, "reset_password");
+  const now = new Date().toISOString();
+  const passwordHash = await hashPassword(password);
+
+  await env.DB.prepare(
+    `INSERT INTO password_credentials (user_id, password_hash, created_at, updated_at)
+     VALUES (?, ?, ?, ?)
+     ON CONFLICT(user_id) DO UPDATE SET
+       password_hash = excluded.password_hash,
+       updated_at = excluded.updated_at;`,
+  )
+    .bind(record.userId, passwordHash, now, now)
+    .run();
+
+  await env.DB.prepare(
+    `UPDATE users
+     SET email_verified_at = COALESCE(email_verified_at, ?), updated_at = ?, last_login_at = ?
+     WHERE id = ?;`,
+  )
+    .bind(now, now, now, record.userId)
+    .run();
+
+  return readViewerById(env, record.userId);
 }
 
 export async function exchangeGoogleCode(
@@ -312,6 +435,7 @@ export async function upsertGoogleViewer(env: WorkerEnv, profile: GoogleResolved
   const now = new Date().toISOString();
   const provider = "google";
   const email = normalizeEmail(profile.email);
+  const verifiedAt = profile.email_verified ? now : null;
   const existingOauth = await env.DB.prepare(
     `SELECT users.id, users.email, users.name, users.avatar_url
      FROM oauth_accounts
@@ -336,21 +460,22 @@ export async function upsertGoogleViewer(env: WorkerEnv, profile: GoogleResolved
     if (existingUser) {
       await env.DB.prepare(
        `UPDATE users
-         SET email = ?, name = ?, avatar_url = ?, updated_at = ?, last_login_at = ?
+         SET email = ?, name = ?, avatar_url = ?, email_verified_at = COALESCE(?, email_verified_at), updated_at = ?, last_login_at = ?
          WHERE id = ?;`,
       )
-        .bind(email, profile.name ?? email, profile.picture ?? null, now, now, userId)
+        .bind(email, profile.name ?? email, profile.picture ?? null, verifiedAt, now, now, userId)
         .run();
     } else {
       await env.DB.prepare(
-        `INSERT INTO users (id, email, name, avatar_url, created_at, updated_at, last_login_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?);`,
+        `INSERT INTO users (id, email, name, avatar_url, email_verified_at, created_at, updated_at, last_login_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
       )
         .bind(
           userId,
           email,
           profile.name ?? email,
           profile.picture ?? null,
+          verifiedAt,
           now,
           now,
           now,
@@ -370,19 +495,14 @@ export async function upsertGoogleViewer(env: WorkerEnv, profile: GoogleResolved
   } else {
     await env.DB.prepare(
        `UPDATE users
-        SET email = ?, name = ?, avatar_url = ?, updated_at = ?, last_login_at = ?
+        SET email = ?, name = ?, avatar_url = ?, email_verified_at = COALESCE(?, email_verified_at), updated_at = ?, last_login_at = ?
         WHERE id = ?;`,
     )
-      .bind(email, profile.name ?? email, profile.picture ?? null, now, now, userId)
+      .bind(email, profile.name ?? email, profile.picture ?? null, verifiedAt, now, now, userId)
       .run();
   }
 
-  return {
-    id: userId,
-    email,
-    name: profile.name ?? email,
-    avatarUrl: profile.picture ?? null,
-  } satisfies SessionViewer;
+  return readViewerById(env, userId);
 }
 
 export function sanitizeRedirectPath(value: string | undefined) {
@@ -428,27 +548,128 @@ function buildCookieOptions(c: AppContext, env: WorkerEnv, maxAge: number) {
   };
 }
 
+async function issueAuthToken(
+  env: WorkerEnv,
+  input: {
+    userId: string;
+    email: string;
+    purpose: "verify_email" | "reset_password";
+    ttlSeconds: number;
+  },
+) {
+  if (!env.DB) {
+    throw new Error("D1 binding is required for user accounts.");
+  }
+
+  const token = randomToken(32);
+  const tokenHash = await sha256Hex(token);
+  const now = new Date();
+  const createdAt = now.toISOString();
+  const expiresAt = new Date(now.getTime() + input.ttlSeconds * 1000).toISOString();
+
+  await env.DB.prepare(
+    `DELETE FROM auth_tokens WHERE user_id = ? AND purpose = ? AND consumed_at IS NULL;`,
+  )
+    .bind(input.userId, input.purpose)
+    .run();
+
+  await env.DB.prepare(
+    `INSERT INTO auth_tokens (id, user_id, purpose, email, token_hash, expires_at, consumed_at, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, NULL, ?);`,
+  )
+    .bind(crypto.randomUUID(), input.userId, input.purpose, input.email, tokenHash, expiresAt, createdAt)
+    .run();
+
+  return token;
+}
+
+async function consumeAuthToken(
+  env: WorkerEnv,
+  token: string,
+  purpose: "verify_email" | "reset_password",
+) {
+  if (!env.DB) {
+    throw new Error("D1 binding is required for user accounts.");
+  }
+
+  const tokenHash = await sha256Hex(token);
+  const now = new Date().toISOString();
+  const row = await env.DB.prepare(
+    `SELECT id, user_id, email
+     FROM auth_tokens
+     WHERE token_hash = ? AND purpose = ? AND consumed_at IS NULL AND expires_at > ?
+     LIMIT 1;`,
+  )
+    .bind(tokenHash, purpose, now)
+    .first<{ id: string; user_id: string; email: string }>();
+
+  if (!row) {
+    throw new Error("token_invalid_or_expired");
+  }
+
+  await env.DB.prepare(
+    `UPDATE auth_tokens SET consumed_at = ? WHERE id = ?;`,
+  )
+    .bind(now, row.id)
+    .run();
+
+  return {
+    id: row.id,
+    userId: row.user_id,
+    email: row.email,
+  };
+}
+
 async function readViewerById(env: WorkerEnv, userId: string) {
   if (!env.DB) {
     throw new Error("D1 binding is required for user accounts.");
   }
 
   const row = await env.DB.prepare(
-    `SELECT id, email, name, avatar_url FROM users WHERE id = ? LIMIT 1;`,
+    `SELECT id, email, name, avatar_url, email_verified_at FROM users WHERE id = ? LIMIT 1;`,
   )
     .bind(userId)
-    .first<{ id: string; email: string; name: string; avatar_url: string | null }>();
+    .first<{ id: string; email: string; name: string; avatar_url: string | null; email_verified_at: string | null }>();
 
   if (!row) {
     throw new Error("user_not_found");
   }
+
+  const authState = await readUserAuthState(env, userId);
 
   return {
     id: row.id,
     email: row.email,
     name: row.name,
     avatarUrl: row.avatar_url,
+    emailVerified: Boolean(row.email_verified_at),
+    emailVerifiedAt: row.email_verified_at,
+    hasPassword: authState.hasPassword,
+    authProviders: authState.providers,
   } satisfies SessionViewer;
+}
+
+async function readUserAuthState(env: WorkerEnv, userId: string) {
+  if (!env.DB) {
+    throw new Error("D1 binding is required for user accounts.");
+  }
+
+  const passwordRow = await env.DB.prepare(
+    `SELECT user_id FROM password_credentials WHERE user_id = ? LIMIT 1;`,
+  )
+    .bind(userId)
+    .first<{ user_id: string }>();
+
+  const providerRows = await env.DB.prepare(
+    `SELECT provider FROM oauth_accounts WHERE user_id = ? ORDER BY provider ASC;`,
+  )
+    .bind(userId)
+    .all<{ provider: string }>();
+
+  return {
+    hasPassword: Boolean(passwordRow),
+    providers: (providerRows.results ?? []).map((row) => row.provider),
+  };
 }
 
 function resolveRegisteredName(

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { loginWithPassword, registerWithPassword, startGoogleLogin } from "@/lib/auth";
@@ -178,6 +179,12 @@ export function AuthDialog({
                 ? "Entrar com email"
                 : "Criar conta com email"}
           </button>
+
+          {mode === "login" && (
+            <Link href="/esqueci-a-senha" className="auth-inline-link" onClick={onClose}>
+              Esqueci minha senha
+            </Link>
+          )}
         </form>
 
         <p className="auth-modal-note">

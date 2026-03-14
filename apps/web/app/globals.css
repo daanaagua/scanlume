@@ -452,6 +452,11 @@ main {
   color: #9c2f2f;
 }
 
+.auth-inline-link {
+  color: var(--accent-strong);
+  justify-self: start;
+}
+
 .auth-modal-note {
   font-size: 0.92rem;
   line-height: 1.6;

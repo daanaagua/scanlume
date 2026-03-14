@@ -23,6 +23,8 @@
     "ARK_API_BASE": "https://ark.cn-beijing.volces.com/api/v3",
     "WEB_ORIGIN": "https://www.scanlume.com",
     "COOKIE_DOMAIN": ".scanlume.com",
+    "AUTH_EMAIL_FROM": "Scanlume <no-reply@scanlume.com>",
+    "AUTH_EMAIL_REPLY_TO": "suporte@scanlume.com",
     "DAILY_IMAGE_LIMIT": "5",
     "DAILY_CREDIT_LIMIT": "5",
     "LOGGED_IN_DAILY_IMAGE_LIMIT": "100",

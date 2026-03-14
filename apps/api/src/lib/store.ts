@@ -9,6 +9,9 @@ export interface WorkerEnv {
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
   GOOGLE_REDIRECT_URI?: string;
+  RESEND_API_KEY?: string;
+  AUTH_EMAIL_FROM?: string;
+  AUTH_EMAIL_REPLY_TO?: string;
   TURNSTILE_SECRET_KEY?: string;
   DAILY_IMAGE_LIMIT?: string;
   DAILY_CREDIT_LIMIT?: string;

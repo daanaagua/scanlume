@@ -12,6 +12,10 @@ type AuthResponse = {
     email: string;
     name: string;
     avatarUrl: string | null;
+    emailVerified: boolean;
+    emailVerifiedAt: string | null;
+    hasPassword: boolean;
+    authProviders: string[];
   } | null;
 };
 

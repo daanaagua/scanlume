@@ -17,8 +17,12 @@ import {
   randomToken,
   readOauthState,
   registerPasswordViewer,
+  requestEmailVerification,
+  requestPasswordReset,
+  resetPasswordWithToken,
   sanitizeRedirectPath,
   setOauthState,
+  verifyEmailToken,
   upsertGoogleViewer,
 } from "./lib/auth";
 import {
@@ -34,8 +38,11 @@ import {
   SUPPORT_SYSTEM_PROMPT,
 } from "./lib/prompts";
 import {
+  authForgotPasswordSchema,
   authLoginSchema,
   authRegisterSchema,
+  authResetPasswordSchema,
+  authVerifyEmailSchema,
   formattedBlocksEnvelopeSchema,
   formattedJsonSchema,
   ocrRequestSchema,
@@ -125,6 +132,9 @@ app.get("/", (c) =>
       "/v1/waitlist/join",
       "/v1/auth/register",
       "/v1/auth/login",
+      "/v1/auth/forgot-password",
+      "/v1/auth/reset-password",
+      "/v1/auth/verify-email",
       "/v1/auth/google/start",
       "/v1/support/chat",
       "/v1/ocr",
@@ -138,6 +148,7 @@ app.get("/v1/health", (c) =>
     provider: "ark",
     modelConfigured: Boolean(c.env.ARK_MODEL),
     googleAuthConfigured: isGoogleAuthConfigured(c.env),
+    authEmailConfigured: Boolean(c.env.RESEND_API_KEY && c.env.AUTH_EMAIL_FROM),
     turnstileConfigured: Boolean(c.env.TURNSTILE_SECRET_KEY),
     d1Configured: Boolean(c.env.DB),
     kvConfigured: Boolean(c.env.RATE_LIMITS),
@@ -348,6 +359,12 @@ app.post("/v1/auth/register", async (c) => {
   try {
     const user = await registerPasswordViewer(c.env, parsed.data);
     await createUserSession(c, c.env, user.id);
+    const verification = user.emailVerified
+      ? { emailDeliveryConfigured: Boolean(c.env.RESEND_API_KEY && c.env.AUTH_EMAIL_FROM), emailSent: false }
+      : await requestEmailVerification(c.env, user).catch(() => ({
+          emailDeliveryConfigured: Boolean(c.env.RESEND_API_KEY && c.env.AUTH_EMAIL_FROM),
+          emailSent: false,
+        }));
 
     return c.json({
       ok: true,
@@ -355,6 +372,7 @@ app.post("/v1/auth/register", async (c) => {
         authenticated: true,
         user,
       },
+      verification,
     });
   } catch (error) {
     return c.json(toAuthErrorPayload(error), toAuthErrorStatus(error));
@@ -379,6 +397,81 @@ app.post("/v1/auth/login", async (c) => {
         user,
       },
     });
+  } catch (error) {
+    return c.json(toAuthErrorPayload(error), toAuthErrorStatus(error));
+  }
+});
+
+app.post("/v1/auth/forgot-password", async (c) => {
+  const payload = await c.req.json().catch(() => null);
+  const parsed = authForgotPasswordSchema.safeParse(payload);
+  if (!parsed.success) {
+    return c.json({ error: "Invalid forgot password payload.", details: parsed.error.flatten() }, 400);
+  }
+
+  try {
+    const result = await requestPasswordReset(c.env, parsed.data.email);
+    return c.json({
+      ok: true,
+      emailDeliveryConfigured: result.emailDeliveryConfigured,
+      message:
+        result.emailDeliveryConfigured
+          ? "Se o email existir, enviaremos um link de redefinicao em instantes."
+          : "O fluxo foi preparado, mas o envio de email ainda nao esta configurado no ambiente.",
+    });
+  } catch (error) {
+    return c.json(toAuthErrorPayload(error), toAuthErrorStatus(error));
+  }
+});
+
+app.post("/v1/auth/verify-email", async (c) => {
+  const payload = await c.req.json().catch(() => null);
+  const parsed = authVerifyEmailSchema.safeParse(payload);
+  if (!parsed.success) {
+    return c.json({ error: "Invalid verification payload.", details: parsed.error.flatten() }, 400);
+  }
+
+  try {
+    const user = await verifyEmailToken(c.env, parsed.data.token);
+    return c.json({ ok: true, user });
+  } catch (error) {
+    return c.json(toAuthErrorPayload(error), toAuthErrorStatus(error));
+  }
+});
+
+app.post("/v1/auth/resend-verification", async (c) => {
+  const user = await getSessionViewer(c, c.env);
+  if (!user) {
+    return c.json({ error: "Authentication required." }, 401);
+  }
+
+  if (user.emailVerified) {
+    return c.json({ ok: true, emailSent: false, alreadyVerified: true });
+  }
+
+  try {
+    const result = await requestEmailVerification(c.env, user);
+    return c.json({
+      ok: true,
+      emailSent: result.emailSent,
+      emailDeliveryConfigured: result.emailDeliveryConfigured,
+    });
+  } catch (error) {
+    return c.json(toAuthErrorPayload(error), toAuthErrorStatus(error));
+  }
+});
+
+app.post("/v1/auth/reset-password", async (c) => {
+  const payload = await c.req.json().catch(() => null);
+  const parsed = authResetPasswordSchema.safeParse(payload);
+  if (!parsed.success) {
+    return c.json({ error: "Invalid reset password payload.", details: parsed.error.flatten() }, 400);
+  }
+
+  try {
+    const user = await resetPasswordWithToken(c.env, parsed.data.token, parsed.data.password);
+    await createUserSession(c, c.env, user.id);
+    return c.json({ ok: true, viewer: { authenticated: true, user } });
   } catch (error) {
     return c.json(toAuthErrorPayload(error), toAuthErrorStatus(error));
   }
@@ -1063,6 +1156,18 @@ function toAuthErrorStatus(error: unknown) {
     return 400;
   }
 
+  if (message === "token_invalid_or_expired") {
+    return 400;
+  }
+
+  if (message === "email_delivery_not_configured") {
+    return 503;
+  }
+
+  if (message.startsWith("email_delivery_failed:")) {
+    return 502;
+  }
+
   return 500;
 }
 
@@ -1079,6 +1184,18 @@ function toAuthErrorPayload(error: unknown) {
 
   if (message === "password_too_short") {
     return { error: "Password must contain at least 8 characters." };
+  }
+
+  if (message === "token_invalid_or_expired") {
+    return { error: "This link is invalid or has already expired." };
+  }
+
+  if (message === "email_delivery_not_configured") {
+    return { error: "Email delivery is not configured in this environment yet." };
+  }
+
+  if (message.startsWith("email_delivery_failed:")) {
+    return { error: "We could not send the email right now. Try again in a moment." };
   }
 
   return { error: "Authentication failed." };

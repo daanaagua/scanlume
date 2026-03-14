@@ -5,6 +5,10 @@ export type AuthUser = {
   email: string;
   name: string;
   avatarUrl: string | null;
+  emailVerified: boolean;
+  emailVerifiedAt: string | null;
+  hasPassword: boolean;
+  authProviders: string[];
 };
 
 export type AuthResult = {
@@ -13,6 +17,15 @@ export type AuthResult = {
     authenticated: true;
     user: AuthUser;
   };
+};
+
+export type AuthActionResult = {
+  ok: true;
+  message?: string;
+  emailDeliveryConfigured?: boolean;
+  emailSent?: boolean;
+  alreadyVerified?: boolean;
+  user?: AuthUser;
 };
 
 type AuthPayload = {
@@ -32,7 +45,23 @@ export async function registerWithPassword(input: { name: string; email: string;
   return postAuthRequest("/v1/auth/register", input);
 }
 
-async function postAuthRequest(path: string, payload: Record<string, string>) {
+export async function requestPasswordReset(input: { email: string }) {
+  return postAuthRequest<AuthActionResult>("/v1/auth/forgot-password", input);
+}
+
+export async function resetPassword(input: { token: string; password: string }) {
+  return postAuthRequest<AuthResult>("/v1/auth/reset-password", input);
+}
+
+export async function verifyEmail(input: { token: string }) {
+  return postAuthRequest<AuthActionResult>("/v1/auth/verify-email", input);
+}
+
+export async function resendVerificationEmail() {
+  return postAuthRequest<AuthActionResult>("/v1/auth/resend-verification", {});
+}
+
+async function postAuthRequest<T>(path: string, payload: Record<string, string>) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: "POST",
     credentials: "include",
@@ -47,5 +76,5 @@ async function postAuthRequest(path: string, payload: Record<string, string>) {
     throw new Error(data?.error ?? "Nao foi possivel autenticar agora.");
   }
 
-  return (await response.json()) as AuthResult;
+  return (await response.json()) as T;
 }
