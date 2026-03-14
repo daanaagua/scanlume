@@ -6,10 +6,11 @@ import { OcrWorkspace } from "@/components/ocr-workspace";
 import {
   buildMetadata,
   homeFaqs,
-  NAV_LINKS,
   OCR_WORKSPACE_ID,
+  SEO_LINKS,
   SITE_NAME,
   SITE_URL,
+  toolPageContent,
 } from "@/lib/site";
 
 export const metadata = buildMetadata({
@@ -143,18 +144,25 @@ export default function Home() {
       <section className="section-band">
         <div className="container">
           <div className="section-heading">
-            <p className="eyebrow">Paginas alvo</p>
-            <h2>Uma pagina principal mais uma rede de long tails com intencao clara.</h2>
+            <p className="eyebrow">Paginas indexaveis</p>
+            <h2>Uma malha de paginas para formatos, cenarios e capacidades em pt-BR.</h2>
+            <p>
+              Em vez de replicar a mesma copy para sinonimos, o cluster abaixo separa formato de arquivo, contexto de uso e capacidade do OCR.
+            </p>
           </div>
 
           <div className="related-grid">
-            {NAV_LINKS.map((link) => (
-              <Link key={link.href} href={link.href} className="related-card">
-                <span>{link.label}</span>
-                <strong>{link.label}</strong>
-                <p>Pagina dedicada com foco em SEO, FAQ e acesso rapido a ferramenta.</p>
-              </Link>
-            ))}
+            {SEO_LINKS.map((link) => {
+              const page = toolPageContent[link.href.replace("/", "") as keyof typeof toolPageContent];
+
+              return (
+                <Link key={link.href} href={link.href} className="related-card">
+                  <span>{page.eyebrow}</span>
+                  <strong>{page.label}</strong>
+                  <p>{page.lead}</p>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>

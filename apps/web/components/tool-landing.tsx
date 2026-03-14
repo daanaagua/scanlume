@@ -4,7 +4,6 @@ import { FaqList } from "@/components/faq-list";
 import { JsonLd } from "@/components/json-ld";
 import { OcrWorkspace } from "@/components/ocr-workspace";
 import {
-  homeFaqs,
   OCR_WORKSPACE_ID,
   SITE_NAME,
   SITE_URL,
@@ -41,7 +40,7 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
         data={{
           "@context": "https://schema.org",
           "@type": "FAQPage",
-          mainEntity: homeFaqs.map((item) => ({
+          mainEntity: page.faq.map((item) => ({
             "@type": "Question",
             name: item.question,
             acceptedAnswer: {
@@ -85,9 +84,9 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
               <span className="hero-action-note">Teste gratis direto no navegador</span>
             </div>
             <div className="hero-bullets">
-              <span>Gratis para testar</span>
-              <span>Sem instalar aplicativo</span>
-              <span>TXT, Markdown e HTML</span>
+              {page.heroBullets.map((item) => (
+                <span key={item}>{item}</span>
+              ))}
             </div>
           </div>
 
@@ -111,7 +110,7 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
 
       <section id={OCR_WORKSPACE_ID} className="section-band">
         <div className="container">
-          <OcrWorkspace defaultMode={slug === "imagem-para-word" ? "formatted" : "simple"} />
+          <OcrWorkspace defaultMode={page.defaultMode ?? "simple"} />
         </div>
       </section>
 
@@ -119,34 +118,42 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
         <div className="container split-content">
           <div>
             <p className="eyebrow">Quando usar</p>
-            <h2>Feito para prints, landing pages, banners e materiais leves.</h2>
-            <p>
-              O foco do Scanlume nao e reconstruir layout pixel por pixel. O objetivo e extrair o texto principal com uma leitura clara para copiar, revisar e reaproveitar rapido.
-            </p>
+            <h2>{page.useCasesHeading}</h2>
+            <p>{page.useCasesLead}</p>
           </div>
 
           <div className="check-grid">
-            <div className="check-card">
-              <strong>Simple OCR</strong>
-              <p>Ideal para capturas simples, posters, recortes de tela e texto puro de uso rapido.</p>
-            </div>
-            <div className="check-card">
-              <strong>Formatted Text</strong>
-              <p>Melhor para paginas, interfaces, criativos, app screens e conteudo que depois vai para Word ou Markdown.</p>
-            </div>
-            <div className="check-card">
-              <strong>Batch ready</strong>
-              <p>Lotes de ate 10 imagens com download em ZIP para acelerar tarefas repetidas.</p>
-            </div>
-            <div className="check-card">
-              <strong>SEO-first</strong>
-              <p>Paginas em pt-BR, SSR, FAQ e slugs pensados para `imagem para texto` e long tails correlatas.</p>
-            </div>
+            {page.useCases.map((item) => (
+              <div key={item.title} className="check-card">
+                <strong>{item.title}</strong>
+                <p>{item.body}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       <section className="section-band">
+        <div className="container">
+          <div className="section-heading">
+            <p className="eyebrow">Como funciona</p>
+            <h2>{page.stepsHeading}</h2>
+            <p>{page.stepsLead}</p>
+          </div>
+
+          <div className="timeline-grid">
+            {page.steps.map((item, index) => (
+              <article key={item.title} className="timeline-step">
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <strong>{item.title}</strong>
+                <p>{item.body}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="section-band muted-band">
         <div className="container">
           <div className="section-heading">
             <p className="eyebrow">Paginas relacionadas</p>
@@ -169,9 +176,9 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
         <div className="container">
           <div className="section-heading">
             <p className="eyebrow">FAQ</p>
-            <h2>Perguntas comuns sobre OCR online em pt-BR.</h2>
+            <h2>{page.faqHeading}</h2>
           </div>
-          <FaqList items={homeFaqs} />
+          <FaqList items={page.faq} />
         </div>
       </section>
     </>

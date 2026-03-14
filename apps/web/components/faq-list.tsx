@@ -1,7 +1,7 @@
 export function FaqList({
   items,
 }: {
-  items: Array<{ question: string; answer: string }>;
+  items: ReadonlyArray<{ question: string; answer: string }>;
 }) {
   return (
     <div className="faq-list">

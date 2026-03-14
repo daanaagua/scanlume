@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { NAV_LINKS, SITE_NAME, TRUST_LINKS } from "@/lib/site";
+import { NAV_LINKS, SITE_NAME, TOOL_SUPPORT_LINKS, TRUST_LINKS } from "@/lib/site";
 
 export function SiteFooter() {
   return (
@@ -29,6 +29,17 @@ export function SiteFooter() {
           <p className="footer-kicker">Confianca</p>
           <ul className="footer-links">
             {TRUST_LINKS.map((link) => (
+              <li key={link.href}>
+                <Link href={link.href}>{link.label}</Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div>
+          <p className="footer-kicker">Cenarios SEO</p>
+          <ul className="footer-links">
+            {TOOL_SUPPORT_LINKS.map((link) => (
               <li key={link.href}>
                 <Link href={link.href}>{link.label}</Link>
               </li>
