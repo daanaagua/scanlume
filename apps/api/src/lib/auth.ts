@@ -297,12 +297,19 @@ export async function requestPasswordReset(env: WorkerEnv, email: string) {
 
   const normalizedEmail = normalizeEmail(email);
   const row = await env.DB.prepare(
-    `SELECT id, email, name FROM users WHERE email = ? LIMIT 1;`,
+    `SELECT id, email, name, email_verified_at FROM users WHERE email = ? LIMIT 1;`,
   )
     .bind(normalizedEmail)
-    .first<{ id: string; email: string; name: string }>();
+    .first<{ id: string; email: string; name: string; email_verified_at: string | null }>();
 
   if (!row) {
+    return {
+      emailDeliveryConfigured: isAuthEmailConfigured(env),
+      emailSent: false,
+    };
+  }
+
+  if (!row.email_verified_at) {
     return {
       emailDeliveryConfigured: isAuthEmailConfigured(env),
       emailSent: false,
@@ -361,6 +368,10 @@ export async function resetPasswordWithToken(env: WorkerEnv, token: string, pass
 
   validatePassword(password);
   const record = await consumeAuthToken(env, token, "reset_password");
+  const viewer = await readViewerById(env, record.userId);
+  if (!viewer.emailVerified) {
+    throw new Error("email_not_verified");
+  }
   const now = new Date().toISOString();
   const passwordHash = await hashPassword(password);
 

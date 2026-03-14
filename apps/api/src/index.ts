@@ -1223,7 +1223,7 @@ function toAuthErrorPayload(error: unknown) {
   }
 
   if (message === "email_not_verified") {
-    return { error: "Please confirm your email before signing in." };
+    return { error: "Please confirm your email before signing in or using password recovery." };
   }
 
   if (message === "password_too_short") {

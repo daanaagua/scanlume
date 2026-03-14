@@ -17,7 +17,7 @@ export default function ForgotPasswordPage() {
         <div className="account-hero-card legal-copy">
           <p className="eyebrow">Conta</p>
           <h1>Esqueci minha senha</h1>
-          <p>Informe o email da conta. Se ele existir, enviaremos um link para criar uma nova senha.</p>
+          <p>Informe o email da conta. Se ele existir e ja tiver sido confirmado, enviaremos um link para criar uma nova senha.</p>
         </div>
 
         <div className="account-card">
