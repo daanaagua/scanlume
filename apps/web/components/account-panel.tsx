@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { AuthDialog } from "@/components/auth-dialog";
 import { getOrCreateBrowserId } from "@/lib/browser-id";
 import { fetchAccount, joinWaitlist, type AccountResponse } from "@/lib/account";
 
@@ -10,6 +11,7 @@ export function AccountPanel() {
   const [error, setError] = useState<string | null>(null);
   const [waitlistError, setWaitlistError] = useState<string | null>(null);
   const [isJoiningWaitlist, setIsJoiningWaitlist] = useState(false);
+  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
 
   useEffect(() => {
     const browserId = getOrCreateBrowserId();
@@ -88,8 +90,15 @@ export function AccountPanel() {
         <p>
           {account.viewer.authenticated
             ? `Seu plano atual e ${account.currentPlan.label}. ${usageLabel ?? ""}`
-            : "Entre com Google para transformar o uso atual em uma conta permanente do Scanlume."}
+            : "Entre com email ou Google para transformar o uso atual em uma conta permanente do Scanlume."}
         </p>
+        {!account.viewer.authenticated && (
+          <div className="hero-actions">
+            <button type="button" className="solid-button" onClick={() => setIsAuthDialogOpen(true)}>
+              Entrar ou criar conta
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="account-grid">
@@ -123,14 +132,14 @@ export function AccountPanel() {
 
         <article className="account-card waitlist-card">
           <span>Versao paga de abril</span>
-          <strong>{account.waitlist.count} pessoa(s) na fila</strong>
-          <p>
-            {account.viewer.authenticated
-              ? account.waitlist.joined
-                ? "Voce ja entrou na lista de espera. Quando a versao paga abrir, enviaremos aviso por email."
-                : "Quer prioridade quando os planos pagos forem liberados? Entre na lista de espera."
-              : "Entre com Google para entrar na lista de espera e receber aviso por email quando a cobranca abrir."}
-          </p>
+            <strong>{account.waitlist.count} pessoa(s) na fila</strong>
+            <p>
+              {account.viewer.authenticated
+                ? account.waitlist.joined
+                  ? "Voce ja entrou na lista de espera. Quando a versao paga abrir, enviaremos aviso por email."
+                  : "Quer prioridade quando os planos pagos forem liberados? Entre na lista de espera."
+                : "Entre com email ou Google para entrar na lista de espera e receber aviso por email quando a cobranca abrir."}
+            </p>
           {account.viewer.authenticated ? (
             <button
               type="button"
@@ -172,6 +181,8 @@ export function AccountPanel() {
           </article>
         ))}
       </div>
+
+      <AuthDialog open={isAuthDialogOpen} onClose={() => setIsAuthDialogOpen(false)} defaultMode="register" />
     </section>
   );
 }

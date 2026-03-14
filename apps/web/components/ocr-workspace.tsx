@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { AuthDialog } from "@/components/auth-dialog";
 import { getOrCreateBrowserId } from "@/lib/browser-id";
 import { downloadBatchZip, downloadHtmlFile, downloadTextFile } from "@/lib/downloads";
 import { API_BASE_URL } from "@/lib/site";
@@ -136,6 +137,7 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [limits, setLimits] = useState<LimitsResponse | null>(null);
+  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const [processingState, setProcessingState] = useState<ProcessingState | null>(null);
   const [progressTick, setProgressTick] = useState(() => Date.now());
   const [animatedPercent, setAnimatedPercent] = useState(0);
@@ -267,7 +269,7 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
     }, 90);
 
     return () => window.clearInterval(timer);
-  }, [progressSummary?.percent]);
+  }, [progressSummary]);
 
   function validateFiles(files: File[]) {
     const maxFiles = limits?.limits.maxBatchFiles ?? 10;
@@ -447,11 +449,6 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
     }
   }
 
-  function startGoogleLogin() {
-    const redirectTo = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-    window.location.href = `${API_BASE_URL}/v1/auth/google/start?redirectTo=${encodeURIComponent(redirectTo)}`;
-  }
-
   function handleDownload(file: SelectedFile, payload: ResultPayload) {
     const name = baseName(file.file.name);
     if (mode === "simple" || activeFormat === "txt") {
@@ -613,10 +610,10 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
           {limits && !limits.viewer.authenticated && (
             <div className="login-promo">
               <div className="login-promo-copy">
-                <strong>Entre com Google para transformar seu teste em uma conta gratuita</strong>
+                <strong>Entre com email ou Google para transformar seu teste em uma conta gratuita</strong>
                 <small>Usuarios conectados recebem uma cota diaria maior e um espaco de conta proprio.</small>
               </div>
-              <button type="button" className="solid-button" onClick={startGoogleLogin}>
+              <button type="button" className="solid-button" onClick={() => setIsAuthDialogOpen(true)}>
                 Entrar agora
               </button>
             </div>
@@ -792,6 +789,7 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
           )}
         </div>
       </div>
+      <AuthDialog open={isAuthDialogOpen} onClose={() => setIsAuthDialogOpen(false)} defaultMode="register" />
     </section>
   );
 }

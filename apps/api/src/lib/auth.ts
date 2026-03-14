@@ -8,6 +8,10 @@ const OAUTH_STATE_COOKIE_NAME = "scanlume_google_state";
 const OAUTH_REDIRECT_COOKIE_NAME = "scanlume_post_auth_redirect";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 const OAUTH_STATE_TTL_SECONDS = 60 * 10;
+const PASSWORD_HASH_PREFIX = "pbkdf2_sha256";
+const PASSWORD_HASH_ITERATIONS = 310_000;
+const PASSWORD_HASH_BYTES = 32;
+const PASSWORD_MIN_LENGTH = 8;
 
 type AppContext = Context<{ Bindings: WorkerEnv }>;
 
@@ -56,6 +60,10 @@ export function getLoggedInDailyCreditLimit(env: WorkerEnv) {
 
 export function isGoogleAuthConfigured(env: WorkerEnv) {
   return Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
+}
+
+export function normalizeEmail(email: string) {
+  return email.trim().toLowerCase();
 }
 
 export function setOauthState(c: AppContext, env: WorkerEnv, state: string, redirectTo: string) {
@@ -143,6 +151,102 @@ export async function getSessionViewer(c: AppContext, env: WorkerEnv) {
   } satisfies SessionViewer;
 }
 
+export async function registerPasswordViewer(
+  env: WorkerEnv,
+  input: { name: string; email: string; password: string },
+) {
+  if (!env.DB) {
+    throw new Error("D1 binding is required for user accounts.");
+  }
+
+  validatePassword(input.password);
+
+  const email = normalizeEmail(input.email);
+  const name = normalizeName(input.name, email);
+  const now = new Date().toISOString();
+  const passwordHash = await hashPassword(input.password);
+  const existingUser = await env.DB.prepare(
+    `SELECT id, email, name, avatar_url FROM users WHERE email = ? LIMIT 1;`,
+  )
+    .bind(email)
+    .first<{ id: string; email: string; name: string; avatar_url: string | null }>();
+
+  const userId = existingUser?.id ?? crypto.randomUUID();
+
+  if (existingUser) {
+    const existingPassword = await env.DB.prepare(
+      `SELECT user_id FROM password_credentials WHERE user_id = ? LIMIT 1;`,
+    )
+      .bind(existingUser.id)
+      .first<{ user_id: string }>();
+
+    if (existingPassword) {
+      throw new Error("email_already_registered");
+    }
+
+    await env.DB.prepare(
+      `UPDATE users
+       SET email = ?, name = ?, updated_at = ?
+       WHERE id = ?;`,
+    )
+      .bind(email, resolveRegisteredName(existingUser, name), now, existingUser.id)
+      .run();
+  } else {
+    await env.DB.prepare(
+      `INSERT INTO users (id, email, name, avatar_url, created_at, updated_at, last_login_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?);`,
+    )
+      .bind(userId, email, name, null, now, now, now)
+      .run();
+  }
+
+  await env.DB.prepare(
+    `INSERT INTO password_credentials (user_id, password_hash, created_at, updated_at)
+     VALUES (?, ?, ?, ?)
+     ON CONFLICT(user_id) DO UPDATE SET
+       password_hash = excluded.password_hash,
+       updated_at = excluded.updated_at;`,
+  )
+    .bind(userId, passwordHash, now, now)
+    .run();
+
+  return readViewerById(env, userId);
+}
+
+export async function authenticatePasswordViewer(env: WorkerEnv, email: string, password: string) {
+  if (!env.DB) {
+    throw new Error("D1 binding is required for user accounts.");
+  }
+
+  const normalizedEmail = normalizeEmail(email);
+  const row = await env.DB.prepare(
+    `SELECT users.id, users.email, users.name, users.avatar_url, password_credentials.password_hash
+     FROM users
+     INNER JOIN password_credentials ON password_credentials.user_id = users.id
+     WHERE users.email = ?
+     LIMIT 1;`,
+  )
+    .bind(normalizedEmail)
+    .first<{ id: string; email: string; name: string; avatar_url: string | null; password_hash: string }>();
+
+  if (!row || !(await verifyPassword(password, row.password_hash))) {
+    throw new Error("invalid_credentials");
+  }
+
+  await env.DB.prepare(
+    `UPDATE users SET last_login_at = ?, updated_at = ? WHERE id = ?;`,
+  )
+    .bind(new Date().toISOString(), new Date().toISOString(), row.id)
+    .run();
+
+  return {
+    id: row.id,
+    email: row.email,
+    name: row.name,
+    avatarUrl: row.avatar_url,
+  } satisfies SessionViewer;
+}
+
 export async function exchangeGoogleCode(
   env: WorkerEnv,
   code: string,
@@ -207,6 +311,7 @@ export async function upsertGoogleViewer(env: WorkerEnv, profile: GoogleResolved
 
   const now = new Date().toISOString();
   const provider = "google";
+  const email = normalizeEmail(profile.email);
   const existingOauth = await env.DB.prepare(
     `SELECT users.id, users.email, users.name, users.avatar_url
      FROM oauth_accounts
@@ -223,18 +328,18 @@ export async function upsertGoogleViewer(env: WorkerEnv, profile: GoogleResolved
     const existingUser = await env.DB.prepare(
       `SELECT id FROM users WHERE email = ? LIMIT 1;`,
     )
-      .bind(profile.email)
+      .bind(email)
       .first<{ id: string }>();
 
     userId = existingUser?.id ?? crypto.randomUUID();
 
     if (existingUser) {
       await env.DB.prepare(
-        `UPDATE users
+       `UPDATE users
          SET email = ?, name = ?, avatar_url = ?, updated_at = ?, last_login_at = ?
          WHERE id = ?;`,
       )
-        .bind(profile.email, profile.name ?? profile.email, profile.picture ?? null, now, now, userId)
+        .bind(email, profile.name ?? email, profile.picture ?? null, now, now, userId)
         .run();
     } else {
       await env.DB.prepare(
@@ -243,8 +348,8 @@ export async function upsertGoogleViewer(env: WorkerEnv, profile: GoogleResolved
       )
         .bind(
           userId,
-          profile.email,
-          profile.name ?? profile.email,
+          email,
+          profile.name ?? email,
           profile.picture ?? null,
           now,
           now,
@@ -264,18 +369,18 @@ export async function upsertGoogleViewer(env: WorkerEnv, profile: GoogleResolved
       .run();
   } else {
     await env.DB.prepare(
-      `UPDATE users
-       SET email = ?, name = ?, avatar_url = ?, updated_at = ?, last_login_at = ?
-       WHERE id = ?;`,
+       `UPDATE users
+        SET email = ?, name = ?, avatar_url = ?, updated_at = ?, last_login_at = ?
+        WHERE id = ?;`,
     )
-      .bind(profile.email, profile.name ?? profile.email, profile.picture ?? null, now, now, userId)
+      .bind(email, profile.name ?? email, profile.picture ?? null, now, now, userId)
       .run();
   }
 
   return {
     id: userId,
-    email: profile.email,
-    name: profile.name ?? profile.email,
+    email,
+    name: profile.name ?? email,
     avatarUrl: profile.picture ?? null,
   } satisfies SessionViewer;
 }
@@ -321,6 +426,122 @@ function buildCookieOptions(c: AppContext, env: WorkerEnv, maxAge: number) {
     sameSite,
     domain: isLocalhost ? undefined : env.COOKIE_DOMAIN ?? ".scanlume.com",
   };
+}
+
+async function readViewerById(env: WorkerEnv, userId: string) {
+  if (!env.DB) {
+    throw new Error("D1 binding is required for user accounts.");
+  }
+
+  const row = await env.DB.prepare(
+    `SELECT id, email, name, avatar_url FROM users WHERE id = ? LIMIT 1;`,
+  )
+    .bind(userId)
+    .first<{ id: string; email: string; name: string; avatar_url: string | null }>();
+
+  if (!row) {
+    throw new Error("user_not_found");
+  }
+
+  return {
+    id: row.id,
+    email: row.email,
+    name: row.name,
+    avatarUrl: row.avatar_url,
+  } satisfies SessionViewer;
+}
+
+function resolveRegisteredName(
+  existingUser: { name: string; email: string },
+  fallbackName: string,
+) {
+  const currentName = existingUser.name.trim();
+  if (!currentName || currentName === existingUser.email) {
+    return fallbackName;
+  }
+
+  return currentName;
+}
+
+function normalizeName(name: string, fallbackEmail: string) {
+  const normalized = name.trim().replace(/\s+/g, " ");
+  return normalized || fallbackEmail;
+}
+
+function validatePassword(password: string) {
+  if (password.length < PASSWORD_MIN_LENGTH) {
+    throw new Error("password_too_short");
+  }
+}
+
+async function hashPassword(password: string) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const derived = await derivePasswordBytes(password, salt, PASSWORD_HASH_ITERATIONS);
+  return `${PASSWORD_HASH_PREFIX}$${PASSWORD_HASH_ITERATIONS}$${bytesToHex(salt)}$${bytesToHex(derived)}`;
+}
+
+async function verifyPassword(password: string, storedHash: string) {
+  const [prefix, iterationValue, saltHex, hashHex] = storedHash.split("$");
+  const iterations = Number(iterationValue);
+
+  if (
+    prefix !== PASSWORD_HASH_PREFIX ||
+    !Number.isFinite(iterations) ||
+    !saltHex ||
+    !hashHex
+  ) {
+    return false;
+  }
+
+  const salt = hexToBytes(saltHex);
+  const expected = hexToBytes(hashHex);
+  const actual = await derivePasswordBytes(password, salt, iterations);
+  return constantTimeEquals(actual, expected);
+}
+
+async function derivePasswordBytes(password: string, salt: Uint8Array, iterations: number) {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(password),
+    "PBKDF2",
+    false,
+    ["deriveBits"],
+  );
+  const bits = await crypto.subtle.deriveBits(
+    {
+      name: "PBKDF2",
+      hash: "SHA-256",
+      salt: new Uint8Array(salt),
+      iterations,
+    },
+    key,
+    PASSWORD_HASH_BYTES * 8,
+  );
+  return new Uint8Array(bits);
+}
+
+function bytesToHex(bytes: Uint8Array) {
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function hexToBytes(value: string) {
+  const bytes = new Uint8Array(value.length / 2);
+  for (let index = 0; index < value.length; index += 2) {
+    bytes[index / 2] = Number.parseInt(value.slice(index, index + 2), 16);
+  }
+  return bytes;
+}
+
+function constantTimeEquals(left: Uint8Array, right: Uint8Array) {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  let mismatch = 0;
+  for (let index = 0; index < left.length; index += 1) {
+    mismatch |= left[index] ^ right[index];
+  }
+  return mismatch === 0;
 }
 
 function base64Url(bytes: Uint8Array) {

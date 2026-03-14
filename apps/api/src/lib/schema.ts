@@ -101,6 +101,20 @@ export const supportAssistantJsonSchema = {
   },
 } as const;
 
+const authEmailSchema = z.string().trim().email().max(190).transform((value) => value.toLowerCase());
+const authPasswordSchema = z.string().min(8).max(128);
+
+export const authRegisterSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  email: authEmailSchema,
+  password: authPasswordSchema,
+});
+
+export const authLoginSchema = z.object({
+  email: authEmailSchema,
+  password: authPasswordSchema,
+});
+
 export const formattedBlockSchema = z.object({
   type: z.enum(["h1", "h2", "p", "br"]),
   text: z.string().default(""),
@@ -151,3 +165,5 @@ export type SupportAssistant = z.infer<typeof supportAssistantSchema>;
 export type SupportCategory = z.infer<typeof supportCategorySchema>;
 export type SupportChatRequest = z.infer<typeof supportChatRequestSchema>;
 export type SupportPriority = z.infer<typeof supportPrioritySchema>;
+export type AuthLoginRequest = z.infer<typeof authLoginSchema>;
+export type AuthRegisterRequest = z.infer<typeof authRegisterSchema>;

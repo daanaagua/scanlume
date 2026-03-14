@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 
 import { buildAccountSnapshot, joinWaitlist, resolveCurrentPlan, type AccountPlan } from "./lib/account";
 import {
+  authenticatePasswordViewer,
   buildGoogleAuthorizationUrl,
   clearOauthState,
   createUserSession,
@@ -15,6 +16,7 @@ import {
   isGoogleAuthConfigured,
   randomToken,
   readOauthState,
+  registerPasswordViewer,
   sanitizeRedirectPath,
   setOauthState,
   upsertGoogleViewer,
@@ -32,6 +34,8 @@ import {
   SUPPORT_SYSTEM_PROMPT,
 } from "./lib/prompts";
 import {
+  authLoginSchema,
+  authRegisterSchema,
   formattedBlocksEnvelopeSchema,
   formattedJsonSchema,
   ocrRequestSchema,
@@ -119,6 +123,8 @@ app.get("/", (c) =>
       "/v1/me",
       "/v1/account",
       "/v1/waitlist/join",
+      "/v1/auth/register",
+      "/v1/auth/login",
       "/v1/auth/google/start",
       "/v1/support/chat",
       "/v1/ocr",
@@ -330,6 +336,52 @@ app.post("/v1/support/pending-notifications/:notificationId/ack", async (c) => {
 
   await markSupportNotificationAttempt(c.env, notificationId, error || "delivery_failed", now);
   return c.json({ ok: true, status: "pending" });
+});
+
+app.post("/v1/auth/register", async (c) => {
+  const payload = await c.req.json().catch(() => null);
+  const parsed = authRegisterSchema.safeParse(payload);
+  if (!parsed.success) {
+    return c.json({ error: "Invalid registration payload.", details: parsed.error.flatten() }, 400);
+  }
+
+  try {
+    const user = await registerPasswordViewer(c.env, parsed.data);
+    await createUserSession(c, c.env, user.id);
+
+    return c.json({
+      ok: true,
+      viewer: {
+        authenticated: true,
+        user,
+      },
+    });
+  } catch (error) {
+    return c.json(toAuthErrorPayload(error), toAuthErrorStatus(error));
+  }
+});
+
+app.post("/v1/auth/login", async (c) => {
+  const payload = await c.req.json().catch(() => null);
+  const parsed = authLoginSchema.safeParse(payload);
+  if (!parsed.success) {
+    return c.json({ error: "Invalid login payload.", details: parsed.error.flatten() }, 400);
+  }
+
+  try {
+    const user = await authenticatePasswordViewer(c.env, parsed.data.email, parsed.data.password);
+    await createUserSession(c, c.env, user.id);
+
+    return c.json({
+      ok: true,
+      viewer: {
+        authenticated: true,
+        user,
+      },
+    });
+  } catch (error) {
+    return c.json(toAuthErrorPayload(error), toAuthErrorStatus(error));
+  }
 });
 
 app.get("/v1/auth/google/start", async (c) => {
@@ -994,6 +1046,42 @@ function isSupportSyncAuthorized(c: Context<AppBindings>) {
   const header = c.req.header("authorization") ?? "";
   const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
   return token.length > 0 && token === c.env.SUPPORT_SYNC_TOKEN;
+}
+
+function toAuthErrorStatus(error: unknown) {
+  const message = error instanceof Error ? error.message : "auth_failed";
+
+  if (message === "email_already_registered") {
+    return 409;
+  }
+
+  if (message === "invalid_credentials") {
+    return 401;
+  }
+
+  if (message === "password_too_short") {
+    return 400;
+  }
+
+  return 500;
+}
+
+function toAuthErrorPayload(error: unknown) {
+  const message = error instanceof Error ? error.message : "auth_failed";
+
+  if (message === "email_already_registered") {
+    return { error: "This email is already registered. Try signing in instead." };
+  }
+
+  if (message === "invalid_credentials") {
+    return { error: "Email or password is incorrect." };
+  }
+
+  if (message === "password_too_short") {
+    return { error: "Password must contain at least 8 characters." };
+  }
+
+  return { error: "Authentication failed." };
 }
 
 function clampNumber(value: number, min: number, max: number) {

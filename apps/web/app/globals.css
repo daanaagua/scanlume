@@ -341,6 +341,122 @@ main {
   gap: 0.1rem;
 }
 
+.auth-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(22, 42, 44, 0.44);
+  backdrop-filter: blur(10px);
+}
+
+.auth-modal {
+  width: min(480px, 100%);
+  display: grid;
+  gap: 1rem;
+  padding: 1.4rem;
+  border-radius: 28px;
+  background: rgba(255, 250, 240, 0.98);
+  border: 1px solid rgba(22, 42, 44, 0.1);
+  box-shadow: var(--shadow);
+}
+
+.auth-modal-head,
+.auth-field {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.auth-modal-head {
+  grid-template-columns: 1fr auto;
+  align-items: start;
+}
+
+.auth-modal-close {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid rgba(22, 42, 44, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+}
+
+.auth-modal-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.auth-modal-tabs button {
+  min-height: 2.9rem;
+  border: 1px solid rgba(22, 42, 44, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.64);
+  cursor: pointer;
+}
+
+.auth-modal-tabs button.is-active {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+  color: white;
+  box-shadow: 0 18px 34px rgba(7, 89, 76, 0.18);
+}
+
+.auth-provider-button,
+.auth-submit-button {
+  width: 100%;
+}
+
+.auth-modal-divider {
+  position: relative;
+  text-align: center;
+  color: var(--muted);
+}
+
+.auth-modal-divider::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: 1px solid rgba(22, 42, 44, 0.1);
+}
+
+.auth-modal-divider span {
+  position: relative;
+  padding: 0 0.8rem;
+  background: rgba(255, 250, 240, 0.98);
+}
+
+.auth-form {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.auth-field span,
+.auth-modal-note,
+.auth-form-error {
+  color: var(--muted);
+}
+
+.auth-field input {
+  min-height: 3rem;
+  padding: 0.8rem 0.95rem;
+  border: 1px solid rgba(22, 42, 44, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.auth-form-error {
+  color: #9c2f2f;
+}
+
+.auth-modal-note {
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
 .auth-chip small,
 .login-promo-copy small {
   color: var(--muted);

@@ -10,7 +10,6 @@ export function SupportWidget() {
 
   useEffect(() => {
     if (!isOpen) {
-      setPanelStyle(undefined);
       return;
     }
 

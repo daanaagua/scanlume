@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { AuthDialog } from "@/components/auth-dialog";
 import { getOrCreateBrowserId } from "@/lib/browser-id";
 import { fetchAccount, joinWaitlist, type AccountResponse } from "@/lib/account";
 import { API_BASE_URL } from "@/lib/site";
@@ -12,6 +13,7 @@ export function AuthControls() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isJoiningWaitlist, setIsJoiningWaitlist] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -54,11 +56,6 @@ export function AuthControls() {
     return name ? name.split(/\s+/)[0] : "Conta";
   }, [account?.viewer.user?.name]);
 
-  function handleGoogleLogin() {
-    const redirectTo = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-    window.location.href = `${API_BASE_URL}/v1/auth/google/start?redirectTo=${encodeURIComponent(redirectTo)}`;
-  }
-
   async function handleLogout() {
     setIsLoggingOut(true);
 
@@ -95,10 +92,13 @@ export function AuthControls() {
 
   if (!account?.viewer.authenticated || !account.viewer.user) {
     return (
-      <button type="button" className="ghost-button auth-login-button" onClick={handleGoogleLogin}>
-        <span className="label-full">Entrar com Google</span>
-        <span className="label-short">Entrar Google</span>
-      </button>
+      <>
+        <button type="button" className="ghost-button auth-login-button" onClick={() => setIsAuthDialogOpen(true)}>
+          <span className="label-full">Entrar</span>
+          <span className="label-short">Login</span>
+        </button>
+        <AuthDialog open={isAuthDialogOpen} onClose={() => setIsAuthDialogOpen(false)} />
+      </>
     );
   }
 

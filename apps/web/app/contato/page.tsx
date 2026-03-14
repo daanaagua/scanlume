@@ -19,7 +19,7 @@ export default function ContactPage() {
             Use este canal para tirar duvidas de uso, relatar problemas de reconhecimento, sugerir melhorias de formato ou iniciar conversas comerciais.
           </p>
           <p>
-            Se voce estiver logado com Google, nome e email sao preenchidos automaticamente. Para esta fase, respondemos em ate 1 dia.
+            Se voce estiver logado com email ou Google, nome e email sao preenchidos automaticamente. Para esta fase, respondemos em ate 1 dia.
           </p>
         </div>
 
