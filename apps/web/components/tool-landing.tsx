@@ -3,6 +3,7 @@ import Link from "next/link";
 import { FaqList } from "@/components/faq-list";
 import { JsonLd } from "@/components/json-ld";
 import { OcrWorkspace } from "@/components/ocr-workspace";
+import { BLOG_POSTS, BLOG_PATH } from "@/lib/blog";
 import {
   OCR_WORKSPACE_ID,
   SITE_NAME,
@@ -15,6 +16,7 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
   const page = toolPageContent[slug];
   const relatedPages = Object.entries(toolPageContent).filter(([key]) => key !== slug);
   const canonical = `${SITE_URL}/${slug}`;
+  const featuredPosts = BLOG_POSTS.slice(0, 3);
 
   return (
     <>
@@ -166,6 +168,33 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
                 <span>{entry.eyebrow}</span>
                 <strong>{entry.h1}</strong>
                 <p>{entry.lead}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="section-band">
+        <div className="container split-content blog-related-band">
+          <div className="section-heading">
+            <p className="eyebrow">Do blog</p>
+            <h2>Quer contexto antes do upload? Leia os guias de OCR.</h2>
+            <p>
+              Publicamos comparativos e benchmarks para explicar quando o OCR funciona melhor, como escolher entre JPG e PNG e qual formato faz mais sentido na exportacao.
+            </p>
+            <div className="hero-actions">
+              <Link href={BLOG_PATH} className="ghost-button large-button">
+                Abrir blog
+              </Link>
+            </div>
+          </div>
+
+          <div className="related-grid">
+            {featuredPosts.map((post) => (
+              <Link key={post.slug} href={`${BLOG_PATH}/${post.slug}`} className="related-card blog-related-card">
+                <span>{post.category}</span>
+                <strong>{post.title}</strong>
+                <p>{post.excerpt}</p>
               </Link>
             ))}
           </div>

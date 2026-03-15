@@ -176,6 +176,11 @@ export default function Home() {
             <p>
               Publicamos conteudo complementar para responder duvidas reais sobre OCR em portugues, diferenca entre formatos e exportacao para Word e Markdown.
             </p>
+            <div className="hero-actions">
+              <Link href={BLOG_PATH} className="ghost-button large-button">
+                Abrir blog
+              </Link>
+            </div>
           </div>
 
           <div className="blog-card-grid compact-blog-grid">

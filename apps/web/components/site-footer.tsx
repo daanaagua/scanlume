@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { BLOG_POSTS, BLOG_PATH } from "@/lib/blog";
 import { NAV_LINKS, SITE_NAME, TOOL_SUPPORT_LINKS, TRUST_LINKS } from "@/lib/site";
 
 export function SiteFooter() {
@@ -12,6 +13,11 @@ export function SiteFooter() {
           <p>
             Feito para converter imagem em texto online sem instalar aplicativo e sem travar o fluxo de copia.
           </p>
+          <div className="hero-actions">
+            <Link href={BLOG_PATH} className="ghost-button large-button">
+              Ler o blog
+            </Link>
+          </div>
         </div>
 
         <div>
@@ -42,6 +48,17 @@ export function SiteFooter() {
             {TOOL_SUPPORT_LINKS.map((link) => (
               <li key={link.href}>
                 <Link href={link.href}>{link.label}</Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div>
+          <p className="footer-kicker">Do blog</p>
+          <ul className="footer-links">
+            {BLOG_POSTS.map((post) => (
+              <li key={post.slug}>
+                <Link href={`${BLOG_PATH}/${post.slug}`}>{post.title}</Link>
               </li>
             ))}
           </ul>

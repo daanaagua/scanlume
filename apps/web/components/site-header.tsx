@@ -24,6 +24,7 @@ export function SiteHeader() {
               {link.label}
             </Link>
           ))}
+          <Link href="/blog">Blog</Link>
         </nav>
 
         <div className="header-actions">
