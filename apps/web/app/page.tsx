@@ -3,6 +3,7 @@ import Link from "next/link";
 import { FaqList } from "@/components/faq-list";
 import { JsonLd } from "@/components/json-ld";
 import { OcrWorkspace } from "@/components/ocr-workspace";
+import { BLOG_PATH, BLOG_POSTS } from "@/lib/blog";
 import {
   buildMetadata,
   homeFaqs,
@@ -163,6 +164,37 @@ export default function Home() {
                 </Link>
               );
             })}
+          </div>
+        </div>
+      </section>
+
+      <section className="section-band muted-band">
+        <div className="container">
+          <div className="section-heading">
+            <p className="eyebrow">Guias praticos</p>
+            <h2>Benchmarks e comparativos para apoiar a primeira indexacao.</h2>
+            <p>
+              Publicamos conteudo complementar para responder duvidas reais sobre OCR em portugues, diferenca entre formatos e exportacao para Word e Markdown.
+            </p>
+          </div>
+
+          <div className="blog-card-grid compact-blog-grid">
+            {BLOG_POSTS.map((post) => (
+              <article key={post.slug} className="blog-card-surface compact-blog-card">
+                <div className="blog-card-copy">
+                  <div className="blog-card-meta">
+                    <span>{post.category}</span>
+                    <span>{post.readTime}</span>
+                  </div>
+                  <strong>{post.title}</strong>
+                  <p>{post.excerpt}</p>
+                </div>
+
+                <Link href={`${BLOG_PATH}/${post.slug}`} className="ghost-button large-button blog-card-button">
+                  Ler guia
+                </Link>
+              </article>
+            ))}
           </div>
         </div>
       </section>
