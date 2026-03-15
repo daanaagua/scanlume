@@ -9,13 +9,6 @@ const featuredBadges = [
     height: 54,
   },
   {
-    href: "https://deeplaunch.io",
-    image: "https://deeplaunch.io/badge/badge_transparent.svg",
-    alt: "Featured on DeepLaunch.io",
-    width: 200,
-    height: 54,
-  },
-  {
     href: "https://newtool.site/item/scanlume",
     image: "https://newtool.site/badges/newtool-light.svg",
     alt: "Featured on NewTool.site",
