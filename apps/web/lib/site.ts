@@ -3,10 +3,13 @@ import type { Metadata } from "next";
 export const SITE_NAME = "Scanlume";
 export const SITE_URL = "https://www.scanlume.com";
 export const SOCIAL_IMAGE_PATH = "/opengraph-image.png";
-export const SOCIAL_IMAGE_ALT = "Preview da homepage do Scanlume com OCR simples e formatado em pt-BR";
+export const SOCIAL_IMAGE_ALT = "Previa da pagina inicial do Scanlume com OCR simples e texto formatado em pt-BR";
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8787";
 export const OCR_WORKSPACE_ID = "ocr-workspace";
+export const SIMPLE_MODE_LABEL = "OCR simples";
+export const FORMATTED_MODE_LABEL = "Texto formatado";
+export const LISTINGS_LABEL = "Onde aparecemos";
 
 export const DEFAULT_KEYWORDS = [
   "imagem para texto",
@@ -28,7 +31,7 @@ export const DEFAULT_KEYWORDS = [
 
 export const TRUST_LINKS = [
   { href: "/conta", label: "Conta" },
-  { href: "/featured-on", label: "Featured on" },
+  { href: "/featured-on", label: LISTINGS_LABEL },
   { href: "/sobre", label: "Sobre" },
   { href: "/contato", label: "Contato" },
   { href: "/privacidade", label: "Privacidade" },
@@ -42,9 +45,9 @@ export const homeFaqs = [
       "Sim. O fluxo principal foi pensado para screenshots, artes, fotos do celular e imagens JPG ou PNG com texto visivel.",
   },
   {
-    question: "Qual e a diferenca entre Simple OCR e Formatted Text?",
+    question: `Qual e a diferenca entre ${SIMPLE_MODE_LABEL} e ${FORMATTED_MODE_LABEL}?`,
     answer:
-      "Simple OCR entrega texto puro com mais velocidade. Formatted Text reorganiza o conteudo em blocos legiveis, preservando titulos, paragrafos e a hierarquia principal.",
+      `${SIMPLE_MODE_LABEL} entrega texto puro com mais velocidade. ${FORMATTED_MODE_LABEL} reorganiza o conteudo em blocos legiveis, preservando titulos, paragrafos e a hierarquia principal.`,
   },
   {
     question: "Posso baixar em Word?",
@@ -150,11 +153,11 @@ export const toolPageContent = {
       },
       {
         title: "Escolha a saida",
-        body: "Use Simple OCR para texto puro ou Formatted Text para manter a estrutura principal do conteudo.",
+        body: `Use ${SIMPLE_MODE_LABEL} para texto puro ou ${FORMATTED_MODE_LABEL} para manter a estrutura principal do conteudo.`,
       },
       {
         title: "Copie ou exporte",
-        body: "Revise o texto no preview e baixe em TXT, Markdown ou HTML para seguir o trabalho em outro lugar.",
+        body: "Revise o texto na previa e baixe em TXT, Markdown ou HTML para seguir o trabalho em outro lugar.",
       },
     ],
     faqHeading: "FAQ sobre imagem para texto online.",
@@ -167,7 +170,7 @@ export const toolPageContent = {
       {
         question: "Quando usar o modo simples e quando usar o modo formatado?",
         answer:
-          "Simple OCR e melhor para texto puro e velocidade. Formatted Text e melhor quando voce quer preservar titulos, paragrafos e uma leitura mais limpa.",
+          `${SIMPLE_MODE_LABEL} e melhor para texto puro e velocidade. ${FORMATTED_MODE_LABEL} e melhor quando voce quer preservar titulos, paragrafos e uma leitura mais limpa.`,
       },
       {
         question: "Preciso instalar aplicativo para converter imagem em texto?",
@@ -196,7 +199,7 @@ export const toolPageContent = {
     h1: "Imagem para Word com texto mais organizado e OCR com IA",
     eyebrow: "Ideal para colar no Word sem reformatar tudo do zero",
     lead:
-      "O modo Formatted Text usa OCR com IA para entregar um layout mais legivel em screenshots de paginas, app screens e materiais de marketing.",
+      `O modo ${FORMATTED_MODE_LABEL} usa OCR com IA para entregar um layout mais legivel em screenshots de paginas, telas de app e materiais de marketing.`,
     heroBullets: ["Foco em leitura organizada", "Melhor para colar no Word", "Exporta em HTML e Markdown"],
     primaryNav: true,
     defaultMode: "formatted",
@@ -304,7 +307,7 @@ export const toolPageContent = {
     ],
     stepsHeading: "OCR online sem barreira de entrada.",
     stepsLead:
-      "A interface foi montada para reduzir atrito: upload rapido, preview imediato e download em formatos simples.",
+      "A interface foi montada para reduzir atrito: upload rapido, previa imediata e download em formatos simples.",
     steps: [
       {
         title: "Abra a pagina",
@@ -316,7 +319,7 @@ export const toolPageContent = {
       },
       {
         title: "Copie o texto",
-        body: "Depois do processamento, revise no preview e leve o resultado para docs, chats internos ou sistemas de apoio.",
+        body: "Depois do processamento, revise na previa e leve o resultado para documentos, chats internos ou sistemas de apoio.",
       },
     ],
     faqHeading: "FAQ sobre OCR online.",
@@ -397,7 +400,7 @@ export const toolPageContent = {
       },
       {
         title: "Revise e baixe",
-        body: "Confirme o resultado no preview e exporte no formato que faz mais sentido para o seu fluxo.",
+        body: "Confirme o resultado na previa e exporte no formato que faz mais sentido para o seu fluxo.",
       },
     ],
     faqHeading: "FAQ sobre JPG para texto.",
@@ -466,7 +469,7 @@ export const toolPageContent = {
     ],
     stepsHeading: "Um atalho direto para screenshots em PNG.",
     stepsLead:
-      "Como PNG aparece muito em recortes de tela, o fluxo privilegia preview rapido e uma saida facil de revisar antes de copiar.",
+      "Como PNG aparece muito em recortes de tela, o fluxo privilegia previa rapida e uma saida facil de revisar antes de copiar.",
     steps: [
       {
         title: "Suba o PNG",
@@ -474,7 +477,7 @@ export const toolPageContent = {
       },
       {
         title: "Ative o melhor modo",
-        body: "Simple OCR resolve casos diretos. Formatted Text ajuda quando a captura tem varios niveis visuais e blocos.",
+        body: `${SIMPLE_MODE_LABEL} resolve casos diretos. ${FORMATTED_MODE_LABEL} ajuda quando a captura tem varios niveis visuais e blocos.`,
       },
       {
         title: "Leve para o seu fluxo",
@@ -494,7 +497,7 @@ export const toolPageContent = {
           "Quando a imagem tiver hierarquia visual, varios blocos ou estrutura de pagina, porque a saida formatada tende a ficar mais facil de reutilizar.",
       },
       {
-        question: "Posso extrair texto de app screens em PNG?",
+        question: "Posso extrair texto de telas de app em PNG?",
         answer:
           "Sim. O Scanlume foi desenhado para telas, interfaces e capturas em que o texto principal precisa ser reaproveitado rapido.",
       },
@@ -640,7 +643,7 @@ export const toolPageContent = {
       },
       {
         title: "Compartilhe o texto",
-        body: "Depois do preview, copie o conteudo ou baixe para levar para Word, docs ou mensagens internas.",
+        body: "Depois da previa, copie o conteudo ou baixe para levar para Word, documentos ou mensagens internas.",
       },
     ],
     faqHeading: "FAQ sobre extrair texto de foto.",
@@ -658,7 +661,7 @@ export const toolPageContent = {
       {
         question: "Foto de quadro branco tambem entra nesse fluxo?",
         answer:
-          "Sim, desde que o contraste permita a leitura do texto principal. Para fotos mais complexas, revisar o preview e sempre recomendado.",
+          "Sim, desde que o contraste permita a leitura do texto principal. Para fotos mais complexas, revisar a previa e sempre recomendado.",
       },
       {
         question: "Posso usar a saida da foto em docs e relatatorios?",
@@ -790,7 +793,7 @@ export const toolPageContent = {
     ],
     stepsHeading: "Um fluxo que comeca e termina no celular.",
     stepsLead:
-      "A experiencia foi pensada para toque rapido, upload simples e um preview que ja permita copiar o resultado do proprio telefone.",
+      "A experiencia foi pensada para toque rapido, upload simples e uma previa que ja permita copiar o resultado do proprio telefone.",
     steps: [
       {
         title: "Abra o site no navegador",
@@ -871,7 +874,7 @@ export const toolPageContent = {
     ],
     stepsHeading: "OCR em portugues com o mesmo fluxo leve do produto.",
     stepsLead:
-      "Voce so precisa subir a imagem e revisar o preview, com a vantagem de uma pagina criada para a intencao de idioma.",
+      "Voce so precisa subir a imagem e revisar a previa, com a vantagem de uma pagina criada para a intencao de idioma.",
     steps: [
       {
         title: "Suba a imagem em pt-BR",
@@ -883,7 +886,7 @@ export const toolPageContent = {
       },
       {
         title: "Revise os detalhes",
-        body: "Confirme o resultado no preview, especialmente em termos, nomes proprios e acentos, antes de copiar ou exportar.",
+        body: "Confirme o resultado na previa, especialmente em termos, nomes proprios e acentos, antes de copiar ou exportar.",
       },
     ],
     faqHeading: "FAQ sobre OCR em portugues.",
@@ -960,7 +963,7 @@ export const toolPageContent = {
       },
       {
         title: "Escolha o grau de fidelidade",
-        body: "Simple OCR prioriza velocidade. Formatted Text ajuda quando a ordem e a separacao dos blocos importam mais.",
+        body: `${SIMPLE_MODE_LABEL} prioriza velocidade. ${FORMATTED_MODE_LABEL} ajuda quando a ordem e a separacao dos blocos importam mais.`,
       },
       {
         title: "Edite e reaproveite",

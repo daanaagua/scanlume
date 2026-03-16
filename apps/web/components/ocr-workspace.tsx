@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AuthDialog } from "@/components/auth-dialog";
 import { getOrCreateBrowserId } from "@/lib/browser-id";
 import { downloadBatchZip, downloadHtmlFile, downloadTextFile } from "@/lib/downloads";
-import { API_BASE_URL } from "@/lib/site";
+import { API_BASE_URL, FORMATTED_MODE_LABEL, SIMPLE_MODE_LABEL } from "@/lib/site";
 
 type Mode = "simple" | "formatted";
 type FormatTab = "txt" | "md" | "html";
@@ -42,7 +42,12 @@ type ProcessingState = {
   startedAt: number;
 };
 
-const DISPLAY_DAILY_BUDGET_USD = 20;
+const DISPLAY_DAILY_BUDGET_BRL = 20;
+const brlFormatter = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+  minimumFractionDigits: 2,
+});
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -491,20 +496,20 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
   const hasQueuedFiles = selectedFiles.length > 0;
   const hasCompletedResults = completedItems.length > 0;
   const canStart = hasQueuedFiles && !isSubmitting;
-  const modeActionLabel = mode === "simple" ? "Iniciar Simple OCR" : "Iniciar Formatted Text";
+  const modeActionLabel = mode === "simple" ? `Iniciar ${SIMPLE_MODE_LABEL}` : `Iniciar ${FORMATTED_MODE_LABEL}`;
   const budgetUsed = limits?.budget.totalCostRmb ?? 0;
-  const budgetLimit = limits?.limits.hardBudgetRmb ?? DISPLAY_DAILY_BUDGET_USD;
+  const budgetLimit = limits?.limits.hardBudgetRmb ?? DISPLAY_DAILY_BUDGET_BRL;
   const budgetUsagePercent = clamp((budgetUsed / Math.max(budgetLimit, 1)) * 100, 0, 100);
-  const budgetUsageLabel = `USD$ ${budgetUsed.toFixed(2)}/${DISPLAY_DAILY_BUDGET_USD}`;
+  const budgetUsageLabel = `${brlFormatter.format(budgetUsed)} / ${brlFormatter.format(budgetLimit)}`;
 
   return (
     <section className="workspace-shell">
       <div className="workspace-head">
         <div>
           <p className="eyebrow">Ferramenta principal</p>
-          <h2>Upload instantaneo com preview e download.</h2>
+          <h2>Upload instantaneo com previa e download.</h2>
           <p className="workspace-intro">
-            Simple OCR entrega texto puro. Formatted Text reorganiza titulos, paragrafos e a estrutura principal para Word, Markdown e HTML.
+            {SIMPLE_MODE_LABEL} entrega texto puro. {FORMATTED_MODE_LABEL} reorganiza titulos, paragrafos e a estrutura principal para Word, Markdown e HTML.
           </p>
         </div>
       </div>
@@ -515,14 +520,14 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
           onClick={() => setMode("simple")}
           type="button"
         >
-          Simple OCR
+          {SIMPLE_MODE_LABEL}
         </button>
         <button
           className={mode === "formatted" ? "is-active" : ""}
           onClick={() => setMode("formatted")}
           type="button"
         >
-          Formatted Text
+          {FORMATTED_MODE_LABEL}
         </button>
       </div>
 
@@ -549,10 +554,10 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
 
           <div className="workspace-meta-stack">
             <div className="limit-pills">
-              <span>Limite gratis diario: US$ 20</span>
+              <span>Limite gratis diario: R$ 20,00</span>
               <span>Uso hoje: {budgetUsageLabel}</span>
-              <span>Simple = 1 credito</span>
-              <span>Formatted = 3 creditos</span>
+              <span>{SIMPLE_MODE_LABEL} = 1 credito</span>
+              <span>{FORMATTED_MODE_LABEL} = 3 creditos</span>
             </div>
             <p className="workspace-note">
               Teste gratis agora. Assinaturas para lotes maiores entram em lancamento por volta de 2026/04/01.
@@ -656,7 +661,7 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
               <div>
                 <span>Lotes maiores</span>
                 <strong>Abr. 2026</strong>
-                <small>Assinatura em preparacao para batches recorrentes.</small>
+                <small>Assinatura em preparacao para lotes recorrentes.</small>
               </div>
             </div>
           )}

@@ -1,26 +1,26 @@
-import { buildMetadata } from "@/lib/site";
+import { buildMetadata, LISTINGS_LABEL } from "@/lib/site";
 
 const featuredBadges = [
   {
     href: "https://toolsaiapp.com/",
     image: "https://toolsaiapp.com/wp-content/uploads/2025/12/badge.png",
-    alt: "Featured on Tools AI App",
+    alt: "Listado no Tools AI App",
     width: 200,
     height: 54,
   },
   {
     href: "https://newtool.site/item/scanlume",
     image: "https://newtool.site/badges/newtool-light.svg",
-    alt: "Featured on NewTool.site",
+    alt: "Listado no NewTool.site",
     width: 200,
     height: 54,
   },
 ];
 
 export const metadata = buildMetadata({
-  title: "Featured on",
+  title: LISTINGS_LABEL,
   description:
-    "Diretorios, launchpads e plataformas onde o Scanlume foi listado durante a fase inicial do produto.",
+    "Diretorios, plataformas de lancamento e listas de ferramentas onde o Scanlume apareceu na fase inicial do produto.",
   pathname: "/featured-on",
 });
 
@@ -29,10 +29,10 @@ export default function FeaturedOnPage() {
     <section className="section-band legal-band">
       <div className="container featured-page-shell">
         <div className="legal-copy featured-page-copy">
-          <p className="eyebrow">Featured on</p>
+          <p className="eyebrow">{LISTINGS_LABEL}</p>
           <h1>Onde o Scanlume foi listado.</h1>
           <p>
-            Esta pagina concentra badges e links de plataformas, launchpads e diretorios onde o projeto foi publicado.
+            Esta pagina concentra badges e links de plataformas, listas e diretorios onde o projeto foi publicado.
             Assim mantemos o rodape principal mais limpo sem perder as referencias externas que ajudam no lancamento.
           </p>
         </div>

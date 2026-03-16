@@ -7,6 +7,21 @@ import { getOrCreateBrowserId } from "@/lib/browser-id";
 import { requestPasswordReset, resendVerificationEmail } from "@/lib/auth";
 import { fetchAccount, joinWaitlist, type AccountResponse } from "@/lib/account";
 
+function formatBillingStatus(status: AccountResponse["billing"]["status"]) {
+  switch (status) {
+    case "active":
+      return "Assinatura ativa";
+    case "trialing":
+      return "Periodo de teste";
+    case "past_due":
+      return "Pagamento pendente";
+    case "canceled":
+      return "Assinatura cancelada";
+    default:
+      return "Ainda sem assinatura";
+  }
+}
+
 export function AccountPanel() {
   const [account, setAccount] = useState<AccountResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -187,7 +202,7 @@ export function AccountPanel() {
 
         <article className="account-card">
           <span>Cobranca futura</span>
-          <strong>{account.billing.status === "inactive" ? "Ainda sem assinatura" : account.billing.status}</strong>
+          <strong>{formatBillingStatus(account.billing.status)}</strong>
           <p>{account.notes.subscriptions}</p>
           <small>{account.notes.replyWindow}</small>
         </article>

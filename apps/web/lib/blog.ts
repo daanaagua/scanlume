@@ -275,7 +275,7 @@ export const blogPosts = {
         heading: "Quando escolher Markdown",
         paragraphs: [
           "Markdown brilha em fluxos de documentacao, bases internas, prompts, resumos para IA e ferramentas que aceitam texto estruturado sem peso visual extra. Ele e leve, facil de versionar e simples de revisar em diff.",
-          "Se o time usa Notion, GitHub, Obsidian, editores MD ou automacoes, manter headings e listas em Markdown costuma ser mais valioso do que colar tudo em texto cru.",
+          "Se o time usa Notion, GitHub, Obsidian, editores MD ou automacoes, manter titulos e listas em Markdown costuma ser mais valioso do que colar tudo em texto cru.",
         ],
         metrics: [
           { label: "Word", value: "Edicao final", note: "Melhor para comentarios, revisao e distribuicao interna." },
@@ -305,7 +305,7 @@ export const blogPosts = {
       {
         question: "Markdown ajuda mais do que Word para IA?",
         answer:
-          "Na maioria dos fluxos sim, porque headings, listas e blocos ficam explicitos em texto puro. Para IA, isso costuma ser mais util do que um documento rico fechado.",
+          "Na maioria dos fluxos sim, porque titulos, listas e blocos ficam explicitos em texto puro. Para IA, isso costuma ser mais util do que um documento rico fechado.",
       },
     ],
     relatedLinks: [

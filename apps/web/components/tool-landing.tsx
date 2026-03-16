@@ -5,9 +5,11 @@ import { JsonLd } from "@/components/json-ld";
 import { OcrWorkspace } from "@/components/ocr-workspace";
 import { BLOG_POSTS, BLOG_PATH } from "@/lib/blog";
 import {
+  FORMATTED_MODE_LABEL,
   OCR_WORKSPACE_ID,
   SITE_NAME,
   SITE_URL,
+  SIMPLE_MODE_LABEL,
   toolPageContent,
   type ToolPageSlug,
 } from "@/lib/site";
@@ -32,8 +34,8 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
           description: page.description,
           featureList: [
             "OCR com IA em pt-BR",
-            "Simple OCR para texto puro",
-            "Formatted Text com estrutura principal preservada",
+            `${SIMPLE_MODE_LABEL} para texto puro`,
+            `${FORMATTED_MODE_LABEL} com estrutura principal preservada`,
             "Download em TXT, Markdown e HTML",
           ],
         }}
@@ -95,13 +97,13 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
           <div className="hero-card editorial-card">
             <div>
               <p className="card-label">Modo rapido</p>
-              <h2>Simple OCR</h2>
-              <p>Texto puro, sem thinking, mais veloz para screenshot, poster e foto do celular.</p>
+              <h2>{SIMPLE_MODE_LABEL}</h2>
+              <p>Texto puro, sem raciocinio extra, mais veloz para screenshot, poster e foto do celular.</p>
             </div>
             <div>
               <p className="card-label">Modo estruturado</p>
-              <h2>Formatted Text</h2>
-              <p>Preserva a estrutura principal com headings, paragraphs e uma leitura mais clara.</p>
+              <h2>{FORMATTED_MODE_LABEL}</h2>
+              <p>Preserva a estrutura principal com titulos, paragrafos e uma leitura mais clara.</p>
             </div>
             <a href={`#${OCR_WORKSPACE_ID}`} className="solid-button large-button">
               Teste gratis agora

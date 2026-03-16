@@ -6,11 +6,13 @@ import { OcrWorkspace } from "@/components/ocr-workspace";
 import { BLOG_PATH, BLOG_POSTS } from "@/lib/blog";
 import {
   buildMetadata,
+  FORMATTED_MODE_LABEL,
   homeFaqs,
   OCR_WORKSPACE_ID,
   SEO_LINKS,
   SITE_NAME,
   SITE_URL,
+  SIMPLE_MODE_LABEL,
   toolPageContent,
 } from "@/lib/site";
 
@@ -44,8 +46,8 @@ export default function Home() {
             "Ferramenta OCR com IA para converter imagem em texto em pt-BR com saida simples ou formatada.",
           featureList: [
             "OCR com IA em pt-BR",
-            "Simple OCR para texto puro",
-            "Formatted Text para leitura principal organizada",
+            `${SIMPLE_MODE_LABEL} para texto puro`,
+            `${FORMATTED_MODE_LABEL} para leitura principal organizada`,
             "Exportacao em TXT, Markdown e HTML",
           ],
         }}
@@ -91,13 +93,13 @@ export default function Home() {
           <div className="hero-card stacked-hero-card">
             <div>
               <p className="card-label">Modo 01</p>
-              <h2>Simple OCR</h2>
+              <h2>{SIMPLE_MODE_LABEL}</h2>
               <p>Mais rapido, mais barato e focado em texto puro para prints, posters e fotos do celular.</p>
             </div>
             <div>
               <p className="card-label">Modo 02</p>
-              <h2>Formatted Text</h2>
-              <p>Preserva a estrutura principal com headings, paragraphs e uma ordem de leitura melhor para Word e Markdown.</p>
+              <h2>{FORMATTED_MODE_LABEL}</h2>
+              <p>Preserva a estrutura principal com titulos, paragrafos e uma ordem de leitura melhor para Word e Markdown.</p>
             </div>
             <a href={`#${OCR_WORKSPACE_ID}`} className="solid-button large-button">
               Teste gratis agora
@@ -118,7 +120,7 @@ export default function Home() {
             <p className="eyebrow">Como funciona</p>
             <h2>Upload, OCR e download em um fluxo direto.</h2>
             <p>
-              O MVP foi desenhado para validar SEO e conversao com uma experiencia leve: envio imediato, preview no navegador e exportacao simples.
+              O MVP foi desenhado para validar SEO e conversao com uma experiencia leve: envio imediato, previa no navegador e exportacao simples.
             </p>
           </div>
 
@@ -131,7 +133,9 @@ export default function Home() {
             <article className="timeline-step">
               <span>02</span>
               <strong>Escolha o modo</strong>
-              <p>Simple OCR para texto puro. Formatted Text para preservar a leitura principal.</p>
+              <p>
+                {SIMPLE_MODE_LABEL} para texto puro. {FORMATTED_MODE_LABEL} para preservar a leitura principal.
+              </p>
             </article>
             <article className="timeline-step">
               <span>03</span>
