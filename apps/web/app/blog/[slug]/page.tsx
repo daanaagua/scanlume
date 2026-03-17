@@ -27,10 +27,18 @@ export function generateMetadata({ params }: { params: Promise<{ slug: string }>
       applicationName: SITE_NAME,
       alternates: {
         canonical,
+        languages: {
+          "pt-BR": canonical,
+          "x-default": canonical,
+        },
       },
       robots: {
         index: true,
         follow: true,
+        googleBot: {
+          index: true,
+          follow: true,
+        },
       },
       openGraph: {
         title: post.title,

@@ -22,6 +22,7 @@ export const metadata = buildMetadata({
   description:
     "Diretorios, plataformas de lancamento e listas de ferramentas onde o Scanlume apareceu na fase inicial do produto.",
   pathname: "/featured-on",
+  index: false,
 });
 
 export default function FeaturedOnPage() {

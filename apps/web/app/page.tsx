@@ -17,15 +17,15 @@ import {
 } from "@/lib/site";
 
 export const metadata = buildMetadata({
-  title: "Imagem para texto online com IA | OCR simples e formatado",
+  title: "Scanlume | OCR online em pt-BR para screenshots, JPG e PNG",
   description:
-    "Converta imagem para texto com IA em pt-BR. OCR online gratis para screenshots, JPG e PNG com exportacao em TXT, Markdown e HTML.",
+    "OCR online do Scanlume para converter screenshots, JPG e PNG em texto editavel com saida simples ou formatada em TXT, Markdown e HTML.",
   keywords: [
-    "imagem para texto",
-    "converter imagem em texto",
-    "imagem em texto",
-    "ocr online",
-    "ocr com ia",
+    "scanlume",
+    "ocr online pt-br",
+    "ocr para screenshot",
+    "ocr para jpg",
+    "ocr para png",
   ],
   pathname: "/",
 });
@@ -70,10 +70,10 @@ export default function Home() {
       <section className="hero-section">
         <div className="container hero-grid">
           <div className="hero-copy">
-            <p className="eyebrow">Converter imagem em texto online</p>
-            <h1>OCR simples e formatado para screenshots, JPG e PNG.</h1>
+            <p className="eyebrow">Scanlume em pt-BR</p>
+            <h1>OCR online para transformar screenshots, JPG e PNG em texto editavel.</h1>
             <p className="hero-lead">
-              Scanlume ajuda o mercado pt-BR a converter imagem em texto com IA, copiar com menos limpeza manual e baixar em TXT, Markdown ou HTML sem instalar app.
+              Use o Scanlume para testar OCR simples ou texto formatado no navegador e levar o resultado para Word, Markdown ou fluxos internos sem instalar app.
             </p>
             <div className="hero-bullets">
               <span>Gratis para testar</span>
@@ -120,7 +120,7 @@ export default function Home() {
             <p className="eyebrow">Como funciona</p>
             <h2>Upload, OCR e download em um fluxo direto.</h2>
             <p>
-              O MVP foi desenhado para validar SEO e conversao com uma experiencia leve: envio imediato, previa no navegador e exportacao simples.
+              O fluxo foi desenhado para reduzir atrito: envio imediato, previa no navegador e exportacao simples para continuar o trabalho em outro lugar.
             </p>
           </div>
 
@@ -149,10 +149,10 @@ export default function Home() {
       <section className="section-band">
         <div className="container">
           <div className="section-heading">
-            <p className="eyebrow">Paginas indexaveis</p>
-            <h2>Uma malha de paginas para formatos, cenarios e capacidades em pt-BR.</h2>
+            <p className="eyebrow">Escolha o fluxo</p>
+            <h2>Escolha a pagina certa para o seu formato, contexto e tipo de saida.</h2>
             <p>
-              Em vez de replicar a mesma copy para sinonimos, o cluster abaixo separa formato de arquivo, contexto de uso e capacidade do OCR.
+              Cada rota abaixo organiza o produto por formato de arquivo, contexto de uso e resultado esperado, para voce chegar mais rapido ao melhor fluxo.
             </p>
           </div>
 
@@ -176,7 +176,7 @@ export default function Home() {
         <div className="container">
           <div className="section-heading">
             <p className="eyebrow">Guias praticos</p>
-            <h2>Benchmarks e comparativos para apoiar a primeira indexacao.</h2>
+            <h2>Guias praticos para escolher formato, modo e exportacao.</h2>
             <p>
               Publicamos conteudo complementar para responder duvidas reais sobre OCR em portugues, diferenca entre formatos e exportacao para Word e Markdown.
             </p>

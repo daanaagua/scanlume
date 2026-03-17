@@ -481,7 +481,7 @@ export const toolPageContent = {
       },
       {
         title: "Leve para o seu fluxo",
-        body: "Copie o texto ou baixe em TXT, Markdown e HTML para seguir com edicao, SEO ou documentacao.",
+        body: "Copie o texto ou baixe em TXT, Markdown e HTML para seguir com edicao, documentacao ou revisao interna.",
       },
     ],
     faqHeading: "FAQ sobre PNG para texto.",
@@ -1013,17 +1013,25 @@ export const TOOL_SUPPORT_LINKS = TOOL_PAGE_SLUGS.filter((slug) => !toolPageCont
   (slug) => ({ href: `/${slug}`, label: toolPageContent[slug].label }),
 );
 
+export function getCanonicalUrl(pathname: string) {
+  return pathname === "/" ? `${SITE_URL}/` : `${SITE_URL}${pathname}`;
+}
+
 export function buildMetadata({
   title,
   description,
   keywords = DEFAULT_KEYWORDS,
   pathname,
+  index = true,
 }: {
   title: string;
   description: string;
   keywords?: readonly string[];
   pathname: string;
+  index?: boolean;
 }): Metadata {
+  const canonical = getCanonicalUrl(pathname);
+
   return {
     title,
     description,
@@ -1031,16 +1039,24 @@ export function buildMetadata({
     applicationName: SITE_NAME,
     category: "OCR",
     alternates: {
-      canonical: `${SITE_URL}${pathname}`,
+      canonical,
+      languages: {
+        "pt-BR": canonical,
+        "x-default": canonical,
+      },
     },
     robots: {
-      index: true,
+      index,
       follow: true,
+      googleBot: {
+        index,
+        follow: true,
+      },
     },
     openGraph: {
       title,
       description,
-      url: `${SITE_URL}${pathname}`,
+      url: canonical,
       siteName: SITE_NAME,
       type: "website",
       locale: "pt_BR",

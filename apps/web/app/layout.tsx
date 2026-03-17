@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { IBM_Plex_Sans, Syne } from "next/font/google";
 import Script from "next/script";
 
+import { JsonLd } from "@/components/json-ld";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { SupportWidget } from "@/components/support-widget";
@@ -28,6 +29,12 @@ export const metadata: Metadata = {
     "Converta imagem para texto com IA em pt-BR. OCR online para JPG, PNG e screenshots com saida simples ou formatada em TXT, Markdown e HTML.",
   keywords: DEFAULT_KEYWORDS,
   applicationName: SITE_NAME,
+  alternates: {
+    languages: {
+      "pt-BR": `${SITE_URL}/`,
+      "x-default": `${SITE_URL}/`,
+    },
+  },
   icons: {
     icon: [
       { url: "/icon.png", type: "image/png" },
@@ -67,6 +74,25 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={`${bodyFont.variable} ${displayFont.variable}`}>
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: SITE_NAME,
+            url: SITE_URL,
+            logo: `${SITE_URL}/icon.png`,
+            sameAs: ["https://toolsaiapp.com/", "https://newtool.site/item/scanlume"],
+          }}
+        />
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            name: SITE_NAME,
+            url: SITE_URL,
+            inLanguage: "pt-BR",
+          }}
+        />
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-ST57ZKSQZJ"
           strategy="afterInteractive"

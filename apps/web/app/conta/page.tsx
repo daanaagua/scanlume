@@ -6,6 +6,7 @@ export const metadata = buildMetadata({
   description:
     "Veja o plano atual, uso de hoje, creditos disponiveis e a estrutura preparada para futuras assinaturas do Scanlume.",
   pathname: "/conta",
+  index: false,
 });
 
 export default function AccountPage() {

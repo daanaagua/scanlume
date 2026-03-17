@@ -38,7 +38,7 @@ export default function BlogIndexPage() {
 
           <div className="hero-card blog-hub-card">
             <p className="card-label">Recorte editorial</p>
-            <h2>Conteudo desenhado para ajudar a indexar melhor e explicar melhor.</h2>
+            <h2>Conteudo desenhado para mostrar o que funciona melhor em casos reais.</h2>
             <p>
               Cada artigo nasce de um caso concreto: screenshot com layout misto, diferenca entre formatos e exportacao do OCR para o uso final.
             </p>
@@ -50,7 +50,7 @@ export default function BlogIndexPage() {
         <div className="container">
           <div className="section-heading">
             <p className="eyebrow">Artigos</p>
-            <h2>Uma base inicial de conteudo para apoiar imagem para texto.</h2>
+            <h2>Guias que ajudam antes do upload e depois da exportacao.</h2>
             <p>
               Os posts abaixo foram escritos para responder duvidas que aparecem antes e depois do upload: qualidade da imagem, escolha do formato e destino do texto exportado.
             </p>

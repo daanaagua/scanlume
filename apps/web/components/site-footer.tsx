@@ -43,7 +43,7 @@ export function SiteFooter() {
         </div>
 
         <div>
-          <p className="footer-kicker">Cenarios SEO</p>
+          <p className="footer-kicker">Outros cenarios</p>
           <ul className="footer-links">
             {TOOL_SUPPORT_LINKS.map((link) => (
               <li key={link.href}>

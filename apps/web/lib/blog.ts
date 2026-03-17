@@ -107,10 +107,10 @@ export const blogPosts = {
         ],
       },
       {
-        heading: "Como transformar esse teste em conteudo util para SEO",
+        heading: "Como transformar esse teste em um fluxo util no mundo real",
         paragraphs: [
-          "Para ranking, o ideal nao e prometer uma taxa magica de acerto. Melhor mostrar o tipo de imagem que o produto le bem, o tipo de revisao humana que ainda faz sentido e o formato de saida mais pratico para cada caso.",
-          "Esse tipo de post ajuda porque cria prova visual. Ele mostra que a pagina nao foi escrita so para a keyword 'imagem para texto': ela foi escrita a partir de um benchmark real, com contexto, limites e recomendacoes praticas.",
+          "Em vez de prometer uma taxa magica de acerto, vale mostrar que tipo de imagem o produto le bem, que revisao humana ainda faz sentido e qual formato de saida combina com cada tarefa.",
+          "Esse tipo de benchmark cria prova visual. Ele ajuda o usuario a entender limites, contexto e recomendacoes praticas antes de subir um arquivo proprio para OCR.",
         ],
       },
     ],
