@@ -16,7 +16,16 @@ import {
 
 export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
   const page = toolPageContent[slug];
-  const relatedPages = Object.entries(toolPageContent).filter(([key]) => key !== slug);
+  const relatedPages = page.relatedSlugs.flatMap((key) => {
+    const relatedSlug = key as ToolPageSlug;
+    const entry = toolPageContent[relatedSlug];
+
+    if (!entry || relatedSlug === slug) {
+      return [];
+    }
+
+    return [[relatedSlug, entry] as const];
+  });
   const canonical = `${SITE_URL}/${slug}`;
   const featuredPosts = BLOG_POSTS.slice(0, 3);
 
@@ -138,6 +147,30 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
       </section>
 
       <section className="section-band">
+        <div className="container split-content blog-faq-band">
+          <div className="section-heading">
+            <p className="eyebrow">Rotas complementares</p>
+            <h2>Use links mais proximos da intencao para reforcar a pagina certa.</h2>
+            <p>
+              Cada atalho abaixo cobre um recorte diferente do mesmo problema e ajuda a concentrar a navegacao entre
+              formato, idioma, contexto de uso e destino final do texto.
+            </p>
+          </div>
+
+          <div className="faq-list">
+            {page.contextualLinks.map((item) => (
+              <article key={item.href} className="faq-item">
+                <strong>
+                  <Link href={item.href}>{item.label}</Link>
+                </strong>
+                <p>{item.body}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="section-band">
         <div className="container">
           <div className="section-heading">
             <p className="eyebrow">Como funciona</p>
@@ -161,7 +194,7 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
         <div className="container">
           <div className="section-heading">
             <p className="eyebrow">Paginas relacionadas</p>
-            <h2>Use a malha interna para navegar entre intencoes proximas.</h2>
+            <h2>Continue por paginas de apoio sem dispersar a rota principal.</h2>
           </div>
 
           <div className="related-grid">

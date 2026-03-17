@@ -5,11 +5,16 @@ import { JsonLd } from "@/components/json-ld";
 import {
   BLOG_PATH,
   type BlogPost,
+  getBlogPost,
   getBlogBreadcrumbJsonLd,
   getBlogPostingJsonLd,
 } from "@/lib/blog";
 
 export function BlogArticlePage({ post }: { post: BlogPost }) {
+  const relatedPosts = post.relatedPosts
+    .map((slug) => getBlogPost(slug))
+    .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+
   return (
     <>
       <JsonLd data={getBlogPostingJsonLd(post)} />
@@ -129,6 +134,33 @@ export function BlogArticlePage({ post }: { post: BlogPost }) {
                 <strong>{item.question}</strong>
                 <p>{item.answer}</p>
               </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="section-band muted-band">
+        <div className="container split-content blog-related-band">
+          <div className="section-heading">
+            <p className="eyebrow">Leia em seguida</p>
+            <h2>Continue no cluster antes de voltar para a ferramenta.</h2>
+            <p>
+              Estes artigos aprofundam formato, exportacao e cenarios vizinhos para manter a leitura conectada com a
+              mesma intencao de OCR.
+            </p>
+          </div>
+
+          <div className="related-grid">
+            {relatedPosts.map((relatedPost) => (
+              <Link
+                key={relatedPost.slug}
+                href={`${BLOG_PATH}/${relatedPost.slug}`}
+                className="related-card blog-related-card"
+              >
+                <span>{relatedPost.category}</span>
+                <strong>{relatedPost.title}</strong>
+                <p>{relatedPost.excerpt}</p>
+              </Link>
             ))}
           </div>
         </div>

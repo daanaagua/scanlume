@@ -42,6 +42,7 @@ export type BlogPost = {
   editorialMethod: readonly string[];
   sections: readonly BlogSection[];
   faq: readonly BlogFaq[];
+  relatedPosts: readonly string[];
   relatedLinks: readonly BlogLink[];
 };
 
@@ -134,6 +135,7 @@ export const blogPosts = {
           "Quando o objetivo e so capturar frases centrais, o modo simples resolve rapido. Quando o usuario quer reaproveitar blocos em Word, docs ou Markdown, o modo formatado costuma poupar mais limpeza manual.",
       },
     ],
+    relatedPosts: ["comparativo-jpg-png-print-ocr", "exportar-ocr-word-markdown-boas-praticas"],
     relatedLinks: [
       {
         href: "/imagem-para-texto",
@@ -231,6 +233,7 @@ export const blogPosts = {
           "Na maioria dos casos sim. Desde que o print seja nativo e nao uma foto da tela, ele preserva bem letras pequenas, alinhamento e contraste.",
       },
     ],
+    relatedPosts: ["ocr-portugues-imagem-para-texto-teste-real", "exportar-ocr-word-markdown-boas-praticas"],
     relatedLinks: [
       {
         href: "/jpg-para-texto",
@@ -328,6 +331,7 @@ export const blogPosts = {
           "Na maioria dos fluxos sim, porque titulos, listas e blocos ficam explicitos em texto puro. Para IA, isso costuma ser mais util do que um documento rico fechado.",
       },
     ],
+    relatedPosts: ["ocr-portugues-imagem-para-texto-teste-real", "comparativo-jpg-png-print-ocr"],
     relatedLinks: [
       {
         href: "/imagem-para-word",

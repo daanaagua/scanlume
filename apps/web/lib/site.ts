@@ -30,7 +30,6 @@ export const DEFAULT_KEYWORDS = [
 ];
 
 export const TRUST_LINKS = [
-  { href: "/conta", label: "Conta" },
   { href: "/featured-on", label: LISTINGS_LABEL },
   { href: "/sobre", label: "Sobre" },
   { href: "/contato", label: "Contato" },
@@ -81,6 +80,12 @@ type ToolFaq = {
   answer: string;
 };
 
+type ToolContextualLink = {
+  href: string;
+  label: string;
+  body: string;
+};
+
 type ToolPageEntry = {
   label: string;
   title: string;
@@ -92,6 +97,8 @@ type ToolPageEntry = {
   heroBullets: readonly string[];
   primaryNav?: boolean;
   defaultMode?: "simple" | "formatted";
+  relatedSlugs: readonly string[];
+  contextualLinks: readonly ToolContextualLink[];
   useCasesHeading: string;
   useCasesLead: string;
   useCases: readonly ToolCard[];
@@ -122,6 +129,29 @@ export const toolPageContent = {
     heroBullets: ["Gratis para testar", "Sem instalar aplicativo", "TXT, Markdown e HTML"],
     defaultMode: "simple",
     primaryNav: true,
+    relatedSlugs: ["imagem-para-word", "png-para-texto", "jpg-para-texto", "ocr-em-portugues"],
+    contextualLinks: [
+      {
+        href: "/png-para-texto",
+        label: "PNG para texto",
+        body: "Use esta rota quando o arquivo vier de screenshot, interface ou landing page em PNG e voce quiser preservar mais detalhe visual.",
+      },
+      {
+        href: "/jpg-para-texto",
+        label: "JPG para texto",
+        body: "Prefira esta pagina quando a origem for foto do celular, poster ou imagem compartilhada em JPG antes do OCR.",
+      },
+      {
+        href: "/imagem-para-word",
+        label: "Imagem para Word",
+        body: "Siga por aqui quando o texto precisar chegar mais organizado para Word, Google Docs ou revisao editorial.",
+      },
+      {
+        href: "/ocr-em-portugues",
+        label: "OCR em portugues",
+        body: "Abra esta variacao se o ponto principal da busca for lidar com texto em pt-BR, acentos e vocabulario local.",
+      },
+    ],
     useCasesHeading: "Uma pagina principal para transformar imagens em texto com menos retrabalho.",
     useCasesLead:
       "Ela cobre o fluxo mais amplo do produto: screenshots, artes, fotos do celular e imagens soltas que precisam virar texto editavel rapido.",
@@ -203,6 +233,29 @@ export const toolPageContent = {
     heroBullets: ["Foco em leitura organizada", "Melhor para colar no Word", "Exporta em HTML e Markdown"],
     primaryNav: true,
     defaultMode: "formatted",
+    relatedSlugs: ["imagem-para-texto", "png-para-texto", "ocr-em-portugues", "transcrever-imagem-em-texto"],
+    contextualLinks: [
+      {
+        href: "/imagem-para-texto",
+        label: "Imagem para texto",
+        body: "Volte para a pagina principal quando o caso for mais amplo e voce quiser comparar o fluxo geral antes de decidir o destino do texto.",
+      },
+      {
+        href: "/png-para-texto",
+        label: "PNG para texto",
+        body: "Vale abrir esta pagina quando o arquivo veio de screenshot, interface ou layout exportado em PNG antes de ir para Word.",
+      },
+      {
+        href: "/ocr-em-portugues",
+        label: "OCR em portugues",
+        body: "Use esta rota quando a revisao precisar prestar mais atencao em acentos, labels locais e textos feitos para pt-BR.",
+      },
+      {
+        href: "/transcrever-imagem-em-texto",
+        label: "Transcrever imagem em texto",
+        body: "Siga por aqui se a etapa seguinte for resumir, reorganizar ou reaproveitar o texto em pautas, briefs e documentos.",
+      },
+    ],
     useCasesHeading: "Feito para quem quer levar a imagem para Word com menos limpeza manual.",
     useCasesLead:
       "Essa pagina puxa a intencao de usuarios que precisam de estrutura, e nao so do texto bruto, antes de continuar a edicao em documentos.",
@@ -284,6 +337,29 @@ export const toolPageContent = {
     heroBullets: ["OCR direto no navegador", "Sem instalacao", "Ideal para testes rapidos"],
     defaultMode: "simple",
     primaryNav: true,
+    relatedSlugs: ["imagem-para-texto", "jpg-para-texto", "png-para-texto", "ocr-em-portugues"],
+    contextualLinks: [
+      {
+        href: "/imagem-para-texto",
+        label: "Imagem para texto",
+        body: "Use a pagina principal quando a busca deixar de ser teste rapido e passar a pedir uma rota mais ampla para formatos e contextos diferentes.",
+      },
+      {
+        href: "/jpg-para-texto",
+        label: "JPG para texto",
+        body: "Entre aqui quando o arquivo chegar de foto, camera do celular ou exportacao comprimida em JPG.",
+      },
+      {
+        href: "/png-para-texto",
+        label: "PNG para texto",
+        body: "Abra esta variacao para screenshots e layouts em PNG, onde a nitidez costuma ajudar mais na leitura do OCR.",
+      },
+      {
+        href: "/ocr-em-portugues",
+        label: "OCR em portugues",
+        body: "Vale seguir por esta pagina quando a busca mencionar idioma, acentos ou texto em portugues como prioridade.",
+      },
+    ],
     useCasesHeading: "OCR online para quem quer testar, extrair e seguir rapido.",
     useCasesLead:
       "A promessa desta pagina e velocidade: abrir o navegador, subir a imagem e ter o texto disponivel sem configurar nada.",
@@ -365,6 +441,29 @@ export const toolPageContent = {
     heroBullets: ["Aceita JPG leve", "Bom para fotos", "Saida simples ou formatada"],
     defaultMode: "simple",
     primaryNav: true,
+    relatedSlugs: ["imagem-para-texto", "extrair-texto-de-foto", "imagem-para-texto-no-celular", "ocr-online"],
+    contextualLinks: [
+      {
+        href: "/imagem-para-texto",
+        label: "Imagem para texto",
+        body: "Volte para a pagina principal quando o uso deixar de ser so JPG e passar a envolver varios tipos de imagem no mesmo fluxo.",
+      },
+      {
+        href: "/extrair-texto-de-foto",
+        label: "Extrair texto de foto",
+        body: "Prefira esta pagina quando a origem for claramente uma foto do mundo real, com camera, perspectiva e luz variavel.",
+      },
+      {
+        href: "/imagem-para-texto-no-celular",
+        label: "Imagem para texto no celular",
+        body: "Siga por aqui quando a tarefa inteira acontece no telefone, da captura ao OCR e ao compartilhamento do texto.",
+      },
+      {
+        href: "/ocr-online",
+        label: "OCR online",
+        body: "Abra esta rota quando o objetivo for validar rapido o OCR sem decidir primeiro por formato, dispositivo ou destino final.",
+      },
+    ],
     useCasesHeading: "JPG para texto em cenarios onde a camera ou exportacao gera imagem comprimida.",
     useCasesLead:
       "Muita imagem com texto chega em JPG. Esta pagina foi criada para esse caso especifico, especialmente fotos e artes leves compartilhadas no dia a dia.",
@@ -446,6 +545,29 @@ export const toolPageContent = {
     heroBullets: ["Pensado para screenshots", "Bom para UI e layouts", "Modo formatado com IA"],
     defaultMode: "simple",
     primaryNav: true,
+    relatedSlugs: ["imagem-para-texto", "extrair-texto-de-print", "imagem-para-word", "ocr-online"],
+    contextualLinks: [
+      {
+        href: "/imagem-para-texto",
+        label: "Imagem para texto",
+        body: "Use a pagina principal quando voce quiser manter a busca mais ampla e navegar entre formatos sem perder a rota central.",
+      },
+      {
+        href: "/extrair-texto-de-print",
+        label: "Extrair texto de print",
+        body: "Abra esta variacao quando o caso for print de tela, dashboard ou recorte digital em que o usuario quer so puxar o texto principal.",
+      },
+      {
+        href: "/imagem-para-word",
+        label: "Imagem para Word",
+        body: "Siga por esta pagina quando o resultado em PNG precisar chegar com hierarquia melhor para Word, Docs ou revisao manual.",
+      },
+      {
+        href: "/ocr-online",
+        label: "OCR online",
+        body: "Use este atalho se a prioridade for testar o OCR no navegador antes de escolher um fluxo mais especifico por formato.",
+      },
+    ],
     useCasesHeading: "PNG para texto funciona muito bem quando a origem e tela, design ou interface.",
     useCasesLead:
       "Muitos screenshots e layouts saem em PNG. Esta pagina conversa com essa intencao e com o tipo de imagem mais comum em fluxos digitais.",
@@ -527,6 +649,29 @@ export const toolPageContent = {
     heroBullets: ["Foco em extracao", "Serve para print e foto", "Copiar sem retrabalho"],
     defaultMode: "simple",
     primaryNav: false,
+    relatedSlugs: ["imagem-para-texto", "ocr-online", "imagem-para-word", "transcrever-imagem-em-texto"],
+    contextualLinks: [
+      {
+        href: "/imagem-para-texto",
+        label: "Imagem para texto",
+        body: "Volte para a pagina principal quando a necessidade deixar de ser so extrair e passar a cobrir diferentes formatos, saidas e cenarios.",
+      },
+      {
+        href: "/ocr-online",
+        label: "OCR online",
+        body: "Abra esta rota quando o contexto pedir um teste rapido no navegador sem entrar primeiro em um recorte de formato ou dispositivo.",
+      },
+      {
+        href: "/imagem-para-word",
+        label: "Imagem para Word",
+        body: "Siga por esta pagina se o texto extraido precisar chegar mais limpo para colar em Word, Docs ou materiais de equipe.",
+      },
+      {
+        href: "/transcrever-imagem-em-texto",
+        label: "Transcrever imagem em texto",
+        body: "Use esta variacao quando a proxima etapa for resumir, reorganizar ou reaproveitar o conteudo em documentos e briefs.",
+      },
+    ],
     useCasesHeading: "Feito para copiar o texto da imagem, nao para reconstruir o layout inteiro.",
     useCasesLead:
       "Essa pagina conversa com a busca de quem quer extrair conteudo rapido de uma imagem e seguir para a proxima etapa.",
@@ -608,6 +753,29 @@ export const toolPageContent = {
     heroBullets: ["Bom para camera do celular", "Sem app dedicado", "Revisao rapida no navegador"],
     defaultMode: "simple",
     primaryNav: false,
+    relatedSlugs: ["imagem-para-texto", "jpg-para-texto", "imagem-para-texto-no-celular", "transcrever-imagem-em-texto"],
+    contextualLinks: [
+      {
+        href: "/imagem-para-texto",
+        label: "Imagem para texto",
+        body: "Volte para a pagina principal quando a foto for so um dos formatos do seu fluxo e voce quiser uma rota mais ampla para o produto.",
+      },
+      {
+        href: "/jpg-para-texto",
+        label: "JPG para texto",
+        body: "Use esta pagina quando a foto ja estiver em JPG e o foco for trabalhar direto com esse formato.",
+      },
+      {
+        href: "/imagem-para-texto-no-celular",
+        label: "Imagem para texto no celular",
+        body: "Abra esta variacao se a tarefa inteira acontece no telefone, da captura ao OCR e ao compartilhamento do texto.",
+      },
+      {
+        href: "/transcrever-imagem-em-texto",
+        label: "Transcrever imagem em texto",
+        body: "Siga por esta pagina quando a foto for so a fonte inicial e o texto final precisar entrar em resumos, notas ou documentacao.",
+      },
+    ],
     useCasesHeading: "Pensado para fotos do mundo real, nao so para screenshots perfeitos.",
     useCasesLead:
       "Esta pagina organiza a intencao de quem fotografou algum texto e agora precisa copiar, resumir ou reaproveitar o conteudo.",
@@ -689,6 +857,29 @@ export const toolPageContent = {
     heroBullets: ["Ideal para screenshot", "Bom para interfaces", "Modo formatado ajuda na hierarquia"],
     defaultMode: "simple",
     primaryNav: false,
+    relatedSlugs: ["imagem-para-texto", "png-para-texto", "ocr-online", "imagem-para-word"],
+    contextualLinks: [
+      {
+        href: "/imagem-para-texto",
+        label: "Imagem para texto",
+        body: "Use a pagina principal quando o fluxo combinar prints com outros formatos e voce quiser concentrar o sinal no fluxo mais amplo do produto.",
+      },
+      {
+        href: "/png-para-texto",
+        label: "PNG para texto",
+        body: "Prefira esta pagina quando o print vier em PNG e o que mais importa for manter nitidez e hierarquia visual.",
+      },
+      {
+        href: "/ocr-online",
+        label: "OCR online",
+        body: "Abra este atalho quando a ideia for validar o OCR rapidamente em qualquer print sem entrar tanto no detalhe do formato.",
+      },
+      {
+        href: "/imagem-para-word",
+        label: "Imagem para Word",
+        body: "Siga por aqui se o print tiver varios blocos e o resultado precisar ser colado depois em Word, Docs ou briefings.",
+      },
+    ],
     useCasesHeading: "Quando o texto esta preso em um print de tela.",
     useCasesLead:
       "Esta pagina cobre o cenario de capturas digitais, onde a maior dor nao e o formato do arquivo, mas o tempo perdido copiando texto da tela manualmente.",
@@ -770,6 +961,29 @@ export const toolPageContent = {
     heroBullets: ["Pensado para mobile", "Sem instalar app", "Fotos e prints do telefone"],
     defaultMode: "simple",
     primaryNav: false,
+    relatedSlugs: ["imagem-para-texto", "extrair-texto-de-foto", "jpg-para-texto", "png-para-texto"],
+    contextualLinks: [
+      {
+        href: "/imagem-para-texto",
+        label: "Imagem para texto",
+        body: "Volte para a pagina principal quando voce quiser continuar o fluxo depois no desktop ou comparar formatos alem do contexto mobile.",
+      },
+      {
+        href: "/extrair-texto-de-foto",
+        label: "Extrair texto de foto",
+        body: "Use esta pagina quando o caso for camera, quadro, cartaz ou foto do mundo real capturada no telefone.",
+      },
+      {
+        href: "/jpg-para-texto",
+        label: "JPG para texto",
+        body: "Abra esta variacao quando o celular salvar ou compartilhar a imagem em JPG e voce quiser trabalhar direto com esse formato.",
+      },
+      {
+        href: "/png-para-texto",
+        label: "PNG para texto",
+        body: "Siga por aqui para screenshots do telefone, telas de app e recortes exportados em PNG com texto mais limpo.",
+      },
+    ],
     useCasesHeading: "Mobile first para quem resolve tudo no telefone.",
     useCasesLead:
       "Aqui a intencao nao e apenas OCR. E conveniencia: usar a ferramenta no navegador do celular e continuar o trabalho sem sair do aparelho.",
@@ -851,6 +1065,29 @@ export const toolPageContent = {
     heroBullets: ["Foco em pt-BR", "Bom para acentos", "Serve para UI e fotos"],
     defaultMode: "simple",
     primaryNav: false,
+    relatedSlugs: ["imagem-para-texto", "ocr-online", "png-para-texto", "imagem-para-word"],
+    contextualLinks: [
+      {
+        href: "/imagem-para-texto",
+        label: "Imagem para texto",
+        body: "Volte para a pagina principal quando a busca misturar idioma com outros formatos e a rota central fizer mais sentido para o usuario.",
+      },
+      {
+        href: "/ocr-online",
+        label: "OCR online",
+        body: "Abra esta variacao quando a prioridade for testar rapido no navegador antes de entrar no recorte especifico de idioma.",
+      },
+      {
+        href: "/png-para-texto",
+        label: "PNG para texto",
+        body: "Use esta pagina para interfaces e screenshots em pt-BR, onde o formato do arquivo tambem ajuda a leitura do OCR.",
+      },
+      {
+        href: "/imagem-para-word",
+        label: "Imagem para Word",
+        body: "Siga por aqui se o texto em portugues precisar chegar mais organizado para Word, Docs ou revisao editorial.",
+      },
+    ],
     useCasesHeading: "Quando o idioma tambem importa na hora de extrair texto.",
     useCasesLead:
       "A busca por OCR em portugues aparece quando o usuario quer mais confianca para processar textos com vocabulario local, acentos e padroes visuais do mercado brasileiro.",
@@ -932,6 +1169,29 @@ export const toolPageContent = {
     heroBullets: ["Foco em transcricao", "Boa para reaproveitamento", "Saida pronta para editar"],
     defaultMode: "simple",
     primaryNav: false,
+    relatedSlugs: ["imagem-para-texto", "imagem-para-word", "extrair-texto-de-imagem", "ocr-em-portugues"],
+    contextualLinks: [
+      {
+        href: "/imagem-para-texto",
+        label: "Imagem para texto",
+        body: "Volte para a rota principal quando a transcricao for so uma das necessidades e voce quiser concentrar o sinal no fluxo mais amplo do produto.",
+      },
+      {
+        href: "/imagem-para-word",
+        label: "Imagem para Word",
+        body: "Use esta pagina quando o texto transcrito precisar seguir para Word, Docs ou revisao com estrutura melhor antes da edicao final.",
+      },
+      {
+        href: "/extrair-texto-de-imagem",
+        label: "Extrair texto de imagem",
+        body: "Abra esta variacao quando o objetivo for so tirar o texto da imagem sem enfatizar tanto a etapa posterior de resumo e reaproveitamento.",
+      },
+      {
+        href: "/ocr-em-portugues",
+        label: "OCR em portugues",
+        body: "Siga por esta pagina quando a transcricao envolver conteudo em pt-BR e voce quiser revisar melhor acentos e termos locais.",
+      },
+    ],
     useCasesHeading: "Transcrever imagem em texto faz sentido quando a proxima etapa e trabalhar o conteudo.",
     useCasesLead:
       "Essa pagina fala com quem nao quer apenas ler a imagem, mas converter o que esta nela em materia-prima para edicao, sintese e distribuicao.",
