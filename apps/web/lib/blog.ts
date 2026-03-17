@@ -33,11 +33,13 @@ export type BlogPost = {
   excerpt: string;
   heroLead: string;
   publishedAt: string;
+  lastReviewedAt: string;
   readTime: string;
   coverImage: string;
   coverAlt: string;
   coverCaption: string;
   summary: readonly string[];
+  editorialMethod: readonly string[];
   sections: readonly BlogSection[];
   faq: readonly BlogFaq[];
   relatedLinks: readonly BlogLink[];
@@ -57,6 +59,7 @@ export const blogPosts = {
     heroLead:
       "Para um produto como o Scanlume, nao basta ler frases grandes. O benchmark abaixo foi montado para avaliar o comportamento em uma tela com heading principal, CTA, chips e blocos de apoio em portugues e ingles.",
     publishedAt: "2026-03-15",
+    lastReviewedAt: "2026-03-17",
     readTime: "6 min",
     coverImage: "/blog/ocr-portuguese-benchmark-board.png",
     coverAlt: "Painel do teste OCR com benchmark misto em portugues e ingles",
@@ -66,6 +69,11 @@ export const blogPosts = {
       "Headings e CTAs grandes costumam sair primeiro; labels curtas e chips exigem revisao mais cuidadosa.",
       "Mistura de portugues com ingles nao inviabiliza o OCR, mas aumenta a importancia de preservar contexto e ordem de leitura.",
       "Quando o objetivo e colar no Word, Notion ou Markdown, formato e hierarquia contam tanto quanto taxa bruta de acerto.",
+    ],
+    editorialMethod: [
+      "Usamos uma imagem de interface com heading, CTA, chips e texto auxiliar em PT + EN.",
+      "Avaliamos leitura principal, ordem dos blocos e recuperacao de labels curtas antes de olhar velocidade.",
+      "As conclusoes desta pagina priorizam reaproveitamento pratico em Word, docs e Markdown, nao promessas genericas.",
     ],
     sections: [
       {
@@ -150,6 +158,7 @@ export const blogPosts = {
     heroLead:
       "Formato de arquivo muda o trabalho depois do OCR. O mesmo texto pode sair quase pronto em um print nativo e exigir limpeza pesada quando passa por camera, compressao ou recorte mal feito.",
     publishedAt: "2026-03-15",
+    lastReviewedAt: "2026-03-17",
     readTime: "7 min",
     coverImage: "/blog/ocr-format-comparison.png",
     coverAlt: "Quadro comparativo entre JPG, PNG e screenshot para OCR",
@@ -159,6 +168,11 @@ export const blogPosts = {
       "Para interfaces, dashboards e landing pages, screenshot nativo costuma gerar a melhor leitura.",
       "PNG preserva bordas e texto pequeno melhor do que JPG quando a origem ja e digital.",
       "JPG ainda funciona bem para fotos e documentos capturados por camera, desde que haja corte e contraste razoaveis.",
+    ],
+    editorialMethod: [
+      "Comparamos tres origens comuns: foto em JPG, exportacao em PNG e screenshot nativo.",
+      "Observamos contraste, nitidez, letras pequenas e quantidade de limpeza manual apos a extracao.",
+      "As recomendacoes foram escritas para orientar a escolha do arquivo antes do upload, nao apenas depois do OCR.",
     ],
     sections: [
       {
@@ -241,6 +255,7 @@ export const blogPosts = {
     heroLead:
       "Depois que a imagem vira texto, comeca a segunda metade do trabalho: organizar o resultado para o proximo sistema. A escolha entre Word e Markdown define quanto contexto voce preserva para equipe, IA e documentacao.",
     publishedAt: "2026-03-15",
+    lastReviewedAt: "2026-03-17",
     readTime: "6 min",
     coverImage: "/blog/ocr-export-workflow.png",
     coverAlt: "Fluxo de exportacao OCR para Word, Markdown e HTML",
@@ -250,6 +265,11 @@ export const blogPosts = {
       "Word e melhor quando o destino final envolve revisao manual, comentarios e compartilhamento com areas nao tecnicas.",
       "Markdown ajuda quando o texto vai para docs internos, IA, bases de conhecimento ou versionamento.",
       "HTML pode ser a ponte mais rapida para colar um resultado com hierarquia visual em Word ou editores ricos.",
+    ],
+    editorialMethod: [
+      "Partimos do texto extraido e avaliamos quanto contexto se preserva em Word, Markdown e HTML.",
+      "O criterio principal foi reduzir retrabalho humano em titulacao, listas e ordem de leitura.",
+      "As conclusoes assumem uso real em documentos internos, editores ricos e fluxos de conhecimento.",
     ],
     sections: [
       {
@@ -372,7 +392,7 @@ export function getBlogPostingJsonLd(post: BlogPost) {
     description: post.description,
     image: `${SITE_URL}${post.coverImage}`,
     datePublished: post.publishedAt,
-    dateModified: post.publishedAt,
+    dateModified: post.lastReviewedAt,
     inLanguage: "pt-BR",
     mainEntityOfPage: postUrl,
     author: {

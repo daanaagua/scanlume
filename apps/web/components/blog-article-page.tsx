@@ -27,6 +27,8 @@ export function BlogArticlePage({ post }: { post: BlogPost }) {
 
             <div className="blog-meta-row">
               <span>Publicado em {post.publishedAt}</span>
+              <span>Revisado em {post.lastReviewedAt}</span>
+              <span>Testado pela equipe Scanlume</span>
               <span>Blog Scanlume</span>
             </div>
 
@@ -49,14 +51,26 @@ export function BlogArticlePage({ post }: { post: BlogPost }) {
 
       <section className="section-band">
         <div className="container blog-article-layout">
-          <aside className="blog-summary-card">
-            <p className="card-label">Leitura guiada</p>
-            <h2>O que vale levar deste artigo</h2>
-            <ul className="blog-summary-list">
-              {post.summary.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
+          <aside className="blog-aside-stack">
+            <div className="blog-summary-card">
+              <p className="card-label">Leitura guiada</p>
+              <h2>O que vale levar deste artigo</h2>
+              <ul className="blog-summary-list">
+                {post.summary.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="blog-summary-card">
+              <p className="card-label">Metodo editorial</p>
+              <h2>Como este guia foi preparado</h2>
+              <ul className="blog-summary-list">
+                {post.editorialMethod.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
           </aside>
 
           <article className="blog-article-surface">
