@@ -8,7 +8,8 @@
     "dev:web": "pnpm --dir apps/web dev",
     "dev:api": "pnpm --dir apps/api dev",
     "build": "pnpm --dir apps/web build && pnpm --dir apps/api typecheck",
-    "lint": "pnpm --dir apps/web lint && pnpm --dir apps/api typecheck"
+    "lint": "pnpm --dir apps/web lint && pnpm --dir apps/api typecheck",
+    "submit:indexnow": "node scripts/submit-indexnow.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
