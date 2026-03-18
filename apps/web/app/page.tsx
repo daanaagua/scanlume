@@ -7,9 +7,9 @@ import { BLOG_PATH, BLOG_POSTS } from "@/lib/blog";
 import {
   buildMetadata,
   FORMATTED_MODE_LABEL,
+  HOME_FLOW_LINKS,
   homeFaqs,
   OCR_WORKSPACE_ID,
-  SEO_LINKS,
   SITE_NAME,
   SITE_URL,
   SIMPLE_MODE_LABEL,
@@ -150,14 +150,14 @@ export default function Home() {
         <div className="container">
           <div className="section-heading">
             <p className="eyebrow">Escolha o fluxo</p>
-            <h2>Escolha a pagina certa para o seu formato, contexto e tipo de saida.</h2>
+            <h2>Comece pela rota principal e refine o fluxo so quando houver um contexto especifico.</h2>
             <p>
-              Cada rota abaixo organiza o produto por formato de arquivo, contexto de uso e resultado esperado, para voce chegar mais rapido ao melhor fluxo.
+              A pagina <Link href="/imagem-para-texto">Imagem para texto</Link> concentra o caso geral. As rotas abaixo existem para formatos e cenarios mais especificos, sem competir com a rota central do produto.
             </p>
           </div>
 
           <div className="related-grid">
-            {SEO_LINKS.map((link) => {
+            {HOME_FLOW_LINKS.map((link) => {
               const page = toolPageContent[link.href.replace("/", "") as keyof typeof toolPageContent];
 
               return (

@@ -91,6 +91,7 @@ type ToolPageEntry = {
   title: string;
   description: string;
   keywords: readonly string[];
+  index?: boolean;
   h1: string;
   eyebrow: string;
   lead: string;
@@ -123,7 +124,7 @@ export const toolPageContent = {
       "ocr com ia",
     ],
     h1: "Imagem para texto online com OCR simples, formatado e IA",
-    eyebrow: "Principal pagina transacional para imagem para texto",
+    eyebrow: "Rota central do Scanlume para imagem para texto",
     lead:
       "Use o modo rapido para texto puro ou escolha a saida formatada com IA para preservar titulos, paragrafos e a ordem de leitura principal.",
     heroBullets: ["Gratis para testar", "Sem instalar aplicativo", "TXT, Markdown e HTML"],
@@ -640,8 +641,8 @@ export const toolPageContent = {
       "tirar texto de imagem",
       "copiar texto de imagem",
       "ocr online",
-      "imagem para texto",
     ],
+    index: false,
     h1: "Extrair texto de imagem sem redigitar tudo do zero",
     eyebrow: "Pagina de suporte para a intencao de extrair conteudo visual",
     lead:
@@ -1159,9 +1160,9 @@ export const toolPageContent = {
       "transcrever imagem em texto",
       "transcrever foto em texto",
       "converter imagem em texto",
-      "imagem para texto",
       "ocr online",
     ],
+    index: false,
     h1: "Transcrever imagem em texto para editar, resumir e reaproveitar",
     eyebrow: "Pagina de suporte para buscas com foco em transcricao e reaproveitamento",
     lead:
@@ -1265,6 +1266,45 @@ export const NAV_LINKS = TOOL_PAGE_SLUGS.filter((slug) => toolPageContent[slug].
 );
 
 export const SEO_LINKS = TOOL_PAGE_SLUGS.map((slug) => ({
+  href: `/${slug}`,
+  label: toolPageContent[slug].label,
+}));
+
+export const INDEXABLE_TOOL_PAGE_SLUGS = TOOL_PAGE_SLUGS.filter((slug) => {
+  const entry = toolPageContent[slug] as ToolPageEntry;
+
+  return entry.index !== false;
+});
+
+export const INDEXABLE_SEO_LINKS = INDEXABLE_TOOL_PAGE_SLUGS.map((slug) => ({
+  href: `/${slug}`,
+  label: toolPageContent[slug].label,
+}));
+
+const HOME_FLOW_SLUGS = [
+  "imagem-para-texto",
+  "imagem-para-word",
+  "ocr-online",
+  "jpg-para-texto",
+  "png-para-texto",
+  "ocr-em-portugues",
+  "extrair-texto-de-print",
+  "extrair-texto-de-foto",
+  "imagem-para-texto-no-celular",
+] as const satisfies readonly ToolPageSlug[];
+
+export const HOME_FLOW_LINKS = HOME_FLOW_SLUGS.map((slug) => ({
+  href: `/${slug}`,
+  label: toolPageContent[slug].label,
+}));
+
+const FOOTER_SUPPORT_SLUGS = [
+  "extrair-texto-de-foto",
+  "extrair-texto-de-print",
+  "imagem-para-texto-no-celular",
+] as const satisfies readonly ToolPageSlug[];
+
+export const FOOTER_SUPPORT_LINKS = FOOTER_SUPPORT_SLUGS.map((slug) => ({
   href: `/${slug}`,
   label: toolPageContent[slug].label,
 }));

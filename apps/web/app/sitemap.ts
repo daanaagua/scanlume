@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { BLOG_PATH, BLOG_POSTS } from "@/lib/blog";
-import { SEO_LINKS, SITE_URL } from "@/lib/site";
+import { INDEXABLE_SEO_LINKS, SITE_URL } from "@/lib/site";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const buildDate = new Date();
@@ -26,7 +26,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly" as const,
       priority: 0.88,
     })),
-    ...SEO_LINKS.map((link) => ({
+    ...INDEXABLE_SEO_LINKS.map((link) => ({
       url: `${SITE_URL}${link.href}`,
       lastModified: buildDate,
       changeFrequency: "weekly" as const,
