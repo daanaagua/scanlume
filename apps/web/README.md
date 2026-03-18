@@ -1,36 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Scanlume Web App
 
-## Getting Started
+This app contains the public-facing Scanlume website and OCR workspace.
 
-First, run the development server:
+Live product: `https://www.scanlume.com`
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Primary landing page: `https://www.scanlume.com/imagem-para-texto`
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Responsibilities
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- render the homepage and SEO landing pages
+- host the OCR workspace UI
+- publish trust pages such as `sobre`, `contato`, `privacidade`, and `termos`
+- publish blog content and product-supporting pages
+- expose generated assets such as `robots.txt`, `sitemap.xml`, and `llms.txt`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Local development
 
-## Learn More
+From the repository root:
 
-To learn more about Next.js, take a look at the following resources:
+1. Install dependencies with `pnpm install`
+2. Start the frontend with `pnpm dev:web`
+3. Open `http://localhost:3000`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Useful commands
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `pnpm dev:web`
+- `pnpm --dir apps/web lint`
+- `pnpm --dir apps/web build`
 
-## Deploy on Vercel
+## Notes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- The app uses the Next.js App Router.
+- Product metadata, landing page copy, and tool routing are largely driven from `apps/web/lib/site.ts`.
+- The OCR UI talks to the Cloudflare Worker API defined in `apps/api`.
