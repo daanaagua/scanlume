@@ -75,6 +75,9 @@ export default function Home() {
             <p className="hero-lead">
               Use o Scanlume para testar OCR simples ou texto formatado no navegador e levar o resultado para Word, Markdown ou fluxos internos sem instalar app.
             </p>
+            <p className="hero-lead">
+              A rota principal de <Link href="/imagem-para-texto">imagem para texto</Link> tambem atende buscas por <Link href="/imagem-para-texto">converter imagem em texto</Link> e <Link href="/imagem-para-texto">imagem em texto</Link>, mantendo o caso geral concentrado em uma pagina central.
+            </p>
             <div className="hero-bullets">
               <span>Gratis para testar</span>
               <span>Sem instalar aplicativo</span>

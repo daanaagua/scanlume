@@ -16,6 +16,45 @@ export default function ImageToTextPage() {
     <>
       <ToolLanding slug="imagem-para-texto" />
 
+      <section className="section-band">
+        <div className="container split-content">
+          <div className="section-heading">
+            <p className="eyebrow">Intencao principal</p>
+            <h2>Imagem para texto, converter imagem em texto e imagem em texto levam ao mesmo fluxo.</h2>
+            <p>
+              Na pratica, essas buscas costumam descrever a mesma tarefa: pegar JPG, PNG ou capturas de tela e transformar o conteudo visual em texto editavel. Esta pagina concentra esse caso geral para evitar que a navegacao se espalhe entre sinonimos muito parecidos.
+            </p>
+            <div className="hero-actions">
+              <a href="#ocr-workspace" className="solid-button large-button">
+                Testar imagem para texto
+              </a>
+              <Link href="/ocr-online" className="ghost-button large-button">
+                Ver OCR online
+              </Link>
+            </div>
+          </div>
+
+          <div className="check-grid">
+            <article className="check-card">
+              <strong>Imagem para texto</strong>
+              <p>Busca mais ampla para quem quer a pagina principal do produto e um fluxo geral para diferentes formatos.</p>
+            </article>
+            <article className="check-card">
+              <strong>Converter imagem em texto</strong>
+              <p>Busca mais orientada a acao, comum quando o usuario quer resolver a tarefa no navegador sem instalar aplicativo.</p>
+            </article>
+            <article className="check-card">
+              <strong>Imagem em texto</strong>
+              <p>Variacao semantica que ainda aponta para o mesmo objetivo: transformar a imagem em texto editavel com o menor retrabalho possivel.</p>
+            </article>
+            <article className="check-card">
+              <strong>Quando abrir outra rota</strong>
+              <p>Se o problema for mais especifico, como Word, PNG ou OCR em portugues, os links complementares continuam disponiveis sem tirar o foco desta pagina principal.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
       <section className="section-band muted-band">
         <div className="container split-content">
           <div className="section-heading">

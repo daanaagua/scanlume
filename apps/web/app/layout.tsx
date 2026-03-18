@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: `${SITE_NAME} | Imagem para texto com IA em pt-BR`,
   description:
-    "Converta imagem para texto com IA em pt-BR. OCR online para JPG, PNG e screenshots com saida simples ou formatada em TXT, Markdown e HTML.",
+    "Converta imagem em texto com IA em portugues do Brasil. Use OCR no navegador para JPG, PNG e capturas de tela com saida simples ou formatada em TXT, Markdown e HTML.",
   keywords: DEFAULT_KEYWORDS,
   applicationName: SITE_NAME,
   alternates: {
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: `${SITE_NAME} | Imagem para texto com IA em pt-BR`,
     description:
-      "Converta imagem para texto com IA em pt-BR. OCR online para JPG, PNG e screenshots com saida simples ou formatada em TXT, Markdown e HTML.",
+      "Converta imagem em texto com IA em portugues do Brasil. Use OCR no navegador para JPG, PNG e capturas de tela com saida simples ou formatada em TXT, Markdown e HTML.",
     url: SITE_URL,
     siteName: SITE_NAME,
     locale: "pt_BR",
@@ -61,7 +61,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: `${SITE_NAME} | Imagem para texto com IA em pt-BR`,
     description:
-      "Converta imagem para texto com IA em pt-BR. OCR online para JPG, PNG e screenshots com saida simples ou formatada em TXT, Markdown e HTML.",
+      "Converta imagem em texto com IA em portugues do Brasil. Use OCR no navegador para JPG, PNG e capturas de tela com saida simples ou formatada em TXT, Markdown e HTML.",
     images: [SOCIAL_IMAGE_PATH],
   },
 };

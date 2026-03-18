@@ -113,9 +113,9 @@ type ToolPageEntry = {
 export const toolPageContent = {
   "imagem-para-texto": {
     label: "Imagem para texto",
-    title: "Imagem para texto online com IA | OCR simples e formatado | Scanlume",
+    title: "Imagem para texto: converter imagem em texto com IA | Scanlume",
     description:
-      "Converta imagem para texto com IA em pt-BR. Use OCR online para transformar JPG, PNG e screenshots em texto puro ou formatado e baixar em TXT, Markdown ou HTML.",
+      "Converta imagem em texto com IA em portugues do Brasil. Use OCR no navegador para transformar JPG, PNG e capturas de tela em texto simples ou formatado e exportar em TXT, Markdown ou HTML.",
     keywords: [
       "imagem para texto",
       "converter imagem em texto",
@@ -123,10 +123,10 @@ export const toolPageContent = {
       "ocr online",
       "ocr com ia",
     ],
-    h1: "Imagem para texto online com OCR simples, formatado e IA",
-    eyebrow: "Rota central do Scanlume para imagem para texto",
+    h1: "Imagem para texto online para converter imagem em texto com IA",
+    eyebrow: "Pagina principal para imagem para texto, imagem em texto e OCR em pt-BR",
     lead:
-      "Use o modo rapido para texto puro ou escolha a saida formatada com IA para preservar titulos, paragrafos e a ordem de leitura principal.",
+      "Se voce procura imagem para texto, converter imagem em texto ou imagem em texto, esta e a rota principal do Scanlume para JPG, PNG e capturas de tela com saida simples ou formatada.",
     heroBullets: ["Gratis para testar", "Sem instalar aplicativo", "TXT, Markdown e HTML"],
     defaultMode: "simple",
     primaryNav: true,
@@ -155,7 +155,7 @@ export const toolPageContent = {
     ],
     useCasesHeading: "Uma pagina principal para transformar imagens em texto com menos retrabalho.",
     useCasesLead:
-      "Ela cobre o fluxo mais amplo do produto: screenshots, artes, fotos do celular e imagens soltas que precisam virar texto editavel rapido.",
+      "Ela cobre o fluxo mais amplo do produto: capturas de tela, artes, fotos do celular e imagens soltas que precisam virar texto editavel rapido quando a busca e imagem para texto ou converter imagem em texto.",
     useCases: [
       {
         title: "Capturas de landing page",
@@ -209,6 +209,11 @@ export const toolPageContent = {
           "Nao. O fluxo roda no navegador e ja permite copiar ou baixar o resultado sem instalar app.",
       },
       {
+        question: "Imagem para texto, converter imagem em texto e imagem em texto significam a mesma coisa?",
+        answer:
+          "Na maioria dos casos, sim. Essas buscas costumam apontar para a mesma necessidade: pegar uma imagem e transformar o conteudo visual em texto editavel. Por isso esta pagina concentra a rota principal do Scanlume para esse problema.",
+      },
+      {
         question: "O resultado pode ser usado em Word, Notion ou docs internos?",
         answer:
           "Sim. O texto pode ser copiado direto ou exportado em TXT, Markdown e HTML para reutilizacao rapida.",
@@ -219,7 +224,7 @@ export const toolPageContent = {
     label: "Imagem para Word",
     title: "Imagem para Word com IA e estrutura limpa | Scanlume",
     description:
-      "Transforme imagem em texto com IA e leve para o Word com menos retrabalho. OCR online para JPG, PNG e screenshots com saida em TXT, Markdown e HTML.",
+      "Leve OCR com estrutura mais limpa para o Word. Use esta rota quando o texto precisar chegar mais organizado em documentos, revisoes e edicao posterior.",
     keywords: [
       "imagem para word",
       "converter imagem em texto",
@@ -323,7 +328,7 @@ export const toolPageContent = {
     label: "OCR online",
     title: "OCR online com IA para imagens e screenshots | Scanlume",
     description:
-      "OCR online com IA para converter imagem em texto em pt-BR. Extraia texto de screenshots, JPG e PNG com modo simples ou formatado.",
+      "Use OCR online com IA no navegador para extrair texto de capturas de tela, JPG e PNG. Uma rota leve para testar velocidade, formato e saida sem instalar nada.",
     keywords: [
       "ocr online",
       "imagem para texto",
