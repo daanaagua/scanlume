@@ -508,6 +508,15 @@ main {
   padding: 4rem 0;
 }
 
+.hero-section-compact {
+  padding-top: 2rem;
+}
+
+.tool-workspace-band.is-priority {
+  padding-top: 2.2rem;
+  padding-bottom: 3rem;
+}
+
 .account-panel-shell {
   display: grid;
   gap: 1.25rem;
@@ -548,6 +557,10 @@ main {
   align-items: start;
 }
 
+.hero-grid-compact {
+  grid-template-columns: 0.98fr 1.02fr;
+}
+
 .contact-page-grid {
   grid-template-columns: 0.92fr 1.08fr;
   align-items: start;
@@ -571,6 +584,20 @@ main {
   display: grid;
   gap: 1.1rem;
   padding-top: 1.5rem;
+}
+
+.hero-copy-compact {
+  gap: 0.8rem;
+  padding-top: 0.4rem;
+}
+
+.hero-copy-compact h1 {
+  font-size: clamp(2.1rem, 3.8vw, 3.3rem);
+  line-height: 0.96;
+}
+
+.hero-copy-compact .hero-lead {
+  max-width: 46rem;
 }
 
 .eyebrow,
@@ -652,6 +679,11 @@ main {
 .hero-card,
 .editorial-card {
   padding: 1.5rem;
+}
+
+.hero-card-compact {
+  gap: 0.85rem;
+  padding: 1.2rem;
 }
 
 .stacked-hero-card,
@@ -741,14 +773,96 @@ main {
   gap: 1.5rem;
 }
 
+.workspace-shell-priority {
+  gap: 1rem;
+}
+
 .workspace-head {
   display: grid;
   gap: 1rem;
 }
 
+.upload-panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+}
+
+.upload-panel-head > div:first-child {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.upload-panel-head h3 {
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+}
+
+.upload-panel-head p {
+  color: var(--muted);
+  line-height: 1.65;
+  max-width: 44rem;
+}
+
 .workspace-note {
   color: var(--muted);
   font-size: 0.96rem;
+}
+
+.workspace-help-shell {
+  position: relative;
+  display: inline-flex;
+}
+
+.workspace-help-button {
+  width: 2.35rem;
+  height: 2.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(22, 42, 44, 0.12);
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--ink);
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 12px 24px rgba(22, 42, 44, 0.08);
+}
+
+.workspace-help-popover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.6rem);
+  width: min(290px, calc(100vw - 2rem));
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 18px;
+  background: rgba(22, 42, 44, 0.96);
+  color: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 20px 38px rgba(22, 42, 44, 0.22);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 160ms ease, transform 160ms ease;
+  z-index: 24;
+}
+
+.workspace-help-popover strong {
+  font-size: 0.9rem;
+}
+
+.workspace-help-popover span {
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.workspace-help-popover.is-open {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .workspace-meta-stack {
@@ -1041,6 +1155,11 @@ main {
 .login-promo {
   grid-template-columns: 1fr auto;
   align-items: center;
+}
+
+.login-promo-copy {
+  display: grid;
+  gap: 0.25rem;
 }
 
 .status-board span {
@@ -1747,8 +1866,20 @@ main {
     gap: 1rem;
   }
 
+  .hero-section-compact {
+    padding-top: 1.1rem;
+  }
+
   .hero-copy {
     gap: 0.55rem;
+  }
+
+  .hero-copy-compact {
+    gap: 0.5rem;
+  }
+
+  .hero-copy-compact h1 {
+    font-size: clamp(1.7rem, 6.4vw, 2.2rem);
   }
 
   .hero-copy h1 {
@@ -1776,6 +1907,11 @@ main {
     padding: 0.95rem;
   }
 
+  .hero-card-compact {
+    gap: 0.5rem;
+    padding: 0.9rem;
+  }
+
   .hero-inline-actions {
     margin-top: 0.05rem;
   }
@@ -1799,14 +1935,38 @@ main {
     gap: 1rem;
   }
 
+  .tool-workspace-band.is-priority {
+    padding-top: 1.2rem;
+    padding-bottom: 2rem;
+  }
+
   .workspace-head {
     gap: 0.45rem;
+  }
+
+  .upload-panel-head {
+    gap: 0.75rem;
+  }
+
+  .upload-panel-head h3 {
+    font-size: 1.28rem;
+  }
+
+  .upload-panel-head p {
+    font-size: 0.9rem;
+    line-height: 1.5;
   }
 
   .workspace-intro,
   .workspace-note,
   .limit-pills span:nth-child(n + 3) {
     display: none;
+  }
+
+  .workspace-shell-priority .workspace-note {
+    display: block;
+    font-size: 0.82rem;
+    line-height: 1.45;
   }
 
   .mode-toggle {
@@ -1877,6 +2037,17 @@ main {
     min-height: 42px;
     padding: 0 0.85rem;
     font-size: 0.9rem;
+  }
+
+  .workspace-help-button {
+    width: 2.1rem;
+    height: 2.1rem;
+  }
+
+  .workspace-help-popover {
+    right: 0;
+    left: auto;
+    width: min(260px, calc(100vw - 2rem));
   }
 
   .result-preview {

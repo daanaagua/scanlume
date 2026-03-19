@@ -96,6 +96,7 @@ type ToolPageEntry = {
   eyebrow: string;
   lead: string;
   heroBullets: readonly string[];
+  workspaceFirst?: boolean;
   primaryNav?: boolean;
   defaultMode?: "simple" | "formatted";
   relatedSlugs: readonly string[];
@@ -128,6 +129,7 @@ export const toolPageContent = {
     lead:
       "Se voce procura imagem para texto, converter imagem em texto ou imagem em texto, esta e a rota principal do Scanlume para JPG, PNG e capturas de tela com saida simples ou formatada.",
     heroBullets: ["Gratis para testar", "Sem instalar aplicativo", "TXT, Markdown e HTML"],
+    workspaceFirst: true,
     defaultMode: "simple",
     primaryNav: true,
     relatedSlugs: ["imagem-para-word", "png-para-texto", "jpg-para-texto", "ocr-em-portugues"],

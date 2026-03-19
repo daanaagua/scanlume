@@ -138,7 +138,12 @@ function revokePreviewUrls(files: SelectedFile[]) {
   files.forEach((file) => URL.revokeObjectURL(file.previewUrl));
 }
 
-export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode }) {
+type OcrWorkspaceProps = {
+  defaultMode?: Mode;
+  priorityLayout?: boolean;
+};
+
+export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }: OcrWorkspaceProps) {
   const [mode, setMode] = useState<Mode>(defaultMode);
   const [activeFormat, setActiveFormat] = useState<FormatTab>("txt");
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
@@ -147,6 +152,7 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [limits, setLimits] = useState<LimitsResponse | null>(null);
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
+  const [isPricingHintOpen, setIsPricingHintOpen] = useState(false);
   const [processingState, setProcessingState] = useState<ProcessingState | null>(null);
   const [progressTick, setProgressTick] = useState(() => Date.now());
   const [animatedPercent, setAnimatedPercent] = useState(0);
@@ -501,38 +507,83 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
   const budgetLimit = limits?.limits.hardBudgetRmb ?? DISPLAY_DAILY_BUDGET_BRL;
   const budgetUsagePercent = clamp((budgetUsed / Math.max(budgetLimit, 1)) * 100, 0, 100);
   const budgetUsageLabel = `${brlFormatter.format(budgetUsed)} / ${brlFormatter.format(budgetLimit)}`;
+  const maxImageMb = limits?.limits.maxImageMb ?? 5;
+  const maxBatchTotalMb = limits?.limits.maxBatchTotalMb ?? 20;
+  const maxBatchFiles = limits?.limits.maxBatchFiles ?? 10;
+  const remainingCreditsLabel = limits?.viewer.authenticated
+    ? `${limits.usage.remainingCredits} / ${limits.limits.dailyCredits}`
+    : `${limits?.limits.dailyImages ?? maxBatchFiles} imagens`;
+  const remainingImagesLabel = limits?.viewer.authenticated
+    ? `${limits.usage.remainingImages} / ${limits.limits.dailyImages}`
+    : `${maxBatchFiles} imagens`;
 
   return (
-    <section className="workspace-shell">
-      <div className="workspace-head">
-        <div>
-          <p className="eyebrow">Ferramenta principal</p>
-          <h2>Upload instantaneo com previa e download.</h2>
-          <p className="workspace-intro">
-            {SIMPLE_MODE_LABEL} entrega texto puro. {FORMATTED_MODE_LABEL} reorganiza titulos, paragrafos e a estrutura principal para Word, Markdown e HTML.
-          </p>
+    <section className={`workspace-shell${priorityLayout ? " workspace-shell-priority" : ""}`}>
+      {!priorityLayout && (
+        <div className="workspace-head">
+          <div>
+            <p className="eyebrow">Ferramenta principal</p>
+            <h2>Upload instantaneo com previa e download.</h2>
+            <p className="workspace-intro">
+              {SIMPLE_MODE_LABEL} entrega texto puro. {FORMATTED_MODE_LABEL} reorganiza titulos, paragrafos e a estrutura principal para Word, Markdown e HTML.
+            </p>
+          </div>
         </div>
-      </div>
-
-      <div className="mode-toggle" role="tablist" aria-label="Modo OCR">
-        <button
-          className={mode === "simple" ? "is-active" : ""}
-          onClick={() => setMode("simple")}
-          type="button"
-        >
-          {SIMPLE_MODE_LABEL}
-        </button>
-        <button
-          className={mode === "formatted" ? "is-active" : ""}
-          onClick={() => setMode("formatted")}
-          type="button"
-        >
-          {FORMATTED_MODE_LABEL}
-        </button>
-      </div>
+      )}
 
       <div className="workspace-grid">
         <div className="upload-panel card-surface">
+          <div className="upload-panel-head">
+            <div>
+              <p className="eyebrow">Comece pelo upload</p>
+              <h3>{priorityLayout ? "Envie uma imagem e teste agora." : "Envie a imagem certa para comecar."}</h3>
+              <p>
+                Abra JPG, PNG e screenshots no navegador e escolha a saida que faz sentido para copiar, revisar ou baixar.
+              </p>
+            </div>
+
+            <div
+              className="workspace-help-shell"
+              onMouseEnter={() => setIsPricingHintOpen(true)}
+              onMouseLeave={() => setIsPricingHintOpen(false)}
+            >
+              <button
+                type="button"
+                className="workspace-help-button"
+                aria-label="Entender limites do teste gratis"
+                aria-expanded={isPricingHintOpen}
+                onClick={() => setIsPricingHintOpen((current) => !current)}
+                onFocus={() => setIsPricingHintOpen(true)}
+                onBlur={() => setIsPricingHintOpen(false)}
+              >
+                ?
+              </button>
+              <div className={`workspace-help-popover${isPricingHintOpen ? " is-open" : ""}`} role="tooltip">
+                <strong>Como calculamos o teste gratis</strong>
+                <span>Limite diario: {brlFormatter.format(budgetLimit)}.</span>
+                <span>{SIMPLE_MODE_LABEL} consome 1 credito por imagem.</span>
+                <span>{FORMATTED_MODE_LABEL} consome 3 creditos por imagem.</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mode-toggle" role="tablist" aria-label="Modo OCR">
+            <button
+              className={mode === "simple" ? "is-active" : ""}
+              onClick={() => setMode("simple")}
+              type="button"
+            >
+              {SIMPLE_MODE_LABEL}
+            </button>
+            <button
+              className={mode === "formatted" ? "is-active" : ""}
+              onClick={() => setMode("formatted")}
+              type="button"
+            >
+              {FORMATTED_MODE_LABEL}
+            </button>
+          </div>
+
           <label className="upload-dropzone" htmlFor="scanlume-upload">
             <input
               id="scanlume-upload"
@@ -548,21 +599,11 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
               }}
             />
             <strong>Arraste imagens aqui ou clique para enviar</strong>
-            <span>Envie primeiro e clique em iniciar quando estiver pronto</span>
-            <small>Maximo de 5 MB por imagem e 20 MB por lote</small>
+            <span>O upload aparece na fila na hora e voce escolhe quando iniciar o OCR.</span>
+            <small>
+              Ate {maxImageMb} MB por imagem, {maxBatchTotalMb} MB por lote e {maxBatchFiles} arquivo(s) por envio.
+            </small>
           </label>
-
-          <div className="workspace-meta-stack">
-            <div className="limit-pills">
-              <span>Limite gratis diario: R$ 20,00</span>
-              <span>Uso hoje: {budgetUsageLabel}</span>
-              <span>{SIMPLE_MODE_LABEL} = 1 credito</span>
-              <span>{FORMATTED_MODE_LABEL} = 3 creditos</span>
-            </div>
-            <p className="workspace-note">
-              Teste gratis agora. Assinaturas para lotes maiores entram em lancamento por volta de 2026/04/01.
-            </p>
-          </div>
 
           <div className="upload-actions">
             <button
@@ -616,6 +657,8 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
             </div>
           )}
 
+          {globalError && <p className="error-banner">{globalError}</p>}
+
           {limits && !limits.viewer.authenticated && (
             <div className="login-promo">
               <div className="login-promo-copy">
@@ -638,35 +681,30 @@ export function OcrWorkspace({ defaultMode = "simple" }: { defaultMode?: Mode })
                 </div>
               </div>
               <div>
+                <span>Limite do teste</span>
+                <strong>{brlFormatter.format(budgetLimit)}</strong>
+                <small>{SIMPLE_MODE_LABEL} = 1 credito • {FORMATTED_MODE_LABEL} = 3 creditos</small>
+              </div>
+              <div>
                 <span>Plano</span>
                 <strong>{limits.plan.label}</strong>
                 <small>{limits.plan.shortLabel}</small>
               </div>
               <div>
                 <span>{limits.viewer.authenticated ? "Creditos restantes" : "Cota anonima"}</span>
-                <strong>
-                  {limits.viewer.authenticated
-                    ? `${limits.usage.remainingCredits} / ${limits.limits.dailyCredits}`
-                    : `${limits.limits.dailyImages} imagens`}
-                </strong>
+                <strong>{remainingCreditsLabel}</strong>
               </div>
               <div>
                 <span>{limits.viewer.authenticated ? "Imagens restantes" : "Lote maximo"}</span>
-                <strong>
-                  {limits.viewer.authenticated
-                    ? `${limits.usage.remainingImages} / ${limits.limits.dailyImages}`
-                    : `${limits.limits.maxBatchFiles} imagens`}
-                </strong>
-              </div>
-              <div>
-                <span>Lotes maiores</span>
-                <strong>Abr. 2026</strong>
-                <small>Assinatura em preparacao para lotes recorrentes.</small>
+                <strong>{remainingImagesLabel}</strong>
+                <small>{limits.viewer.authenticated ? "Atualizado apos cada OCR." : `Envio atual aceita ate ${maxBatchFiles} imagens.`}</small>
               </div>
             </div>
           )}
 
-          {globalError && <p className="error-banner">{globalError}</p>}
+          <p className="workspace-note">
+            Teste gratis no navegador. Os detalhes de custo ficam no bloco de status e no botao de ajuda ao lado do titulo.
+          </p>
 
           <div className="preview-stack">
             {selectedFiles.length === 0 && (

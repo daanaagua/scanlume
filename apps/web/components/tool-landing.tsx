@@ -16,6 +16,16 @@ import {
 
 export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
   const page = toolPageContent[slug];
+  const workspaceFirst = "workspaceFirst" in page && Boolean(page.workspaceFirst);
+  const heroEyebrow = workspaceFirst ? "Apoio rapido" : page.eyebrow;
+  const heroLead = workspaceFirst
+    ? "A ferramenta principal ja fica no topo. Aqui embaixo voce so precisa decidir entre velocidade e estrutura antes de processar a imagem."
+    : page.lead;
+  const heroBullets = workspaceFirst
+    ? ["JPG, PNG e screenshot", "Texto puro ou organizado", "Copiar e baixar no navegador"]
+    : page.heroBullets;
+  const heroPrimaryLabel = workspaceFirst ? "Voltar ao upload" : "Usar agora";
+  const heroActionNote = workspaceFirst ? "Use este bloco para comparar os dois modos sem perder o foco no upload." : "Teste gratis direto no navegador";
   const relatedPages = page.relatedSlugs.flatMap((key) => {
     const relatedSlug = key as ToolPageSlug;
     const entry = toolPageContent[relatedSlug];
@@ -28,6 +38,13 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
   });
   const canonical = `${SITE_URL}/${slug}`;
   const featuredPosts = BLOG_POSTS.slice(0, 3);
+  const workspaceSection = (
+    <section id={OCR_WORKSPACE_ID} className={`section-band tool-workspace-band${workspaceFirst ? " is-priority" : ""}`}>
+      <div className="container">
+        <OcrWorkspace defaultMode={page.defaultMode ?? "simple"} priorityLayout={workspaceFirst} />
+      </div>
+    </section>
+  );
 
   return (
     <>
@@ -84,48 +101,54 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
         }}
       />
 
-      <section className="hero-section">
-        <div className="container hero-grid">
-          <div className="hero-copy">
-            <p className="eyebrow">{page.eyebrow}</p>
+      {workspaceFirst ? workspaceSection : null}
+
+      <section className={`hero-section${workspaceFirst ? " hero-section-compact" : ""}`}>
+        <div className={`container hero-grid${workspaceFirst ? " hero-grid-compact" : ""}`}>
+          <div className={`hero-copy${workspaceFirst ? " hero-copy-compact" : ""}`}>
+            <p className="eyebrow">{heroEyebrow}</p>
             <h1>{page.h1}</h1>
-            <p className="hero-lead">{page.lead}</p>
+            <p className="hero-lead">{heroLead}</p>
             <div className="hero-actions hero-inline-actions">
               <a href={`#${OCR_WORKSPACE_ID}`} className="solid-button large-button hero-primary-cta">
-                Usar agora
+                {heroPrimaryLabel}
               </a>
-              <span className="hero-action-note">Teste gratis direto no navegador</span>
+              <span className="hero-action-note">{heroActionNote}</span>
             </div>
             <div className="hero-bullets">
-              {page.heroBullets.map((item) => (
+              {heroBullets.map((item) => (
                 <span key={item}>{item}</span>
               ))}
             </div>
           </div>
 
-          <div className="hero-card editorial-card">
+          <div className={`hero-card editorial-card${workspaceFirst ? " hero-card-compact" : ""}`}>
             <div>
-              <p className="card-label">Modo rapido</p>
+              <p className="card-label">{workspaceFirst ? "Se quer velocidade" : "Modo rapido"}</p>
               <h2>{SIMPLE_MODE_LABEL}</h2>
-              <p>Texto puro, sem raciocinio extra, mais veloz para screenshot, poster e foto do celular.</p>
+              <p>
+                {workspaceFirst
+                  ? "Melhor para extrair texto puro com menos espera em screenshots, posters e fotos simples."
+                  : "Texto puro, sem raciocinio extra, mais veloz para screenshot, poster e foto do celular."}
+              </p>
             </div>
             <div>
-              <p className="card-label">Modo estruturado</p>
+              <p className="card-label">{workspaceFirst ? "Se quer leitura melhor" : "Modo estruturado"}</p>
               <h2>{FORMATTED_MODE_LABEL}</h2>
-              <p>Preserva a estrutura principal com titulos, paragrafos e uma leitura mais clara.</p>
+              <p>
+                {workspaceFirst
+                  ? "Vale usar quando voce quer manter titulos, paragrafos e uma hierarquia mais limpa para revisar depois."
+                  : "Preserva a estrutura principal com titulos, paragrafos e uma leitura mais clara."}
+              </p>
             </div>
             <a href={`#${OCR_WORKSPACE_ID}`} className="solid-button large-button">
-              Teste gratis agora
+              {workspaceFirst ? "Subir imagem" : "Teste gratis agora"}
             </a>
           </div>
         </div>
       </section>
 
-      <section id={OCR_WORKSPACE_ID} className="section-band">
-        <div className="container">
-          <OcrWorkspace defaultMode={page.defaultMode ?? "simple"} />
-        </div>
-      </section>
+      {workspaceFirst ? null : workspaceSection}
 
       <section className="section-band muted-band">
         <div className="container split-content">
