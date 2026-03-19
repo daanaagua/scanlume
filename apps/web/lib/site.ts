@@ -239,6 +239,7 @@ export const toolPageContent = {
     lead:
       `O modo ${FORMATTED_MODE_LABEL} usa OCR com IA para entregar um layout mais legivel em screenshots de paginas, telas de app e materiais de marketing.`,
     heroBullets: ["Foco em leitura organizada", "Melhor para colar no Word", "Exporta em HTML e Markdown"],
+    workspaceFirst: true,
     primaryNav: true,
     defaultMode: "formatted",
     relatedSlugs: ["imagem-para-texto", "png-para-texto", "ocr-em-portugues", "transcrever-imagem-em-texto"],
@@ -343,6 +344,7 @@ export const toolPageContent = {
     lead:
       "Scanlume combina um fluxo simples para texto puro e uma opcao formatada com IA para manter a leitura mais clara.",
     heroBullets: ["OCR direto no navegador", "Sem instalacao", "Ideal para testes rapidos"],
+    workspaceFirst: true,
     defaultMode: "simple",
     primaryNav: true,
     relatedSlugs: ["imagem-para-texto", "jpg-para-texto", "png-para-texto", "ocr-em-portugues"],
@@ -447,6 +449,7 @@ export const toolPageContent = {
     lead:
       "Envie arquivos JPG e receba texto puro ou uma versao com estrutura principal preservada por IA para edicao posterior.",
     heroBullets: ["Aceita JPG leve", "Bom para fotos", "Saida simples ou formatada"],
+    workspaceFirst: true,
     defaultMode: "simple",
     primaryNav: true,
     relatedSlugs: ["imagem-para-texto", "extrair-texto-de-foto", "imagem-para-texto-no-celular", "ocr-online"],
@@ -551,6 +554,7 @@ export const toolPageContent = {
     lead:
       "O modo formatado usa IA para transformar PNG em blocos mais organizados para colar no Word, Markdown ou HTML.",
     heroBullets: ["Pensado para screenshots", "Bom para UI e layouts", "Modo formatado com IA"],
+    workspaceFirst: true,
     defaultMode: "simple",
     primaryNav: true,
     relatedSlugs: ["imagem-para-texto", "extrair-texto-de-print", "imagem-para-word", "ocr-online"],
@@ -655,6 +659,7 @@ export const toolPageContent = {
     lead:
       "Quando a tarefa e so puxar o texto que esta preso dentro de uma imagem, o Scanlume entrega uma rota direta com OCR online e exportacao simples.",
     heroBullets: ["Foco em extracao", "Serve para print e foto", "Copiar sem retrabalho"],
+    workspaceFirst: true,
     defaultMode: "simple",
     primaryNav: false,
     relatedSlugs: ["imagem-para-texto", "ocr-online", "imagem-para-word", "transcrever-imagem-em-texto"],
@@ -759,6 +764,7 @@ export const toolPageContent = {
     lead:
       "Quando o texto esta em uma foto de quadro, aviso, folder ou cartaz, o Scanlume ajuda a transformar esse conteudo em texto editavel no navegador.",
     heroBullets: ["Bom para camera do celular", "Sem app dedicado", "Revisao rapida no navegador"],
+    workspaceFirst: true,
     defaultMode: "simple",
     primaryNav: false,
     relatedSlugs: ["imagem-para-texto", "jpg-para-texto", "imagem-para-texto-no-celular", "transcrever-imagem-em-texto"],
@@ -863,6 +869,7 @@ export const toolPageContent = {
     lead:
       "Prints de landing page, app screen e dashboard costumam sair em PNG ou JPG. Aqui o foco e puxar o texto principal desses recortes com o minimo de atrito.",
     heroBullets: ["Ideal para screenshot", "Bom para interfaces", "Modo formatado ajuda na hierarquia"],
+    workspaceFirst: true,
     defaultMode: "simple",
     primaryNav: false,
     relatedSlugs: ["imagem-para-texto", "png-para-texto", "ocr-online", "imagem-para-word"],
@@ -967,6 +974,7 @@ export const toolPageContent = {
     lead:
       "Se a maior parte do seu fluxo nasce no celular, esta pagina mostra um caminho simples para subir fotos e prints, rodar OCR e copiar o texto sem baixar app dedicado.",
     heroBullets: ["Pensado para mobile", "Sem instalar app", "Fotos e prints do telefone"],
+    workspaceFirst: true,
     defaultMode: "simple",
     primaryNav: false,
     relatedSlugs: ["imagem-para-texto", "extrair-texto-de-foto", "jpg-para-texto", "png-para-texto"],
@@ -1071,6 +1079,7 @@ export const toolPageContent = {
     lead:
       "Esta pagina posiciona o Scanlume para buscas em que o usuario quer um OCR preparado para textos em portugues, com suporte a acentos, chamadas locais e conteudo de uso diario.",
     heroBullets: ["Foco em pt-BR", "Bom para acentos", "Serve para UI e fotos"],
+    workspaceFirst: true,
     defaultMode: "simple",
     primaryNav: false,
     relatedSlugs: ["imagem-para-texto", "ocr-online", "png-para-texto", "imagem-para-word"],
@@ -1175,6 +1184,7 @@ export const toolPageContent = {
     lead:
       "Aqui a promessa e pegar um conteudo visual e transformar em texto utilizavel para docs, resumos, briefings e revisoes, com uma rota simples no navegador.",
     heroBullets: ["Foco em transcricao", "Boa para reaproveitamento", "Saida pronta para editar"],
+    workspaceFirst: true,
     defaultMode: "simple",
     primaryNav: false,
     relatedSlugs: ["imagem-para-texto", "imagem-para-word", "extrair-texto-de-imagem", "ocr-em-portugues"],

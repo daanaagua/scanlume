@@ -795,6 +795,13 @@ main {
   gap: 0.45rem;
 }
 
+.upload-panel-title-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
 .upload-panel-head h3 {
   font-size: clamp(1.5rem, 2.5vw, 2rem);
   line-height: 1.02;
@@ -1146,6 +1153,18 @@ main {
 .status-board {
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   align-items: start;
+}
+
+.status-compact-card {
+  gap: 0.3rem;
+}
+
+.status-board-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.5;
 }
 
 .queue-summary span {
@@ -1952,6 +1971,10 @@ main {
     font-size: 1.28rem;
   }
 
+  .upload-panel-title-row {
+    gap: 0.5rem;
+  }
+
   .upload-panel-head p {
     font-size: 0.9rem;
     line-height: 1.5;
@@ -2048,6 +2071,11 @@ main {
     right: 0;
     left: auto;
     width: min(260px, calc(100vw - 2rem));
+  }
+
+  .status-board-note {
+    font-size: 0.78rem;
+    line-height: 1.4;
   }
 
   .result-preview {

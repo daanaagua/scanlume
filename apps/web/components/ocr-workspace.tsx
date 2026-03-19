@@ -516,6 +516,9 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
   const remainingImagesLabel = limits?.viewer.authenticated
     ? `${limits.usage.remainingImages} / ${limits.limits.dailyImages}`
     : `${maxBatchFiles} imagens`;
+  const statusFootnote = limits?.viewer.authenticated
+    ? `OCR simples = 1 credito • Texto formatado = 3 creditos • Atualizado apos cada OCR.`
+    : `OCR simples = 1 credito • Texto formatado = 3 creditos • Lote atual aceita ate ${maxBatchFiles} imagens.`;
 
   return (
     <section className={`workspace-shell${priorityLayout ? " workspace-shell-priority" : ""}`}>
@@ -536,34 +539,35 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
           <div className="upload-panel-head">
             <div>
               <p className="eyebrow">Comece pelo upload</p>
-              <h3>{priorityLayout ? "Envie uma imagem e teste agora." : "Envie a imagem certa para comecar."}</h3>
+              <div className="upload-panel-title-row">
+                <h3>{priorityLayout ? "Envie uma imagem e teste agora." : "Envie a imagem certa para comecar."}</h3>
+                <div
+                  className="workspace-help-shell"
+                  onMouseEnter={() => setIsPricingHintOpen(true)}
+                  onMouseLeave={() => setIsPricingHintOpen(false)}
+                >
+                  <button
+                    type="button"
+                    className="workspace-help-button"
+                    aria-label="Entender limites do teste gratis"
+                    aria-expanded={isPricingHintOpen}
+                    onClick={() => setIsPricingHintOpen((current) => !current)}
+                    onFocus={() => setIsPricingHintOpen(true)}
+                    onBlur={() => setIsPricingHintOpen(false)}
+                  >
+                    ?
+                  </button>
+                  <div className={`workspace-help-popover${isPricingHintOpen ? " is-open" : ""}`} role="tooltip">
+                    <strong>Como calculamos o teste gratis</strong>
+                    <span>Limite diario: {brlFormatter.format(budgetLimit)}.</span>
+                    <span>{SIMPLE_MODE_LABEL} consome 1 credito por imagem.</span>
+                    <span>{FORMATTED_MODE_LABEL} consome 3 creditos por imagem.</span>
+                  </div>
+                </div>
+              </div>
               <p>
                 Abra JPG, PNG e screenshots no navegador e escolha a saida que faz sentido para copiar, revisar ou baixar.
               </p>
-            </div>
-
-            <div
-              className="workspace-help-shell"
-              onMouseEnter={() => setIsPricingHintOpen(true)}
-              onMouseLeave={() => setIsPricingHintOpen(false)}
-            >
-              <button
-                type="button"
-                className="workspace-help-button"
-                aria-label="Entender limites do teste gratis"
-                aria-expanded={isPricingHintOpen}
-                onClick={() => setIsPricingHintOpen((current) => !current)}
-                onFocus={() => setIsPricingHintOpen(true)}
-                onBlur={() => setIsPricingHintOpen(false)}
-              >
-                ?
-              </button>
-              <div className={`workspace-help-popover${isPricingHintOpen ? " is-open" : ""}`} role="tooltip">
-                <strong>Como calculamos o teste gratis</strong>
-                <span>Limite diario: {brlFormatter.format(budgetLimit)}.</span>
-                <span>{SIMPLE_MODE_LABEL} consome 1 credito por imagem.</span>
-                <span>{FORMATTED_MODE_LABEL} consome 3 creditos por imagem.</span>
-              </div>
             </div>
           </div>
 
@@ -673,32 +677,27 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
 
           {limits && (
             <div className="status-board">
-              <div className="budget-status-card">
-                <span>Uso diario em tempo real</span>
+              <div className="budget-status-card status-compact-card">
+                <span>Hoje / limite</span>
                 <strong>{budgetUsageLabel}</strong>
                 <div className="mini-progress-track" aria-hidden="true">
                   <div className="mini-progress-fill" style={{ width: `${budgetUsagePercent}%` }} />
                 </div>
               </div>
-              <div>
-                <span>Limite do teste</span>
-                <strong>{brlFormatter.format(budgetLimit)}</strong>
-                <small>{SIMPLE_MODE_LABEL} = 1 credito • {FORMATTED_MODE_LABEL} = 3 creditos</small>
-              </div>
-              <div>
+              <div className="status-compact-card">
                 <span>Plano</span>
-                <strong>{limits.plan.label}</strong>
-                <small>{limits.plan.shortLabel}</small>
+                <strong>{limits.plan.shortLabel}</strong>
+                <small>{limits.plan.label}</small>
               </div>
-              <div>
-                <span>{limits.viewer.authenticated ? "Creditos restantes" : "Cota anonima"}</span>
+              <div className="status-compact-card">
+                <span>{limits.viewer.authenticated ? "Creditos" : "Cota anonima"}</span>
                 <strong>{remainingCreditsLabel}</strong>
               </div>
-              <div>
-                <span>{limits.viewer.authenticated ? "Imagens restantes" : "Lote maximo"}</span>
+              <div className="status-compact-card">
+                <span>{limits.viewer.authenticated ? "Imagens" : "Lote maximo"}</span>
                 <strong>{remainingImagesLabel}</strong>
-                <small>{limits.viewer.authenticated ? "Atualizado apos cada OCR." : `Envio atual aceita ate ${maxBatchFiles} imagens.`}</small>
               </div>
+              <p className="status-board-note">{statusFootnote}</p>
             </div>
           )}
 
