@@ -1,10 +1,13 @@
-import { PDFDocument, StandardFonts } from "pdf-lib";
+import { inflateSync } from "node:zlib";
+
+import { PDFArray, PDFDocument, StandardFonts } from "pdf-lib";
 import { describe, expect, it } from "vitest";
 
 import {
   buildSearchableOverlayDrawSpec,
   buildSearchableRegionLayoutSpec,
   buildExportRouteConfig,
+  fitBlocksToRegion,
   buildReflowedPdfBytes,
   buildReflowedPdfPlan,
   buildSearchablePdfBytes,
@@ -155,6 +158,39 @@ describe("buildSearchablePdfPlan", () => {
     expect(spec.drawnBlocks[0]?.bbox.y ?? 0).toBeGreaterThanOrEqual(160);
     expect(spec.drawnBlocks.at(-1)?.bbox.y ?? 0).toBeLessThan(280);
   });
+
+  it("never shrinks paragraph text below 6pt", () => {
+    const spec = fitBlocksToRegion({
+      region: { x: 0, y: 0, width: 140, height: 80 },
+      blocks: [{ type: "p", text: "texto ".repeat(80), order: 0 }],
+      pageSize: { width: 300, height: 400 },
+      pageLayout: { width: 300, height: 400 },
+    });
+
+    expect(Math.min(...spec.blocks.map((block) => block.fontSize))).toBeGreaterThanOrEqual(6);
+  });
+
+  it("falls back to character wrapping when a token exceeds the region width", () => {
+    const spec = fitBlocksToRegion({
+      region: { x: 0, y: 0, width: 80, height: 120 },
+      blocks: [{ type: "p", text: "superlongtokenwithoutspaces", order: 0 }],
+      pageSize: { width: 300, height: 400 },
+      pageLayout: { width: 300, height: 400 },
+    });
+
+    expect(spec.blocks[0]?.lines.length).toBeGreaterThan(1);
+  });
+
+  it("adds ellipsis when content still cannot fit after minimum-size packing", () => {
+    const spec = fitBlocksToRegion({
+      region: { x: 0, y: 0, width: 60, height: 40 },
+      blocks: [{ type: "p", text: "texto ".repeat(200), order: 0 }],
+      pageSize: { width: 300, height: 400 },
+      pageLayout: { width: 300, height: 400 },
+    });
+
+    expect(spec.blocks.at(-1)?.lines.at(-1)).toContain("...");
+  });
 });
 
 describe("buildReflowedPdfPlan", () => {
@@ -202,7 +238,17 @@ describe("buildReflowedPdfPlan", () => {
     });
 
     expect(Buffer.from(bytes).includes(Buffer.from("Page 1"))).toBe(false);
-    expect(Buffer.from(bytes).includes(Buffer.from("Titulo"))).toBe(true);
+    const pdf = await PDFDocument.load(bytes);
+    const page = pdf.getPages()[0];
+    const contents = pdf.context.lookup(page.node.Contents());
+    expect(contents).toBeInstanceOf(PDFArray);
+
+    const operators = Array.from({ length: contents.size() }, (_, index) => {
+      const stream = pdf.context.lookup(contents.get(index)) as { contents: Uint8Array };
+      return inflateSync(stream.contents).toString("latin1");
+    }).join("\n");
+
+    expect((operators.match(/\bTm\b/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
 
   it("exposes the reflowed export route with the same manifest verification path", () => {
