@@ -6,6 +6,7 @@ import { AuthDialog } from "@/components/auth-dialog";
 import { getOrCreateBrowserId } from "@/lib/browser-id";
 import { requestPasswordReset, resendVerificationEmail } from "@/lib/auth";
 import { fetchAccount, joinWaitlist, type AccountResponse } from "@/lib/account";
+import { subscribeUsageRefresh } from "@/lib/usage-sync";
 
 function formatBillingStatus(status: AccountResponse["billing"]["status"]) {
   switch (status) {
@@ -34,14 +35,19 @@ export function AccountPanel() {
 
   useEffect(() => {
     const browserId = getOrCreateBrowserId();
-    void fetchAccount(browserId)
-      .then((data) => {
-        setAccount(data);
-        setError(null);
-      })
-      .catch((reason) => {
-        setError(reason instanceof Error ? reason.message : "Nao foi possivel carregar a conta.");
-      });
+    const loadAccount = () => {
+      void fetchAccount(browserId)
+        .then((data) => {
+          setAccount(data);
+          setError(null);
+        })
+        .catch((reason) => {
+          setError(reason instanceof Error ? reason.message : "Nao foi possivel carregar a conta.");
+        });
+    };
+
+    loadAccount();
+    return subscribeUsageRefresh(loadAccount);
   }, []);
 
   const usageLabel = useMemo(() => {

@@ -85,6 +85,7 @@ export async function fetchAccount(browserId?: string) {
   }
 
   const response = await fetch(url.toString(), {
+    cache: "no-store",
     credentials: "include",
   });
 

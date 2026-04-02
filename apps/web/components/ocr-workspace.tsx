@@ -8,6 +8,7 @@ import { downloadBatchZip, downloadHtmlFile, downloadTextFile, requestPdfExport 
 import { buildPdfSelectionSummary, mapPdfOcrError, parseJsonResponse } from "@/lib/pdf-client";
 import { buildPreparedPdfPages, readPdfPageCount } from "@/lib/pdf-renderer";
 import { API_BASE_URL, FORMATTED_MODE_LABEL, SIMPLE_MODE_LABEL } from "@/lib/site";
+import { announceUsageRefresh } from "@/lib/usage-sync";
 
 type Mode = "simple" | "formatted";
 type FormatTab = "txt" | "md" | "html";
@@ -403,6 +404,7 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
     try {
       for (const [index, item] of files.entries()) {
         const startedAt = Date.now();
+        let succeeded = false;
         setProcessingState({ fileId: item.id, startedAt });
         setProgressTick(startedAt);
         setResults((current) => ({
@@ -454,6 +456,7 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
                 },
               },
             }));
+            succeeded = true;
           } else {
             if (selectedMode !== "formatted") {
               throw new Error("PDFs so podem ser processados no modo Texto formatado.");
@@ -497,6 +500,7 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
                 payload,
               },
             }));
+            succeeded = true;
           }
         } catch (error) {
           const message = error instanceof Error ? error.message : "Erro inesperado.";
@@ -511,6 +515,9 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
 
         setProcessingState(index < files.length - 1 ? null : { fileId: item.id, startedAt });
         await refreshLimits();
+        if (succeeded) {
+          announceUsageRefresh();
+        }
       }
     } finally {
       setProcessingState(null);

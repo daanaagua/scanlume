@@ -7,6 +7,7 @@ import { AuthDialog } from "@/components/auth-dialog";
 import { getOrCreateBrowserId } from "@/lib/browser-id";
 import { fetchAccount, joinWaitlist, type AccountResponse } from "@/lib/account";
 import { API_BASE_URL } from "@/lib/site";
+import { subscribeUsageRefresh } from "@/lib/usage-sync";
 
 export function AuthControls() {
   const [account, setAccount] = useState<AccountResponse | null>(null);
@@ -18,9 +19,14 @@ export function AuthControls() {
 
   useEffect(() => {
     const browserId = getOrCreateBrowserId();
-    void fetchAccount(browserId)
-      .then((data) => setAccount(data))
-      .catch(() => setAccount(null));
+    const loadAccount = () => {
+      void fetchAccount(browserId)
+        .then((data) => setAccount(data))
+        .catch(() => setAccount(null));
+    };
+
+    loadAccount();
+    return subscribeUsageRefresh(loadAccount);
   }, []);
 
   useEffect(() => {
