@@ -37,6 +37,19 @@ import {
   SIMPLE_PROMPT,
   SUPPORT_SYSTEM_PROMPT,
 } from "./lib/prompts";
+import { inspectPdfFile, createPdfHttpError } from "./lib/pdf-ingest";
+import { defaultPdfUpsell, buildPdfAllowance, countBillablePdfPages, acquirePdfProcessingLock, releasePdfProcessingLock } from "./lib/pdf-limits";
+import { assemblePdfDocumentResult, buildPdfRouteOutcome } from "./lib/pdf-ocr";
+import { buildPdfRegionPrompt } from "./lib/pdf-prompts";
+import { buildPdfPageResult } from "./lib/pdf-segmentation";
+import {
+  buildReflowedPdfPlan,
+  buildSearchablePdfPlan,
+  mapPdfExportError,
+  signPdfExportToken,
+  streamPdfResponse,
+  verifyPdfExportToken,
+} from "./lib/pdf-export";
 import {
   authForgotPasswordSchema,
   authLoginSchema,
@@ -51,7 +64,7 @@ import {
   supportChatRequestSchema,
   type SupportAssistant,
 } from "./lib/schema";
-import { pdfLimitSnapshotSchema } from "./lib/pdf-schema";
+import { pdfLimitSnapshotSchema, pdfOcrUploadSchema } from "./lib/pdf-schema";
 import {
   appendSupportMessage,
   ensureSupportConversation,
@@ -709,6 +722,253 @@ app.post("/v1/ocr", async (c) => {
       dailyCreditLimit: viewer.dailyCreditLimit,
     },
   });
+});
+
+app.post("/v1/pdf/ocr", async (c) => {
+  if (!c.env.ARK_API_KEY || !c.env.ARK_MODEL) {
+    return c.json({ error: "Ark credentials are missing. Configure ARK_MODEL and ARK_API_KEY in the worker." }, 500);
+  }
+
+  const form = await c.req.formData();
+  const file = form.get("file");
+  const browserId = String(form.get("browserId") ?? "");
+  const totalPages = Number(form.get("totalPages") ?? 0);
+  const sourcePath = String(form.get("sourcePath") ?? "");
+  const preparedPagesRaw = String(form.get("preparedPages") ?? "[]");
+  const preparedPages = JSON.parse(preparedPagesRaw) as Array<{
+    pageNumber: number;
+    source: "text-layer" | "ocr" | "mixed";
+    pagePngBase64?: string;
+    nativeTextBlocks: Array<{ text: string; bbox: { x: number; y: number; width: number; height: number } }>;
+    ocrRegions: Array<{ id: string; imageBase64: string; bbox: { x: number; y: number; width: number; height: number } }>;
+  }>;
+
+  if (!(file instanceof File)) {
+    return c.json({ error: "Invalid request payload.", code: "pdf_file_type_invalid", remainingPdfPagesToday: 0 }, 400);
+  }
+
+  const viewer = await resolveViewerContext(c, browserId);
+  const lock = viewer.type === "user" && viewer.user ? await acquirePdfProcessingLock({ lockKey: `pdf:${viewer.user.id}` }).catch((error) => null) : null;
+  if (viewer.type === "user" && viewer.user && !lock) {
+    return c.json({ error: "Another PDF job is already running.", code: "pdf_job_in_progress", remainingPdfPagesToday: await resolveRemainingPdfPagesToday(c.env, viewer) }, 409);
+  }
+
+  try {
+    const parsed = pdfOcrUploadSchema.safeParse({ file, browserId, totalPages, sourcePath: sourcePath || undefined, preparedPages });
+    if (!parsed.success) {
+      return c.json({ error: "Invalid request payload.", code: "pdf_invalid", remainingPdfPagesToday: viewer.type === "user" ? await resolveRemainingPdfPagesToday(c.env, viewer) : 5 }, 400);
+    }
+
+    const inspection = await inspectPdfFile({ file, env: c.env });
+    const resolvedTotalPages = parsed.data.totalPages;
+    const remainingPdfPagesToday = await resolveRemainingPdfPagesToday(c.env, viewer);
+    const allowance = buildPdfAllowance({
+      viewerType: viewer.type,
+      totalPages: resolvedTotalPages,
+      remainingPdfPagesToday,
+    });
+
+    if (allowance.processablePages === 0) {
+      return c.json(
+        {
+          error: "No PDF pages remaining today.",
+          code: "pdf_page_limit_reached",
+          remainingPdfPagesToday: 0,
+          totalPages: resolvedTotalPages,
+          processablePages: 0,
+          lockedPages: resolvedTotalPages,
+          billingUpsell: defaultPdfUpsell(),
+        },
+        429,
+      );
+    }
+
+    const pages = await Promise.all(
+      parsed.data.preparedPages.slice(0, allowance.processablePages).map(async (page) => {
+        try {
+          if (page.source === "text-layer") {
+            const text = page.nativeTextBlocks.map((block: { text: string }) => block.text).join("\n");
+            return buildPdfPageResult({
+              pageNumber: page.pageNumber,
+              status: "success",
+              source: page.source,
+              width: 600,
+              height: 800,
+              text,
+              markdown: text,
+              html: `<p>${text.replace(/\n/g, "<br />")}</p>`,
+              blocks: page.nativeTextBlocks.map((block: { text: string }, index: number) => ({ id: `native-${index}`, kind: "paragraph", order: index, text: block.text, source: "text-layer" })),
+            });
+          }
+
+          const ocrTexts: string[] = [];
+          const ocrBlocks: Array<{ id: string; kind: string; order: number; text: string; source: "ocr" }> = [];
+
+          if (page.source === "ocr" && page.pagePngBase64) {
+            const result = await runFormattedOcr(c.env, `data:image/png;base64,${page.pagePngBase64}`);
+            if (!result.ok) {
+              throw new Error(result.error);
+            }
+            ocrTexts.push(result.payload.txt);
+            ocrBlocks.push({ id: `ocr-${page.pageNumber}`, kind: "paragraph", order: 0, text: result.payload.txt, source: "ocr" });
+          }
+
+          if (page.source === "mixed") {
+            for (const [index, region] of page.ocrRegions.entries()) {
+              const result = await runFormattedOcr(c.env, `data:image/png;base64,${region.imageBase64}`);
+              if (result.ok) {
+                ocrTexts.push(result.payload.txt);
+                ocrBlocks.push({ id: region.id, kind: "paragraph", order: index + page.nativeTextBlocks.length, text: result.payload.txt, source: "ocr" });
+              }
+            }
+            const nativeText = page.nativeTextBlocks.map((block: { text: string }) => block.text).join("\n");
+            const combinedText = [nativeText, ...ocrTexts].filter(Boolean).join("\n\n");
+            return buildPdfPageResult({
+              pageNumber: page.pageNumber,
+              status: ocrTexts.length > 0 ? "partial" : "success",
+              source: page.source,
+              width: 600,
+              height: 800,
+              text: combinedText,
+              markdown: combinedText,
+              html: `<p>${combinedText.replace(/\n/g, "<br />")}</p>`,
+              blocks: [
+                ...page.nativeTextBlocks.map((block: { text: string }, index: number) => ({ id: `native-${page.pageNumber}-${index}`, kind: "paragraph", order: index, text: block.text, source: "text-layer" as const })),
+                ...ocrBlocks,
+              ],
+            });
+          }
+
+          const combinedText = ocrTexts.join("\n\n");
+          return buildPdfPageResult({
+            pageNumber: page.pageNumber,
+            status: "success",
+            source: page.source,
+            width: 600,
+            height: 800,
+            text: combinedText,
+            markdown: combinedText,
+            html: `<p>${combinedText.replace(/\n/g, "<br />")}</p>`,
+            blocks: ocrBlocks,
+          });
+        } catch (error) {
+          return buildPdfPageResult({
+            pageNumber: page.pageNumber,
+            status: "failed",
+            source: page.source,
+            width: 600,
+            height: 800,
+            errorCode: "ocr_failed",
+            errorMessage: error instanceof Error ? error.message : "Unknown OCR failure",
+            blocks: [],
+          });
+        }
+      }),
+    );
+
+    const routedPages = buildPdfRouteOutcome({ totalPages: resolvedTotalPages, pages });
+    const billablePages = countBillablePdfPages(routedPages);
+    const date = todayKey();
+    const createdAt = new Date().toISOString();
+    if (viewer.type === "user" && viewer.user) {
+      const currentPdfUsage = await readUserDailyPdfUsage(c.env, viewer.user.id, date);
+      await writeUserDailyPdfUsage(c.env, viewer.user.id, date, { usedPages: currentPdfUsage.usedPages + billablePages }, createdAt);
+    }
+
+    const draft = assemblePdfDocumentResult({
+      documentId: inspection.sourceHash,
+      fileName: file.name,
+      totalPages: resolvedTotalPages,
+      pages: routedPages,
+      lockedPages: allowance.lockedPages,
+      remainingPdfPagesToday: Math.max(remainingPdfPagesToday - billablePages, 0),
+      exportToken: "pending",
+    });
+    const manifestHash = await sha256Hex(JSON.stringify(draft.exportManifest));
+    const exportToken = await signPdfExportToken({
+      sourceHash: inspection.sourceHash,
+      exportManifestHash: manifestHash,
+      processedPageNumbers: draft.exportManifest.processedPageNumbers,
+      expiresAt: Date.now() + 10 * 60 * 1000,
+      secret: c.env.PDF_EXPORT_SIGNING_SECRET ?? "scanlume-dev-secret",
+    });
+
+    const result = {
+      ...draft,
+      exportToken,
+    };
+
+    return c.json(result);
+  } catch (error) {
+    if (error instanceof Error && "status" in error && "code" in error) {
+      const pdfError = error as Error & { status: number; code: string; details?: Record<string, unknown> };
+      return c.json(
+        {
+          error: pdfError.message,
+          code: pdfError.code,
+          remainingPdfPagesToday: viewer.type === "user" ? await resolveRemainingPdfPagesToday(c.env, viewer) : 5,
+          ...(pdfError.details ?? {}),
+        },
+        pdfError.status as 400 | 413 | 429 | 502,
+      );
+    }
+
+    return c.json({ error: error instanceof Error ? error.message : "PDF processing failed.", code: "pdf_processing_failed", remainingPdfPagesToday: viewer.type === "user" ? await resolveRemainingPdfPagesToday(c.env, viewer) : 5 }, 502);
+  } finally {
+    await releasePdfProcessingLock(lock);
+  }
+});
+
+app.post("/v1/pdf/export/searchable", async (c) => {
+  try {
+    const form = await c.req.formData();
+    const file = form.get("file");
+    const exportToken = String(form.get("exportToken") ?? "");
+    const exportManifestPart = form.get("exportManifest");
+    if (!(file instanceof File) || !(exportManifestPart instanceof File)) {
+      throw new Error("manifest invalid");
+    }
+
+    const exportManifest = JSON.parse(await exportManifestPart.text()) as Parameters<typeof buildSearchablePdfPlan>[0];
+    const inspection = await inspectPdfFile({ file, env: c.env });
+    await verifyPdfExportToken(exportToken, {
+      sourceHash: inspection.sourceHash,
+      exportManifestHash: await sha256Hex(JSON.stringify(exportManifest)),
+      now: Date.now(),
+      secret: c.env.PDF_EXPORT_SIGNING_SECRET ?? "scanlume-dev-secret",
+    });
+    const plan = await buildSearchablePdfPlan(exportManifest);
+    return streamPdfResponse(new Uint8Array(new TextEncoder().encode(JSON.stringify(plan))), `${file.name.replace(/\.[^.]+$/, "")}-searchable.pdf`);
+  } catch (error) {
+    const mapped = mapPdfExportError(error);
+    return c.json(mapped, mapped.status as 400 | 502);
+  }
+});
+
+app.post("/v1/pdf/export/reflowed", async (c) => {
+  try {
+    const form = await c.req.formData();
+    const file = form.get("file");
+    const exportToken = String(form.get("exportToken") ?? "");
+    const exportManifestPart = form.get("exportManifest");
+    if (!(file instanceof File) || !(exportManifestPart instanceof File)) {
+      throw new Error("manifest invalid");
+    }
+
+    const exportManifest = JSON.parse(await exportManifestPart.text()) as Parameters<typeof buildReflowedPdfPlan>[0];
+    const inspection = await inspectPdfFile({ file, env: c.env });
+    await verifyPdfExportToken(exportToken, {
+      sourceHash: inspection.sourceHash,
+      exportManifestHash: await sha256Hex(JSON.stringify(exportManifest)),
+      now: Date.now(),
+      secret: c.env.PDF_EXPORT_SIGNING_SECRET ?? "scanlume-dev-secret",
+    });
+    const plan = await buildReflowedPdfPlan(exportManifest);
+    return streamPdfResponse(new Uint8Array(new TextEncoder().encode(JSON.stringify(plan))), `${file.name.replace(/\.[^.]+$/, "")}-reflowed.pdf`);
+  } catch (error) {
+    const mapped = mapPdfExportError(error);
+    return c.json(mapped, mapped.status as 400 | 502);
+  }
 });
 
 async function runSimpleOcr(env: WorkerEnv, imageUrl: string) {

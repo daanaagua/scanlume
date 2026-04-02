@@ -51,6 +51,10 @@ const compactSections: LlmsSection[] = [
         "Primary image-to-text page covering JPG, PNG and screenshot OCR with TXT, Markdown and HTML export.",
       ),
       buildToolEntry(
+        "pdf-para-texto",
+        "Dedicated PDF OCR page covering text-layer PDFs, scanned PDFs and mixed layouts with searchable PDF, reflowed PDF, HTML and Markdown output.",
+      ),
+      buildToolEntry(
         "imagem-para-word",
         "Structured OCR route for users who want cleaner output before pasting into Word or Google Docs.",
       ),
@@ -175,6 +179,10 @@ const fullSections: LlmsSection[] = [
       buildToolEntry(
         "jpg-para-texto",
         "Scenario page for OCR on JPG files, especially phone photos, posters and compressed images where text still needs to be extracted quickly for editing or reuse.",
+      ),
+      buildToolEntry(
+        "pdf-para-texto",
+        "Scenario page for OCR on PDFs with text, scanned pages or mixed layouts where the user wants text exports plus downloadable PDF outputs.",
       ),
       buildToolEntry(
         "png-para-texto",

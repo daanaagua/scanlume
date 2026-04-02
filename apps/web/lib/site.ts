@@ -222,6 +222,111 @@ export const toolPageContent = {
       },
     ],
   },
+  "pdf-para-texto": {
+    label: "PDF para texto",
+    title: "PDF para texto com OCR online e saida editavel | Scanlume",
+    description:
+      "Converta PDF em texto com OCR online. Extraia paginas com texto nativo ou escaneado e baixe em PDF pesquisavel, PDF reorganizado, HTML e Markdown.",
+    keywords: [
+      "pdf para texto",
+      "converter pdf em texto",
+      "ocr pdf",
+      "pdf pesquisavel",
+      "pdf para markdown",
+    ],
+    h1: "PDF para texto com OCR online e saida editavel",
+    eyebrow: "OCR para PDFs com texto nativo, paginas escaneadas e layouts mistos",
+    lead:
+      "Use esta rota quando o arquivo ja esta em PDF e voce precisa transformar paginas em texto editavel, HTML, Markdown ou um PDF pesquisavel sem sair do navegador.",
+    heroBullets: ["1 PDF por envio", "PDF pesquisavel e reorganizado", "HTML, Markdown e TXT"],
+    workspaceFirst: true,
+    primaryNav: true,
+    defaultMode: "formatted",
+    relatedSlugs: ["imagem-para-texto", "imagem-para-word", "ocr-online", "ocr-em-portugues"],
+    contextualLinks: [
+      {
+        href: "/imagem-para-texto",
+        label: "Imagem para texto",
+        body: "Volte para a rota principal quando a origem for JPG, PNG ou screenshots, e nao um PDF completo.",
+      },
+      {
+        href: "/imagem-para-word",
+        label: "Imagem para Word",
+        body: "Use esta pagina quando a prioridade for colar um texto mais limpo no Word ou no Google Docs depois do OCR.",
+      },
+      {
+        href: "/ocr-online",
+        label: "OCR online",
+        body: "Abra a visao geral do produto para comparar o fluxo de imagens com o fluxo de PDFs dentro do mesmo workspace.",
+      },
+      {
+        href: "/ocr-em-portugues",
+        label: "OCR em portugues",
+        body: "Boa rota de apoio quando o foco da busca e reconhecer texto em pt-BR com acentos, labels e documentos locais.",
+      },
+    ],
+    useCasesHeading: "Feito para PDFs reais, nao so para imagens soltas.",
+    useCasesLead:
+      "Esta pagina cobre contratos leves, materiais escaneados, relatórios, apostilas e PDFs mistos em que parte do conteudo ja tem texto nativo e parte ainda precisa de OCR.",
+    useCases: [
+      {
+        title: "PDF com texto nativo",
+        body: "Aproveita o texto ja embutido quando ele existe e evita OCR desnecessario em paginas digitais limpas.",
+      },
+      {
+        title: "PDF escaneado",
+        body: "Transforma paginas que sao so imagem em texto editavel para copiar, revisar ou exportar em outros formatos.",
+      },
+      {
+        title: "PDF com layout misto",
+        body: "Mantem a leitura principal de paginas com colunas, imagens e blocos de texto combinando texto nativo com OCR por regiao.",
+      },
+      {
+        title: "Entrega pronta para download",
+        body: "Baixe em HTML, Markdown, TXT, PDF pesquisavel ou PDF reorganizado sem reconstruir tudo manualmente.",
+      },
+    ],
+    stepsHeading: "Do PDF enviado ao arquivo final em poucos passos.",
+    stepsLead:
+      "A primeira versao foi desenhada para processar um PDF por vez, mostrar paginas processadas e deixar claro o que ficou bloqueado pela cota.",
+    steps: [
+      {
+        title: "Envie um PDF",
+        body: "Suba um PDF com texto nativo, paginas escaneadas ou layout misto. O workspace calcula quantas paginas entram na cota atual.",
+      },
+      {
+        title: "Revise a previa",
+        body: "Veja o total de paginas, o que foi processado, a mistura entre texto nativo e OCR e a previa HTML do documento.",
+      },
+      {
+        title: "Baixe no formato certo",
+        body: "Escolha entre HTML, Markdown, TXT, PDF pesquisavel ou PDF reorganizado para continuar o trabalho em outra ferramenta.",
+      },
+    ],
+    faqHeading: "FAQ sobre PDF para texto.",
+    faq: [
+      {
+        question: "Funciona com PDF escaneado e com PDF que ja tem texto nativo?",
+        answer:
+          "Sim. O fluxo prioriza o texto nativo quando ele existe e usa OCR nas partes que ainda sao imagem, o que ajuda especialmente em PDFs mistos.",
+      },
+      {
+        question: "Posso baixar em PDF pesquisavel?",
+        answer:
+          "Sim. A rota de PDF oferece PDF pesquisavel, PDF reorganizado, HTML, Markdown e TXT para diferentes fluxos de trabalho.",
+      },
+      {
+        question: "Quantos PDFs posso enviar por vez?",
+        answer:
+          "Na primeira versao, o upload aceita um PDF por envio para manter o processamento e a leitura do resultado mais previsiveis.",
+      },
+      {
+        question: "O que acontece quando a cota nao cobre o documento inteiro?",
+        answer:
+          "O sistema processa o trecho permitido, mostra quantas paginas ficaram bloqueadas e deixa um CTA de upgrade pronto para a proxima fase de cobranca.",
+      },
+    ],
+  },
   "imagem-para-word": {
     label: "Imagem para Word",
     title: "Imagem para Word com IA e estrutura limpa | Scanlume",

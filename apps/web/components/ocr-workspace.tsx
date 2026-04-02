@@ -4,24 +4,62 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { AuthDialog } from "@/components/auth-dialog";
 import { getOrCreateBrowserId } from "@/lib/browser-id";
-import { downloadBatchZip, downloadHtmlFile, downloadTextFile } from "@/lib/downloads";
+import { downloadBatchZip, downloadHtmlFile, downloadTextFile, requestPdfExport } from "@/lib/downloads";
+import { buildPdfSelectionSummary, mapPdfOcrError } from "@/lib/pdf-client";
+import { buildPreparedPdfPages, readPdfPageCount } from "@/lib/pdf-renderer";
 import { API_BASE_URL, FORMATTED_MODE_LABEL, SIMPLE_MODE_LABEL } from "@/lib/site";
 
 type Mode = "simple" | "formatted";
 type FormatTab = "txt" | "md" | "html";
+type DocumentKind = "image" | "pdf";
 
 type SelectedFile = {
   id: string;
   file: File;
-  previewUrl: string;
+  kind: DocumentKind;
+  pageCount?: number;
+  previewUrl?: string;
 };
 
-type ResultPayload = {
+type ImageResultPayload = {
+  kind: "image";
   txt: string;
   md?: string;
   html?: string;
   preview: string;
 };
+
+type PdfResultPayload = {
+  kind: "pdf";
+  totalPages: number;
+  processedPages: number;
+  lockedPages: number;
+  html: string;
+  md: string;
+  txt: string;
+  previewHtml: string;
+  remainingPdfPagesToday: number;
+  exportToken: string;
+  exportManifest: object;
+  pageStats: {
+    textLayerPages: number;
+    ocrPages: number;
+    mixedPages: number;
+  };
+  failedPages: Array<{
+    pageNumber: number;
+    errorCode: string;
+    errorMessage: string;
+  }>;
+  billingUpsell?: {
+    required: boolean;
+    message: string;
+    ctaLabel: string;
+    ctaHref: string;
+  };
+};
+
+type ResultPayload = ImageResultPayload | PdfResultPayload;
 
 type FileResult = {
   status: "idle" | "processing" | "success" | "error";
@@ -97,6 +135,13 @@ type LimitsResponse = {
     maxBatchTotalMb: number;
     softBudgetRmb: number;
     hardBudgetRmb: number;
+    pdf: {
+      maxFileMb: number;
+      maxPagesPerDocument: number;
+      requestPageLimitAnonymous: number;
+      dailyPageLimitLoggedIn: number;
+      remainingPages: number;
+    };
   };
   budget: {
     totalCostRmb: number;
@@ -135,7 +180,11 @@ function baseName(filename: string) {
 }
 
 function revokePreviewUrls(files: SelectedFile[]) {
-  files.forEach((file) => URL.revokeObjectURL(file.previewUrl));
+  files.forEach((file) => {
+    if (file.previewUrl) {
+      URL.revokeObjectURL(file.previewUrl);
+    }
+  });
 }
 
 type OcrWorkspaceProps = {
@@ -226,7 +275,7 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
         completedCount,
         totalCount,
         percent: 100,
-        label: `${completedCount} de ${totalCount} imagem(ns) concluida(s).`,
+          label: `${completedCount} de ${totalCount} arquivo(s) concluido(s).`,
       };
     }
 
@@ -243,7 +292,7 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
         completedCount,
         totalCount,
         percent: clamp(Math.round(((completedCount + perFileProgress) / totalCount) * 100), 3, 99),
-        label: `Reconhecendo imagem ${processingIndex + 1} de ${totalCount}...`,
+          label: `Processando arquivo ${processingIndex + 1} de ${totalCount}...`,
       };
     }
 
@@ -252,7 +301,7 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
       completedCount,
       totalCount,
       percent: completedCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0,
-      label: `${totalCount} imagem(ns) pronta(s). Clique em iniciar para processar.`,
+      label: `${totalCount} arquivo(s) pronto(s). Clique em iniciar para processar.`,
     };
   }, [isSubmitting, processingState, progressTick, results, selectedFiles]);
 
@@ -290,7 +339,30 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
     const maxFiles = limits?.limits.maxBatchFiles ?? 10;
     const maxImageMb = limits?.limits.maxImageMb ?? 5;
     const maxBatchTotalMb = limits?.limits.maxBatchTotalMb ?? 20;
+    const maxPdfMb = limits?.limits.pdf.maxFileMb ?? 15;
     const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
+    const kinds = new Set(files.map((file) => (file.type === "application/pdf" ? "pdf" : file.type.startsWith("image/") ? "image" : "other")));
+
+    if (kinds.has("other")) {
+      return "Envie imagens ou um unico PDF.";
+    }
+
+    if (kinds.size > 1) {
+      return "Nao misture imagens e PDF no mesmo envio.";
+    }
+
+    if (kinds.has("pdf")) {
+      if (files.length > 1) {
+        return "Envie apenas 1 PDF por vez nesta primeira versao.";
+      }
+
+      const [pdfFile] = files;
+      if (pdfFile && pdfFile.size > maxPdfMb * 1024 * 1024) {
+        return `Cada PDF precisa ter no maximo ${maxPdfMb} MB.`;
+      }
+
+      return null;
+    }
 
     if (files.length > maxFiles) {
       return `Selecione no maximo ${maxFiles} imagens por lote.`;
@@ -313,6 +385,10 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
     return null;
   }
 
+  function getDocumentKind(file: File): DocumentKind {
+    return file.type === "application/pdf" ? "pdf" : "image";
+  }
+
   async function processFiles(files: SelectedFile[], selectedMode: Mode) {
     setIsSubmitting(true);
     setGlobalError(null);
@@ -331,41 +407,89 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
         }));
 
         try {
-          const dataUrl = await fileToDataUrl(item.file);
-          const response = await fetch(`${API_BASE_URL}/v1/ocr`, {
-            method: "POST",
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              mode: selectedMode,
-              browserId: browserId.current,
-              image: {
-                name: item.file.name,
-                mimeType: item.file.type,
-                size: item.file.size,
-                dataUrl,
+          if (item.kind === "image") {
+            const dataUrl = await fileToDataUrl(item.file);
+            const response = await fetch(`${API_BASE_URL}/v1/ocr`, {
+              method: "POST",
+              credentials: "include",
+              headers: {
+                "Content-Type": "application/json",
               },
-            }),
-          });
+              body: JSON.stringify({
+                mode: selectedMode,
+                browserId: browserId.current,
+                image: {
+                  name: item.file.name,
+                  mimeType: item.file.type,
+                  size: item.file.size,
+                  dataUrl,
+                },
+              }),
+            });
 
-          const payload = (await response.json()) as {
-            error?: string;
-            result?: ResultPayload;
-          };
+            const payload = (await response.json()) as {
+              error?: string;
+              result?: ImageResultPayload;
+            };
+            const imageResult = payload.result;
 
-          if (!response.ok || !payload.result) {
-            throw new Error(payload.error || "Falha ao processar a imagem.");
+            if (!response.ok || !imageResult) {
+              throw new Error(payload.error || "Falha ao processar a imagem.");
+            }
+
+            setResults((current) => ({
+              ...current,
+              [item.id]: {
+                status: "success",
+                payload: {
+                  kind: "image",
+                  txt: imageResult.txt,
+                  md: imageResult.md,
+                  html: imageResult.html,
+                  preview: imageResult.preview,
+                },
+              },
+            }));
+          } else {
+            const pageCount = item.pageCount ?? (await readPdfPageCount(item.file));
+            const pdfSummary = buildPdfSelectionSummary({
+              totalPages: pageCount,
+              remainingPages: limits?.limits.pdf.remainingPages ?? 5,
+              maxPagesPerDocument: limits?.limits.pdf.maxPagesPerDocument ?? 50,
+            });
+            const preparedPages = await buildPreparedPdfPages(item.file, pdfSummary.processablePages);
+            const formData = new FormData();
+            formData.set("file", item.file);
+            formData.set("browserId", browserId.current);
+            formData.set("totalPages", String(pageCount));
+            formData.set("sourcePath", window.location.pathname);
+            formData.set("preparedPages", JSON.stringify(preparedPages));
+
+            const response = await fetch(`${API_BASE_URL}/v1/pdf/ocr`, {
+              method: "POST",
+              credentials: "include",
+              body: formData,
+            });
+
+            const payload = (await response.json()) as (PdfResultPayload & { error?: string; code?: string; remainingPdfPagesToday?: number });
+            if (!response.ok || !("kind" in payload) || payload.kind !== "pdf") {
+              throw new Error(
+                mapPdfOcrError({
+                  code: payload.code ?? "unknown",
+                  error: payload.error ?? "Falha ao processar o PDF.",
+                  remainingPdfPagesToday: payload.remainingPdfPagesToday ?? 0,
+                }),
+              );
+            }
+
+            setResults((current) => ({
+              ...current,
+              [item.id]: {
+                status: "success",
+                payload,
+              },
+            }));
           }
-
-          setResults((current) => ({
-            ...current,
-            [item.id]: {
-              status: "success",
-              payload: payload.result,
-            },
-          }));
         } catch (error) {
           const message = error instanceof Error ? error.message : "Erro inesperado.";
           setResults((current) => ({
@@ -387,12 +511,16 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
     }
   }
 
-  function handleFiles(nextFiles: File[]) {
-    const mappedFiles = nextFiles.map((file) => ({
-      id: `${file.name}-${file.lastModified}-${Math.random().toString(36).slice(2, 8)}`,
-      file,
-      previewUrl: URL.createObjectURL(file),
-    }));
+  async function handleFiles(nextFiles: File[]) {
+    const mappedFiles = await Promise.all(
+      nextFiles.map(async (file) => ({
+        id: `${file.name}-${file.lastModified}-${Math.random().toString(36).slice(2, 8)}`,
+        file,
+        kind: getDocumentKind(file),
+        pageCount: file.type === "application/pdf" ? await readPdfPageCount(file) : undefined,
+        previewUrl: file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined,
+      })),
+    );
     const combinedFiles = [...selectedFilesRef.current, ...mappedFiles];
     const validationError = validateFiles(combinedFiles.map((entry) => entry.file));
     if (validationError) {
@@ -445,7 +573,9 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
       return;
     }
 
-    URL.revokeObjectURL(removed.previewUrl);
+    if (removed.previewUrl) {
+      URL.revokeObjectURL(removed.previewUrl);
+    }
     const nextFiles = selectedFilesRef.current.filter((file) => file.id !== fileId);
     selectedFilesRef.current = nextFiles;
     setSelectedFiles(nextFiles);
@@ -466,6 +596,21 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
 
   function handleDownload(file: SelectedFile, payload: ResultPayload) {
     const name = baseName(file.file.name);
+    if (payload.kind === "pdf") {
+      if (activeFormat === "txt") {
+        downloadTextFile(`${name}.txt`, payload.txt);
+        return;
+      }
+
+      if (activeFormat === "md") {
+        downloadTextFile(`${name}.md`, payload.md, "text/markdown;charset=utf-8");
+        return;
+      }
+
+      downloadHtmlFile(`${name}.html`, payload.html);
+      return;
+    }
+
     if (mode === "simple" || activeFormat === "txt") {
       downloadTextFile(`${name}.txt`, payload.txt);
       return;
@@ -486,6 +631,10 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
       return;
     }
 
+     if (completedItems.some(({ result }) => result.payload?.kind === "pdf")) {
+      return;
+    }
+
     await downloadBatchZip(
       `scanlume-${mode}-batch.zip`,
       completedItems.map(({ entry, result }) => ({
@@ -499,6 +648,7 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
 
   const primaryPreview = completedItems[0]?.result.payload;
   const primaryFile = completedItems[0]?.entry;
+  const isPdfPreview = primaryPreview?.kind === "pdf";
   const hasQueuedFiles = selectedFiles.length > 0;
   const hasCompletedResults = completedItems.length > 0;
   const canStart = hasQueuedFiles && !isSubmitting;
@@ -592,21 +742,22 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
             <input
               id="scanlume-upload"
               ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
+                type="file"
+                accept="image/*,application/pdf"
+                multiple
               onChange={(event) => {
                 const files = Array.from(event.target.files ?? []);
                 if (files.length > 0) {
-                  handleFiles(files);
+                  void handleFiles(files);
                 }
               }}
             />
-            <strong>Arraste imagens aqui ou clique para enviar</strong>
+            <strong>Arraste imagens ou um PDF aqui</strong>
             <span>O upload aparece na fila na hora e voce escolhe quando iniciar o OCR.</span>
             <small>
-              Ate {maxImageMb} MB por imagem, {maxBatchTotalMb} MB por lote e {maxBatchFiles} arquivo(s) por envio.
+              Ate {maxImageMb} MB por imagem, {maxBatchTotalMb} MB por lote, {maxBatchFiles} imagem(ns) por envio ou 1 PDF de ate {limits?.limits.pdf.maxFileMb ?? 15} MB.
             </small>
+            <small>PDFs mostram paginas processadas, paginas bloqueadas e downloads em HTML, Markdown e PDF.</small>
           </label>
 
           <div className="upload-actions">
@@ -615,7 +766,7 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
               type="button"
               onClick={() => fileInputRef.current?.click()}
             >
-              Selecionar imagens
+              Selecionar arquivos
             </button>
             <button className="ghost-button" type="button" onClick={resetFiles}>
               Limpar
@@ -726,12 +877,21 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
                     >
                       x
                     </button>
-                    {/* Local object URLs are not compatible with Next image optimization. */}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={item.previewUrl} alt={item.file.name} width={92} height={92} />
+                    {item.previewUrl ? (
+                      <>
+                        {/* Local object URLs are not compatible with Next image optimization. */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={item.previewUrl} alt={item.file.name} width={92} height={92} />
+                      </>
+                    ) : (
+                      <div className="mini-file-pdf">PDF</div>
+                    )}
                     <div className="mini-file-meta">
                       <strong>{item.file.name}</strong>
-                      <span>{(item.file.size / 1024 / 1024).toFixed(2)} MB</span>
+                      <span>
+                        {(item.file.size / 1024 / 1024).toFixed(2)} MB
+                        {item.kind === "pdf" && item.pageCount ? ` • ${item.pageCount} paginas` : ""}
+                      </span>
                       <p>
                         {result?.status === "processing" && "Processando..."}
                         {result?.status === "success" && "Pronto para copiar e baixar."}
@@ -764,7 +924,7 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
                 className={activeFormat === "md" ? "is-active" : ""}
                 onClick={() => setActiveFormat("md")}
                 type="button"
-                disabled={mode === "simple"}
+                disabled={!isPdfPreview && mode === "simple"}
               >
                 MD
               </button>
@@ -772,7 +932,7 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
                 className={activeFormat === "html" ? "is-active" : ""}
                 onClick={() => setActiveFormat("html")}
                 type="button"
-                disabled={mode === "simple"}
+                disabled={!isPdfPreview && mode === "simple"}
               >
                 HTML
               </button>
@@ -787,13 +947,24 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
 
           {primaryPreview && (
             <>
+              {isPdfPreview && primaryFile && (
+                <div className="pdf-result-summary">
+                  <strong>{primaryFile.file.name}</strong>
+                  <span>{primaryPreview.totalPages} paginas no total</span>
+                  <span>{primaryPreview.processedPages} paginas processadas</span>
+                  <span>Texto nativo: {primaryPreview.pageStats.textLayerPages}</span>
+                  <span>OCR: {primaryPreview.pageStats.ocrPages}</span>
+                  <span>Misto: {primaryPreview.pageStats.mixedPages}</span>
+                  {primaryPreview.billingUpsell?.required ? <a href={primaryPreview.billingUpsell.ctaHref}>{primaryPreview.billingUpsell.ctaLabel}</a> : null}
+                </div>
+              )}
               <div className="preview-actions">
                 <button
                   className="ghost-button"
                   type="button"
                   onClick={() => navigator.clipboard.writeText(
                     activeFormat === "html"
-                      ? primaryPreview.html ?? ""
+                      ? (primaryPreview.kind === "pdf" ? primaryPreview.html : primaryPreview.html ?? "")
                       : activeFormat === "md"
                         ? primaryPreview.md ?? primaryPreview.txt
                         : primaryPreview.txt,
@@ -810,6 +981,34 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
                     Baixar arquivo
                   </button>
                 )}
+                {isPdfPreview && primaryFile && (
+                  <>
+                    <button
+                      className="ghost-button"
+                      type="button"
+                      onClick={() => void requestPdfExport(`${API_BASE_URL}/v1/pdf/export/searchable`, {
+                        file: primaryFile.file,
+                        exportToken: primaryPreview.exportToken,
+                        exportManifest: primaryPreview.exportManifest,
+                        filename: `${baseName(primaryFile.file.name)}-searchable.pdf`,
+                      })}
+                    >
+                      Baixar PDF pesquisavel
+                    </button>
+                    <button
+                      className="ghost-button"
+                      type="button"
+                      onClick={() => void requestPdfExport(`${API_BASE_URL}/v1/pdf/export/reflowed`, {
+                        file: primaryFile.file,
+                        exportToken: primaryPreview.exportToken,
+                        exportManifest: primaryPreview.exportManifest,
+                        filename: `${baseName(primaryFile.file.name)}-reflowed.pdf`,
+                      })}
+                    >
+                      Baixar PDF reorganizado
+                    </button>
+                  </>
+                )}
                 {completedItems.length > 1 && (
                   <button className="ghost-button" type="button" onClick={() => void handleBatchDownload()}>
                     Baixar lote ZIP
@@ -818,10 +1017,11 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
               </div>
 
               <div className="result-preview">
-                {activeFormat === "html" && primaryPreview.html ? (
+                {activeFormat === "html" && (primaryPreview.kind === "pdf" ? primaryPreview.html : primaryPreview.html) ? (
                   <div
                     className="html-preview"
-                    dangerouslySetInnerHTML={{ __html: primaryPreview.html }}
+                    data-testid={isPdfPreview ? "pdf-preview-html" : undefined}
+                    dangerouslySetInnerHTML={{ __html: primaryPreview.kind === "pdf" ? primaryPreview.previewHtml : primaryPreview.html ?? "" }}
                   />
                 ) : (
                   <pre>

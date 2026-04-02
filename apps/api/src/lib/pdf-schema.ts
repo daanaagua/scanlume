@@ -32,6 +32,7 @@ export const pdfPreparedPageSchema = z.object({
 export const pdfOcrUploadSchema = z.object({
   file: z.instanceof(File),
   browserId: z.string().min(8),
+  totalPages: z.number().int().positive(),
   sourcePath: z.string().trim().min(1).max(300).optional(),
   preparedPages: z.array(pdfPreparedPageSchema),
 });

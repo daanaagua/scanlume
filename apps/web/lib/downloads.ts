@@ -18,6 +18,34 @@ export function downloadHtmlFile(filename: string, body: string) {
   triggerDownload(new Blob([documentHtml], { type: "text/html;charset=utf-8" }), filename);
 }
 
+export async function requestPdfExport(
+  endpoint: string,
+  input: {
+    file: File;
+    exportToken: string;
+    exportManifest: object;
+    filename: string;
+  },
+) {
+  const form = new FormData();
+  form.set("file", input.file);
+  form.set("exportToken", input.exportToken);
+  form.set("exportManifest", new Blob([JSON.stringify(input.exportManifest)], { type: "application/json" }), "export-manifest.json");
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    credentials: "include",
+    body: form,
+  });
+
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(payload?.error || "Falha ao gerar o PDF.");
+  }
+
+  triggerDownload(await response.blob(), input.filename);
+}
+
 export async function downloadBatchZip(
   archiveName: string,
   items: Array<{

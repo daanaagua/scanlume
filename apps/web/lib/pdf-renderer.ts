@@ -1,4 +1,5 @@
-export async function readPdfPageCount(_file: File) {
+export async function readPdfPageCount(file: File) {
+  void file;
   return 1;
 }
 
