@@ -9,6 +9,9 @@
     "dev:api": "pnpm --dir apps/api dev",
     "build": "pnpm --dir apps/web build && pnpm --dir apps/api typecheck",
     "lint": "pnpm --dir apps/web lint && pnpm --dir apps/api typecheck",
+    "test": "pnpm test:web && pnpm test:api",
+    "test:web": "pnpm --dir apps/web test",
+    "test:api": "pnpm --dir apps/api test",
     "submit:indexnow": "node scripts/submit-indexnow.mjs"
   },
   "devDependencies": {
