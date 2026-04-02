@@ -44,6 +44,11 @@ export const homeFaqs = [
       "Sim. O fluxo principal foi pensado para screenshots, artes, fotos do celular e imagens JPG ou PNG com texto visivel.",
   },
   {
+    question: "O Scanlume tambem funciona com PDF?",
+    answer:
+      "Sim. PDFs ficam no modo Texto formatado, onde o produto reaproveita texto nativo, faz OCR por regiao em paginas escaneadas e oferece PDF pesquisavel, PDF reorganizado, HTML, Markdown e TXT.",
+  },
+  {
     question: `Qual e a diferenca entre ${SIMPLE_MODE_LABEL} e ${FORMATTED_MODE_LABEL}?`,
     answer:
       `${SIMPLE_MODE_LABEL} entrega texto puro com mais velocidade. ${FORMATTED_MODE_LABEL} reorganiza o conteudo em blocos legiveis, preservando titulos, paragrafos e a hierarquia principal.`,
@@ -1405,6 +1410,7 @@ export const INDEXABLE_SEO_LINKS = INDEXABLE_TOOL_PAGE_SLUGS.map((slug) => ({
 
 const HOME_FLOW_SLUGS = [
   "imagem-para-texto",
+  "pdf-para-texto",
   "imagem-para-word",
   "ocr-online",
   "jpg-para-texto",

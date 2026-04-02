@@ -49,6 +49,94 @@ export type BlogPost = {
 export const BLOG_PATH = "/blog";
 
 export const blogPosts = {
+  "pdf-layout-reconstruction-update": {
+    slug: "pdf-layout-reconstruction-update",
+    category: "Atualizacao",
+    title: "Atualizamos o PDF OCR: texto reconstruido dentro do layout e contadores corrigidos",
+    description:
+      "Uma explicacao direta da nova fase do PDF OCR do Scanlume: reconstruimos texto dentro das regioes do PDF, diferenciamos melhor PDF pesquisavel e PDF reorganizado, e corrigimos a atualizacao de limites para usuarios logados.",
+    excerpt:
+      "O PDF OCR do Scanlume agora trata regioes em imagem como areas de layout, em vez de apenas anexar uma camada de texto solta em cima do documento.",
+    heroLead:
+      "Esta atualizacao fecha tres lacunas importantes do fluxo PDF: melhor reconstrução visual dentro das regioes em imagem, uma separacao mais clara entre PDF pesquisavel e PDF reorganizado, e contadores de uso que finalmente refletem o consumo real de usuarios autenticados.",
+    publishedAt: "2026-04-03",
+    lastReviewedAt: "2026-04-03",
+    readTime: "7 min",
+    coverImage: "/blog/ocr-export-workflow.png",
+    coverAlt: "Fluxo atualizado de OCR para PDF com reconstrução de layout",
+    coverCaption:
+      "O novo fluxo de PDF parte do OCR por regiao e tenta devolver texto reconstruido dentro do espaco original, em vez de depender apenas de uma camada escondida de busca.",
+    summary: [
+      "`PDF pesquisavel` agora passa a reconstruir texto OCR dentro da propria regiao do PDF, e nao apenas anexar uma camada escondida pouco alinhada.",
+      "`PDF reorganizado` deixa de parecer um dump linear e passa a preservar agrupamentos por regiao e pagina com foco em leitura.",
+      "Usuarios logados passam a ver limites e creditos atualizados de forma consistente depois de cada OCR bem-sucedido.",
+    ],
+    editorialMethod: [
+      "Tomamos como base os PDFs mistos usados nas validacoes do produto e os sintomas reportados pelos primeiros testes manuais.",
+      "A atualizacao foi definida comparando o comportamento de `PDF pesquisavel` e `PDF reorganizado` em relacao ao mesmo arquivo base.",
+      "A explicacao desta pagina foi escrita para ajudar usuarios a entender o que mudou na pratica, nao apenas os detalhes internos da implementacao.",
+    ],
+    sections: [
+      {
+        heading: "O que mudou no PDF pesquisavel",
+        paragraphs: [
+          "Antes, o PDF pesquisavel podia parecer apenas um arquivo com texto escondido anexado sobre a pagina. Isso ajudava na busca, mas nao explicava bem onde o OCR realmente encaixava dentro da imagem original.",
+          "Agora o fluxo trata cada regiao em imagem como uma area de layout. O OCR estruturado gera blocos formatados e o export tenta reencaixar esse texto dentro do mesmo espaco visual, mantendo o documento mais proximo do PDF original.",
+        ],
+      },
+      {
+        heading: "Como `PDF reorganizado` ficou diferente",
+        paragraphs: [
+          "O objetivo do PDF reorganizado continua sendo leitura melhor, mas ele deixa de ser um simples texto corrido. Em vez disso, passa a preservar agrupamentos por pagina e regiao, reconstruindo blocos com mais contexto visual.",
+          "Na pratica, isso significa que o arquivo continua mais limpo do que o original, mas sem perder tanto a nocao de onde cada bloco fazia parte do layout do PDF base.",
+        ],
+      },
+      {
+        heading: "Por que PDF continua no modo Texto formatado",
+        paragraphs: [
+          "PDF exige muito mais do que extrair texto puro. Mesmo quando ha texto nativo, o produto ainda precisa decidir quais paginas usar direto, quais regioes enviar para OCR e como devolver isso em um formato utilizavel depois.",
+          "Por isso PDFs ficam restritos a `Texto formatado`. `OCR simples` continua reservado para imagens, onde a proposta e velocidade e texto bruto, sem reconstruir estrutura e layout.",
+        ],
+        bullets: [
+          "OCR simples: imagens apenas.",
+          "Texto formatado: imagens e PDF.",
+          "PDF pesquisavel e PDF reorganizado saem do fluxo PDF formatado.",
+        ],
+      },
+      {
+        heading: "O que corrigimos nos limites para usuarios logados",
+        paragraphs: [
+          "Outra mudanca importante foi na experiencia de conta. O workspace e os componentes de conta agora voltam a buscar os limites depois de um OCR bem-sucedido, reduzindo a chance de mostrar creditos antigos na tela apos o consumo real ter mudado.",
+          "Isso vale especialmente para quem testa repetidamente OCR em imagem e PDF no mesmo dia e precisa confiar nos contadores para entender quanto ainda resta no plano atual.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: "O PDF pesquisavel agora fica identico ao original?",
+        answer:
+          "Nao de forma absoluta. A nova versao tenta reconstruir melhor o texto dentro das regioes em imagem, mas ainda trabalha com heuristicas e prioriza caber no espaco original antes de buscar fidelidade tipografica perfeita.",
+      },
+      {
+        question: "Quando usar PDF reorganizado em vez de PDF pesquisavel?",
+        answer:
+          "Use PDF pesquisavel quando quiser manter a pagina mais proxima do original. Use PDF reorganizado quando a prioridade for leitura e reaproveitamento, mesmo que o arquivo final fique mais editorial do que o PDF base.",
+      },
+    ],
+    relatedPosts: ["exportar-ocr-word-markdown-boas-praticas", "comparativo-jpg-png-print-ocr"],
+    relatedLinks: [
+      {
+        href: "/pdf-para-texto",
+        label: "Abrir PDF para texto",
+        description: "Testar o fluxo de PDF com texto nativo, paginas escaneadas e downloads em PDF pesquisavel ou reorganizado.",
+      },
+      {
+        href: "/imagem-para-texto",
+        label: "Voltar para a ferramenta principal",
+        description: "Comparar o fluxo PDF com o fluxo geral de OCR para imagens no mesmo workspace.",
+      },
+    ],
+  },
   "ocr-portugues-imagem-para-texto-teste-real": {
     slug: "ocr-portugues-imagem-para-texto-teste-real",
     category: "Teste real",

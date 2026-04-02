@@ -17,15 +17,24 @@ import {
 export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
   const page = toolPageContent[slug];
   const workspaceFirst = "workspaceFirst" in page && Boolean(page.workspaceFirst);
-  const heroEyebrow = workspaceFirst ? "Apoio rapido" : page.eyebrow;
+  const isPdfWorkspace = slug === "pdf-para-texto";
+  const heroEyebrow = workspaceFirst ? (isPdfWorkspace ? page.eyebrow : "Apoio rapido") : page.eyebrow;
   const heroLead = workspaceFirst
-    ? "A ferramenta principal ja fica no topo. Aqui embaixo voce so precisa decidir entre velocidade e estrutura antes de processar a imagem."
+    ? isPdfWorkspace
+      ? "O workspace principal ja fica no topo. Aqui embaixo voce encontra o contexto do fluxo PDF: texto nativo quando existe, OCR por regiao quando a pagina e imagem, e saida em PDF pesquisavel ou reorganizado."
+      : "A ferramenta principal ja fica no topo. Aqui embaixo voce so precisa decidir entre velocidade e estrutura antes de processar a imagem."
     : page.lead;
   const heroBullets = workspaceFirst
-    ? ["JPG, PNG e screenshot", "Texto puro ou organizado", "Copiar e baixar no navegador"]
+    ? isPdfWorkspace
+      ? ["PDF nativo, escaneado ou misto", "PDF pesquisavel e reorganizado", "HTML, Markdown e TXT"]
+      : ["JPG, PNG e screenshot", "Texto puro ou organizado", "Copiar e baixar no navegador"]
     : page.heroBullets;
   const heroPrimaryLabel = workspaceFirst ? "Voltar ao upload" : "Usar agora";
-  const heroActionNote = workspaceFirst ? "Use este bloco para comparar os dois modos sem perder o foco no upload." : "Teste gratis direto no navegador";
+  const heroActionNote = workspaceFirst
+    ? isPdfWorkspace
+      ? "Use este bloco para entender quando o PDF fica melhor em Texto formatado, como os downloads funcionam e o que muda entre PDF pesquisavel e PDF reorganizado."
+      : "Use este bloco para comparar os dois modos sem perder o foco no upload."
+    : "Teste gratis direto no navegador";
   const relatedPages = page.relatedSlugs.flatMap((key) => {
     const relatedSlug = key as ToolPageSlug;
     const entry = toolPageContent[relatedSlug];
@@ -128,7 +137,9 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
               <h2>{SIMPLE_MODE_LABEL}</h2>
               <p>
                 {workspaceFirst
-                  ? "Melhor para extrair texto puro com menos espera em screenshots, posters e fotos simples."
+                  ? isPdfWorkspace
+                    ? "Continua melhor para imagens soltas. PDFs ficam restritos ao modo Texto formatado porque exigem reconstruir estrutura e layout."
+                    : "Melhor para extrair texto puro com menos espera em screenshots, posters e fotos simples."
                   : "Texto puro, sem raciocinio extra, mais veloz para screenshot, poster e foto do celular."}
               </p>
             </div>
@@ -137,12 +148,14 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
               <h2>{FORMATTED_MODE_LABEL}</h2>
               <p>
                 {workspaceFirst
-                  ? "Vale usar quando voce quer manter titulos, paragrafos e uma hierarquia mais limpa para revisar depois."
+                  ? isPdfWorkspace
+                    ? "E o modo que libera PDF no Scanlume: reaproveita texto nativo, aplica OCR nas regioes em imagem e agora reconstrui melhor o texto dentro do espaco original do PDF."
+                    : "Vale usar quando voce quer manter titulos, paragrafos e uma hierarquia mais limpa para revisar depois."
                   : "Preserva a estrutura principal com titulos, paragrafos e uma leitura mais clara."}
               </p>
             </div>
             <a href={`#${OCR_WORKSPACE_ID}`} className="solid-button large-button">
-              {workspaceFirst ? "Subir imagem" : "Teste gratis agora"}
+              {workspaceFirst ? (isPdfWorkspace ? "Subir PDF" : "Subir imagem") : "Teste gratis agora"}
             </a>
           </div>
         </div>
@@ -238,7 +251,7 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
             <p className="eyebrow">Do blog</p>
             <h2>Quer contexto antes do upload? Leia os guias de OCR.</h2>
             <p>
-              Publicamos comparativos e benchmarks para explicar quando o OCR funciona melhor, como escolher entre JPG e PNG e qual formato faz mais sentido na exportacao.
+              Publicamos comparativos, benchmarks e updates de produto para explicar quando o OCR funciona melhor, quando usar PDF no modo formatado e como escolher a exportacao certa.
             </p>
             <div className="hero-actions">
               <Link href={BLOG_PATH} className="ghost-button large-button">

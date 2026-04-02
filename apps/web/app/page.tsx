@@ -17,9 +17,9 @@ import {
 } from "@/lib/site";
 
 export const metadata = buildMetadata({
-  title: "Scanlume | OCR online em pt-BR para screenshots, JPG e PNG",
+  title: "Scanlume | OCR online em pt-BR para imagens e PDF",
   description:
-    "OCR online do Scanlume para converter screenshots, JPG e PNG em texto editavel com saida simples ou formatada em TXT, Markdown e HTML.",
+    "OCR online do Scanlume para converter screenshots, JPG, PNG e PDF em texto editavel com saida simples ou formatada em TXT, Markdown, HTML e PDF.",
   keywords: [
     "scanlume",
     "ocr online pt-br",
@@ -71,17 +71,18 @@ export default function Home() {
         <div className="container hero-grid">
           <div className="hero-copy">
             <p className="eyebrow">Scanlume em pt-BR</p>
-            <h1>OCR online para transformar screenshots, JPG e PNG em texto editavel.</h1>
+            <h1>OCR online para transformar imagens e PDF em texto editavel.</h1>
             <p className="hero-lead">
-              Use o Scanlume para testar OCR simples ou texto formatado no navegador e levar o resultado para Word, Markdown ou fluxos internos sem instalar app.
+              Use o Scanlume para testar OCR simples em imagens ou Texto formatado em imagens e PDF, levando o resultado para Word, Markdown, HTML ou downloads em PDF sem instalar app.
             </p>
             <p className="hero-lead">
               A rota principal de <Link href="/imagem-para-texto">imagem para texto</Link> tambem atende buscas por <Link href="/imagem-para-texto">converter imagem em texto</Link> e <Link href="/imagem-para-texto">imagem em texto</Link>, mantendo o caso geral concentrado em uma pagina central.
+              Quando a origem ja esta em documento, a rota dedicada de <Link href="/pdf-para-texto">PDF para texto</Link> explica o fluxo de OCR por regiao, PDF pesquisavel e PDF reorganizado.
             </p>
             <div className="hero-bullets">
               <span>Gratis para testar</span>
               <span>Sem instalar aplicativo</span>
-              <span>Copiar ou baixar em TXT, MD e HTML</span>
+              <span>Copiar ou baixar em TXT, MD, HTML e PDF</span>
             </div>
             <div className="hero-actions">
               <Link href="/imagem-para-texto" className="solid-button large-button">
@@ -130,20 +131,20 @@ export default function Home() {
           <div className="timeline-grid">
             <article className="timeline-step">
               <span>01</span>
-              <strong>Envie uma imagem</strong>
-              <p>Use screenshot, JPG, PNG, poster ou foto tirada no celular.</p>
+              <strong>Envie uma imagem ou PDF</strong>
+              <p>Use screenshot, JPG, PNG, poster, foto tirada no celular ou um PDF ja pronto para OCR.</p>
             </article>
             <article className="timeline-step">
               <span>02</span>
               <strong>Escolha o modo</strong>
               <p>
-                {SIMPLE_MODE_LABEL} para texto puro. {FORMATTED_MODE_LABEL} para preservar a leitura principal.
+                {SIMPLE_MODE_LABEL} para texto puro em imagens. {FORMATTED_MODE_LABEL} para preservar a leitura principal em imagens e PDF.
               </p>
             </article>
             <article className="timeline-step">
               <span>03</span>
               <strong>Copie ou baixe</strong>
-              <p>Baixe TXT, Markdown ou HTML, ou copie o texto direto para Word e docs internos.</p>
+              <p>Baixe TXT, Markdown, HTML, PDF pesquisavel ou PDF reorganizado, ou copie o texto direto para Word e docs internos.</p>
             </article>
           </div>
         </div>
@@ -181,7 +182,7 @@ export default function Home() {
             <p className="eyebrow">Guias praticos</p>
             <h2>Guias praticos para escolher formato, modo e exportacao.</h2>
             <p>
-              Publicamos conteudo complementar para responder duvidas reais sobre OCR em portugues, diferenca entre formatos e exportacao para Word e Markdown.
+              Publicamos conteudo complementar para responder duvidas reais sobre OCR em portugues, diferenca entre formatos, PDF pesquisavel e exportacao para Word e Markdown.
             </p>
             <div className="hero-actions">
               <Link href={BLOG_PATH} className="ghost-button large-button">

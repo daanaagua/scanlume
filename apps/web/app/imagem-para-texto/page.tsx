@@ -32,6 +32,9 @@ export default function ImageToTextPage() {
                 Ver OCR online
               </Link>
             </div>
+            <p>
+              Se o arquivo ja estiver em documento, use a rota <Link href="/pdf-para-texto">PDF para texto</Link> para combinar texto nativo, OCR por regiao e downloads em PDF pesquisavel ou PDF reorganizado.
+            </p>
           </div>
 
           <div className="check-grid">
