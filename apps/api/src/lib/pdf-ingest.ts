@@ -40,3 +40,11 @@ export async function inspectPdfFile(input: {
     sourceHash,
   };
 }
+
+export function parsePreparedPagesJson(raw: string) {
+  try {
+    return JSON.parse(raw) as unknown[];
+  } catch {
+    throw createPdfHttpError(400, "pdf_invalid", "pdf_invalid: preparedPages must be valid JSON.");
+  }
+}

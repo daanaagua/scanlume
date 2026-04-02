@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AuthDialog } from "@/components/auth-dialog";
 import { getOrCreateBrowserId } from "@/lib/browser-id";
 import { downloadBatchZip, downloadHtmlFile, downloadTextFile, requestPdfExport } from "@/lib/downloads";
-import { buildPdfSelectionSummary, mapPdfOcrError } from "@/lib/pdf-client";
+import { buildPdfSelectionSummary, mapPdfOcrError, parseJsonResponse } from "@/lib/pdf-client";
 import { buildPreparedPdfPages, readPdfPageCount } from "@/lib/pdf-renderer";
 import { API_BASE_URL, FORMATTED_MODE_LABEL, SIMPLE_MODE_LABEL } from "@/lib/site";
 
@@ -427,10 +427,10 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
               }),
             });
 
-            const payload = (await response.json()) as {
+            const payload = await parseJsonResponse<{
               error?: string;
               result?: ImageResultPayload;
-            };
+            }>(response);
             const imageResult = payload.result;
 
             if (!response.ok || !imageResult) {
@@ -471,7 +471,7 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
               body: formData,
             });
 
-            const payload = (await response.json()) as (PdfResultPayload & { error?: string; code?: string; remainingPdfPagesToday?: number });
+            const payload = await parseJsonResponse<PdfResultPayload & { error?: string; code?: string; remainingPdfPagesToday?: number }>(response);
             if (!response.ok || !("kind" in payload) || payload.kind !== "pdf") {
               throw new Error(
                 mapPdfOcrError({

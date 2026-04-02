@@ -37,7 +37,7 @@ import {
   SIMPLE_PROMPT,
   SUPPORT_SYSTEM_PROMPT,
 } from "./lib/prompts";
-import { inspectPdfFile, createPdfHttpError } from "./lib/pdf-ingest";
+import { inspectPdfFile, parsePreparedPagesJson } from "./lib/pdf-ingest";
 import { defaultPdfUpsell, buildPdfAllowance, countBillablePdfPages, acquirePdfProcessingLock, releasePdfProcessingLock } from "./lib/pdf-limits";
 import { assemblePdfDocumentResult, buildPdfRouteOutcome } from "./lib/pdf-ocr";
 import { buildPdfRegionPrompt } from "./lib/pdf-prompts";
@@ -735,13 +735,6 @@ app.post("/v1/pdf/ocr", async (c) => {
   const totalPages = Number(form.get("totalPages") ?? 0);
   const sourcePath = String(form.get("sourcePath") ?? "");
   const preparedPagesRaw = String(form.get("preparedPages") ?? "[]");
-  const preparedPages = JSON.parse(preparedPagesRaw) as Array<{
-    pageNumber: number;
-    source: "text-layer" | "ocr" | "mixed";
-    pagePngBase64?: string;
-    nativeTextBlocks: Array<{ text: string; bbox: { x: number; y: number; width: number; height: number } }>;
-    ocrRegions: Array<{ id: string; imageBase64: string; bbox: { x: number; y: number; width: number; height: number } }>;
-  }>;
 
   if (!(file instanceof File)) {
     return c.json({ error: "Invalid request payload.", code: "pdf_file_type_invalid", remainingPdfPagesToday: 0 }, 400);
@@ -754,6 +747,13 @@ app.post("/v1/pdf/ocr", async (c) => {
   }
 
   try {
+    const preparedPages = parsePreparedPagesJson(preparedPagesRaw) as Array<{
+      pageNumber: number;
+      source: "text-layer" | "ocr" | "mixed";
+      pagePngBase64?: string;
+      nativeTextBlocks: Array<{ text: string; bbox: { x: number; y: number; width: number; height: number } }>;
+      ocrRegions: Array<{ id: string; imageBase64: string; bbox: { x: number; y: number; width: number; height: number } }>;
+    }>;
     const parsed = pdfOcrUploadSchema.safeParse({ file, browserId, totalPages, sourcePath: sourcePath || undefined, preparedPages });
     if (!parsed.success) {
       return c.json({ error: "Invalid request payload.", code: "pdf_invalid", remainingPdfPagesToday: viewer.type === "user" ? await resolveRemainingPdfPagesToday(c.env, viewer) : 5 }, 400);

@@ -23,3 +23,18 @@ export function mapPdfOcrError(error: { code: string; error: string; remainingPd
   }
   return error.error;
 }
+
+export async function parseJsonResponse<T>(response: Response) {
+  const text = await response.text();
+  if (!text) {
+    return {} as T;
+  }
+
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return {
+      error: text,
+    } as T;
+  }
+}
