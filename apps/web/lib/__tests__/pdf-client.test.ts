@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { buildPdfSelectionSummary, mapPdfOcrError, parseJsonResponse } from "@/lib/pdf-client";
+import { buildPreparedPdfPagePayload } from "@/lib/pdf-renderer";
 
 describe("buildPdfSelectionSummary", () => {
   it("marks a PDF as truncated when local pages exceed the remaining allowance", () => {
@@ -43,6 +44,36 @@ describe("parseJsonResponse", () => {
 
     await expect(parseJsonResponse<{ error: string }>(response)).resolves.toEqual({
       error: "Internal Server Error",
+    });
+  });
+});
+
+describe("buildPreparedPdfPagePayload", () => {
+  it("builds an OCR page when no native text blocks are present", () => {
+    expect(
+      buildPreparedPdfPagePayload({
+        pageNumber: 1,
+        pagePngBase64: "abc123",
+        nativeTextBlocks: [],
+      }),
+    ).toMatchObject({
+      pageNumber: 1,
+      source: "ocr",
+      pagePngBase64: "abc123",
+    });
+  });
+
+  it("builds a text-layer page when native text exists", () => {
+    expect(
+      buildPreparedPdfPagePayload({
+        pageNumber: 2,
+        pagePngBase64: "abc123",
+        nativeTextBlocks: [{ text: "hello", bbox: { x: 0, y: 0, width: 10, height: 10 } }],
+      }),
+    ).toMatchObject({
+      pageNumber: 2,
+      source: "text-layer",
+      nativeTextBlocks: [{ text: "hello" }],
     });
   });
 });
