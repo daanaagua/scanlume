@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildPdfPageResult, orderRegionsForReading } from "../pdf-segmentation";
+import { buildPdfPageResult, mapStructuredOcrBlocks, orderRegionsForReading } from "../pdf-segmentation";
 
 describe("orderRegionsForReading", () => {
   it("keeps full-width content before lower two-column content", () => {
@@ -29,5 +29,26 @@ describe("buildPdfPageResult", () => {
 
     expect(page.text).toBeUndefined();
     expect(page.errorCode).toBe("ocr_failed");
+  });
+});
+
+describe("mapStructuredOcrBlocks", () => {
+  it("splits a shared OCR region into non-overlapping block boxes with stable order", () => {
+    const blocks = mapStructuredOcrBlocks({
+      idPrefix: "region-1",
+      orderOffset: 3,
+      source: "ocr",
+      regionBbox: { x: 24, y: 200, width: 220, height: 180 },
+      blocks: [
+        { type: "h1", text: "Titulo", order: 0 },
+        { type: "p", text: "Primeiro paragrafo", order: 1 },
+        { type: "p", text: "Segundo paragrafo", order: 2 },
+      ],
+    });
+
+    expect(blocks.map((block) => block.order)).toEqual([3, 4, 5]);
+    expect(blocks[0]?.bbox?.y).toBeLessThan(blocks[1]?.bbox?.y ?? 0);
+    expect(blocks[1]?.bbox?.y).toBeLessThan(blocks[2]?.bbox?.y ?? 0);
+    expect(blocks.every((block) => (block.bbox?.height ?? 0) > 0)).toBe(true);
   });
 });

@@ -141,7 +141,7 @@ function detectRasterRegion(input: {
   height: number;
   nativeTextBlocks: NativeTextBlock[];
 }) {
-  const blockPadding = 8;
+  const blockPadding = 12;
   let minX = input.width;
   let minY = input.height;
   let maxX = -1;
@@ -187,10 +187,10 @@ function detectRasterRegion(input: {
   }
 
   const bbox = {
-    x: clamp(minX - 12, 0, input.width),
-    y: clamp(minY - 12, 0, input.height),
-    width: clamp(maxX - minX + 24, 1, input.width),
-    height: clamp(maxY - minY + 24, 1, input.height),
+    x: clamp(minX - 24, 0, input.width),
+    y: clamp(minY - 24, 0, input.height),
+    width: clamp(maxX - minX + 48, 1, input.width),
+    height: clamp(maxY - minY + 48, 1, input.height),
   };
 
   if (bbox.width < 24 || bbox.height < 16) {

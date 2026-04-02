@@ -42,7 +42,6 @@ function countSources(pages: PdfPage[]) {
 function buildDocumentHtml(input: { title: string; pages: PdfPage[]; lockedPages: number }) {
   const chunks = [`<h1>${input.title}</h1>`];
   for (const page of input.pages.filter((page) => page.status !== "failed")) {
-    chunks.push(`<!-- Page ${page.pageNumber} -->`);
     chunks.push(page.html ?? "");
   }
   if (input.lockedPages > 0) {
@@ -52,10 +51,7 @@ function buildDocumentHtml(input: { title: string; pages: PdfPage[]; lockedPages
 }
 
 function buildDocumentMarkdown(input: { pages: PdfPage[]; lockedPages: number }) {
-  const chunks: string[] = [];
-  for (const page of input.pages.filter((page) => page.status !== "failed")) {
-    chunks.push(`---\n\nPage ${page.pageNumber}\n\n${page.markdown ?? ""}`);
-  }
+  const chunks = input.pages.filter((page) => page.status !== "failed").map((page) => page.markdown ?? "");
   if (input.lockedPages > 0) {
     chunks.push(`\nLocked pages: ${input.lockedPages}`);
   }

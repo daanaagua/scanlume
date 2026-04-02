@@ -1,4 +1,4 @@
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { PDFDocument, PDFFont, StandardFonts, rgb } from "pdf-lib";
 
 import { sha256Hex } from "./store";
 
@@ -11,6 +11,7 @@ type ExportManifest = {
     width?: number;
     height?: number;
     blocks: Array<{
+      kind?: string;
       text?: string;
       source?: "text-layer" | "ocr";
       bbox?: { x: number; y: number; width: number; height: number };
@@ -198,6 +199,66 @@ function wrapTextToWidth(text: string, maxWidth: number, measure: (value: string
   return result;
 }
 
+function splitOverlayTextLines(text: string) {
+  return text
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function clampNumber(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+export function buildSearchableOverlayDrawSpec(input: {
+  block: { text?: string; bbox?: { x: number; y: number; width: number; height: number } };
+  pageLayout: { width?: number; height?: number };
+  pageSize: { width: number; height: number };
+  font: PDFFont;
+}) {
+  const text = input.block.text?.trim();
+  const bbox = input.block.bbox;
+  if (!text || !bbox) {
+    return null;
+  }
+
+  const width = Math.max(24, scaleX(bbox.width, input.pageLayout.width, input.pageSize.width));
+  const height = Math.max(12, (bbox.height / Math.max(input.pageLayout.height ?? input.pageSize.height, 1)) * input.pageSize.height);
+  const top = (bbox.y / Math.max(input.pageLayout.height ?? input.pageSize.height, 1)) * input.pageSize.height;
+  const x = scaleX(bbox.x, input.pageLayout.width, input.pageSize.width);
+  const lines = splitOverlayTextLines(text);
+  if (lines.length === 0) {
+    return null;
+  }
+
+  let fontSize = clampNumber((height / lines.length) * 0.8, 5, 18);
+  const widestLine = Math.max(...lines.map((line) => input.font.widthOfTextAtSize(line, fontSize)), 0);
+  if (widestLine > width) {
+    fontSize = Math.max(4.5, fontSize * (width / widestLine));
+  }
+
+  let lineHeight = lines.length === 1 ? fontSize * 1.05 : Math.min(height / lines.length, fontSize * 1.15);
+  if (lineHeight < fontSize) {
+    lineHeight = fontSize;
+  }
+
+  const totalTextHeight = fontSize + lineHeight * Math.max(lines.length - 1, 0);
+  if (totalTextHeight > height && totalTextHeight > 0) {
+    const shrinkRatio = height / totalTextHeight;
+    fontSize = Math.max(4.5, fontSize * shrinkRatio);
+    lineHeight = Math.max(fontSize, lineHeight * shrinkRatio);
+  }
+
+  return {
+    text: lines.join("\n"),
+    x: Math.max(0, x),
+    y: input.pageSize.height - top - fontSize,
+    maxWidth: width,
+    size: fontSize,
+    lineHeight,
+  };
+}
+
 export async function buildSearchablePdfBytes(sourceBytes: Uint8Array, manifest: ExportManifest) {
   const pdf = await PDFDocument.load(sourceBytes);
   const font = await pdf.embedFont(StandardFonts.Helvetica);
@@ -215,28 +276,27 @@ export async function buildSearchablePdfBytes(sourceBytes: Uint8Array, manifest:
     }
 
     const size = page.getSize();
-    let fallbackCursor = size.height - 32;
     for (const block of overlayBlocks) {
-      const lines = wrapTextByWords(block.text ?? "");
-      const width = block.bbox ? scaleX(block.bbox.width, pageLayout.width, size.width) : size.width - 48;
-      const x = block.bbox ? scaleX(block.bbox.x, pageLayout.width, size.width) : 24;
-      const y = block.bbox
-        ? scaleY(block.bbox.y, block.bbox.height, pageLayout.height, size.height)
-        : fallbackCursor;
-      const text = lines.join("\n");
+      const drawSpec = buildSearchableOverlayDrawSpec({
+        block,
+        pageLayout,
+        pageSize: size,
+        font,
+      });
+      if (!drawSpec) {
+        continue;
+      }
 
-      page.drawText(text, {
-        x: Math.max(24, x),
-        y: Math.max(24, y),
-        maxWidth: Math.max(120, Math.min(width, size.width - 48)),
-        size: 10,
-        lineHeight: 12,
+      page.drawText(drawSpec.text, {
+        x: Math.max(0, drawSpec.x),
+        y: Math.max(0, drawSpec.y),
+        maxWidth: Math.max(24, Math.min(drawSpec.maxWidth, size.width)),
+        size: drawSpec.size,
+        lineHeight: drawSpec.lineHeight,
         font,
         color: rgb(1, 1, 1),
         opacity: 0.01,
       });
-
-      fallbackCursor = Math.max(24, y - lines.length * 14 - 8);
     }
   }
 
@@ -291,17 +351,23 @@ export async function buildReflowedPdfBytes(manifest: ExportManifest) {
   };
 
   for (const pageLayout of manifest.pageLayouts) {
-    drawLines([`Page ${pageLayout.pageNumber}`], headingSize, 22, true);
-    cursorY -= 6;
-
-    const texts = pageLayout.blocks.map((block) => block.text?.trim() ?? "").filter(Boolean);
-    for (const text of texts) {
-      const wrapped = wrapTextToWidth(text, pageWidth - margin * 2, (value) => font.widthOfTextAtSize(value, bodySize));
-      drawLines(wrapped.length > 0 ? wrapped : [text], bodySize, bodyLineHeight);
-      cursorY -= 6;
+    const blocks = pageLayout.blocks.filter((block) => (block.text?.trim() ?? "").length > 0);
+    for (const block of blocks) {
+      const text = block.text?.trim() ?? "";
+      const isPrimaryHeading = block.kind === "h1";
+      const isSecondaryHeading = block.kind === "h2";
+      const fontSize = isPrimaryHeading ? 18 : isSecondaryHeading ? 15 : bodySize;
+      const lineHeight = isPrimaryHeading ? 24 : isSecondaryHeading ? 21 : bodyLineHeight;
+      const wrapped = wrapTextToWidth(
+        text,
+        pageWidth - margin * 2,
+        (value) => (isPrimaryHeading || isSecondaryHeading ? titleFont.widthOfTextAtSize(value, fontSize) : font.widthOfTextAtSize(value, fontSize)),
+      );
+      drawLines(wrapped.length > 0 ? wrapped : [text], fontSize, lineHeight, isPrimaryHeading || isSecondaryHeading);
+      cursorY -= isPrimaryHeading ? 10 : isSecondaryHeading ? 8 : 6;
     }
 
-    cursorY -= 10;
+    cursorY -= 14;
   }
 
   return new Uint8Array(await pdf.save());

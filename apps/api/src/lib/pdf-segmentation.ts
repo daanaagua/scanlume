@@ -20,6 +20,12 @@ export type PdfPageBlock = {
   bbox?: { x: number; y: number; width: number; height: number };
 };
 
+type StructuredOcrBlockInput = {
+  type: string;
+  text: string;
+  order: number;
+};
+
 export type PageBuildInput = {
   pageNumber: number;
   status: PdfPageStatus;
@@ -79,4 +85,51 @@ export function buildPdfPageResult(input: PageBuildInput) {
     html: input.html ?? "",
     blocks: input.blocks ?? [],
   };
+}
+
+function blockWeight(kind: string, text: string) {
+  if (kind === "h1") return 1.4;
+  if (kind === "h2") return 1.2;
+  if (kind === "br") return 0.35;
+  return Math.max(1, Math.min(3.2, Math.ceil(text.trim().length / 80)));
+}
+
+export function mapStructuredOcrBlocks(input: {
+  idPrefix: string;
+  orderOffset: number;
+  source: "ocr";
+  regionBbox: { x: number; y: number; width: number; height: number };
+  blocks: StructuredOcrBlockInput[];
+}) {
+  const meaningfulBlocks = input.blocks.filter((block) => block.text.trim().length > 0 || block.type === "br");
+  if (meaningfulBlocks.length === 0) {
+    return [] as PdfPageBlock[];
+  }
+
+  const totalWeight = meaningfulBlocks.reduce((sum, block) => sum + blockWeight(block.type, block.text), 0);
+  let cursorY = input.regionBbox.y;
+
+  return meaningfulBlocks.map((block, index) => {
+    const weight = blockWeight(block.type, block.text);
+    const rawHeight = (weight / totalWeight) * input.regionBbox.height;
+    const remainingHeight = input.regionBbox.y + input.regionBbox.height - cursorY;
+    const height = index === meaningfulBlocks.length - 1 ? remainingHeight : Math.max(12, rawHeight);
+
+    const mappedBlock: PdfPageBlock = {
+      id: `${input.idPrefix}-${index}`,
+      kind: block.type,
+      order: input.orderOffset + index,
+      text: block.text,
+      source: input.source,
+      bbox: {
+        x: input.regionBbox.x,
+        y: cursorY,
+        width: input.regionBbox.width,
+        height,
+      },
+    };
+
+    cursorY += height;
+    return mappedBlock;
+  });
 }

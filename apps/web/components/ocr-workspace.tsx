@@ -335,7 +335,7 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
     return () => window.clearInterval(timer);
   }, [progressSummary]);
 
-  function validateFiles(files: File[]) {
+  function validateFiles(files: File[], selectedMode: Mode) {
     const maxFiles = limits?.limits.maxBatchFiles ?? 10;
     const maxImageMb = limits?.limits.maxImageMb ?? 5;
     const maxBatchTotalMb = limits?.limits.maxBatchTotalMb ?? 20;
@@ -352,6 +352,10 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
     }
 
     if (kinds.has("pdf")) {
+      if (selectedMode !== "formatted") {
+        return "PDFs so podem ser processados no modo Texto formatado.";
+      }
+
       if (files.length > 1) {
         return "Envie apenas 1 PDF por vez nesta primeira versao.";
       }
@@ -451,6 +455,10 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
               },
             }));
           } else {
+            if (selectedMode !== "formatted") {
+              throw new Error("PDFs so podem ser processados no modo Texto formatado.");
+            }
+
             const pageCount = item.pageCount ?? (await readPdfPageCount(item.file));
             const pdfSummary = buildPdfSelectionSummary({
               totalPages: pageCount,
@@ -522,7 +530,7 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
       })),
     );
     const combinedFiles = [...selectedFilesRef.current, ...mappedFiles];
-    const validationError = validateFiles(combinedFiles.map((entry) => entry.file));
+    const validationError = validateFiles(combinedFiles.map((entry) => entry.file), mode);
     if (validationError) {
       revokePreviewUrls(mappedFiles);
       setGlobalError(validationError);
@@ -649,9 +657,10 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
   const primaryPreview = completedItems[0]?.result.payload;
   const primaryFile = completedItems[0]?.entry;
   const isPdfPreview = primaryPreview?.kind === "pdf";
+  const hasQueuedPdf = selectedFiles.some((file) => file.kind === "pdf");
   const hasQueuedFiles = selectedFiles.length > 0;
   const hasCompletedResults = completedItems.length > 0;
-  const canStart = hasQueuedFiles && !isSubmitting;
+  const canStart = hasQueuedFiles && !isSubmitting && !(mode === "simple" && hasQueuedPdf);
   const modeActionLabel = mode === "simple" ? `Iniciar ${SIMPLE_MODE_LABEL}` : `Iniciar ${FORMATTED_MODE_LABEL}`;
   const budgetUsed = limits?.budget.totalCostRmb ?? 0;
   const budgetLimit = limits?.limits.hardBudgetRmb ?? DISPLAY_DAILY_BUDGET_BRL;
@@ -724,7 +733,12 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
           <div className="mode-toggle" role="tablist" aria-label="Modo OCR">
             <button
               className={mode === "simple" ? "is-active" : ""}
-              onClick={() => setMode("simple")}
+              onClick={() => {
+                setMode("simple");
+                if (hasQueuedPdf) {
+                  setGlobalError("PDFs so podem ser processados no modo Texto formatado.");
+                }
+              }}
               type="button"
             >
               {SIMPLE_MODE_LABEL}
@@ -743,7 +757,7 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
               id="scanlume-upload"
               ref={fileInputRef}
                 type="file"
-                accept="image/*,application/pdf"
+                accept={mode === "formatted" ? "image/*,application/pdf" : "image/*"}
                 multiple
               onChange={(event) => {
                 const files = Array.from(event.target.files ?? []);
@@ -752,12 +766,18 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
                 }
               }}
             />
-            <strong>Arraste imagens ou um PDF aqui</strong>
+            <strong>{mode === "formatted" ? "Arraste imagens ou um PDF aqui" : "Arraste imagens aqui"}</strong>
             <span>O upload aparece na fila na hora e voce escolhe quando iniciar o OCR.</span>
             <small>
-              Ate {maxImageMb} MB por imagem, {maxBatchTotalMb} MB por lote, {maxBatchFiles} imagem(ns) por envio ou 1 PDF de ate {limits?.limits.pdf.maxFileMb ?? 15} MB.
+              {mode === "formatted"
+                ? `Ate ${maxImageMb} MB por imagem, ${maxBatchTotalMb} MB por lote, ${maxBatchFiles} imagem(ns) por envio ou 1 PDF de ate ${limits?.limits.pdf.maxFileMb ?? 15} MB.`
+                : `Ate ${maxImageMb} MB por imagem, ${maxBatchTotalMb} MB por lote e ${maxBatchFiles} imagem(ns) por envio.`}
             </small>
-            <small>PDFs mostram paginas processadas, paginas bloqueadas e downloads em HTML, Markdown e PDF.</small>
+            <small>
+              {mode === "formatted"
+                ? "PDFs mostram paginas processadas, paginas bloqueadas e downloads em HTML, Markdown e PDF."
+                : "OCR simples aceita apenas imagens porque PDFs exigem reconstrucao de estrutura e layout."}
+            </small>
           </label>
 
           <div className="upload-actions">

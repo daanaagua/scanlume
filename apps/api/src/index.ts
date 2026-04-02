@@ -41,7 +41,8 @@ import { inspectPdfFile, parsePreparedPagesJson } from "./lib/pdf-ingest";
 import { defaultPdfUpsell, buildPdfAllowance, countBillablePdfPages, acquirePdfProcessingLock, releasePdfProcessingLock } from "./lib/pdf-limits";
 import { assemblePdfDocumentResult, buildPdfRouteOutcome } from "./lib/pdf-ocr";
 import { buildPdfRegionPrompt } from "./lib/pdf-prompts";
-import { buildPdfPageResult } from "./lib/pdf-segmentation";
+import { buildPdfPageResult, mapStructuredOcrBlocks } from "./lib/pdf-segmentation";
+import type { PdfPageBlock } from "./lib/pdf-segmentation";
 import {
   buildReflowedPdfBytes,
   buildSearchablePdfBytes,
@@ -124,6 +125,20 @@ type SupportReplyResult = {
 };
 
 const app = new Hono<AppBindings>();
+
+function normalizeFormattedBlockType(value?: string): "h1" | "h2" | "p" | "br" {
+  return value === "h1" || value === "h2" || value === "br" ? value : "p";
+}
+
+function toFormattedBlocks(blocks: PdfPageBlock[]) {
+  return blocks
+    .filter((block): block is PdfPageBlock & { text: string; order: number } => typeof block.text === "string" && typeof block.order === "number")
+    .map((block) => ({
+      type: normalizeFormattedBlockType(block.kind),
+      text: block.text,
+      order: block.order,
+    }));
+}
 
 app.use("*", async (c, next) => {
   const middleware = cors({
@@ -801,7 +816,7 @@ app.post("/v1/pdf/ocr", async (c) => {
               html: `<p>${text.replace(/\n/g, "<br />")}</p>`,
               blocks: page.nativeTextBlocks.map((block: { text: string; bbox: { x: number; y: number; width: number; height: number } }, index: number) => ({
                 id: `native-${index}`,
-                kind: "paragraph",
+                kind: "p",
                 order: index,
                 text: block.text,
                 source: "text-layer",
@@ -811,39 +826,55 @@ app.post("/v1/pdf/ocr", async (c) => {
           }
 
           const ocrTexts: string[] = [];
-          const ocrBlocks: Array<{ id: string; kind: string; order: number; text: string; source: "ocr"; bbox?: { x: number; y: number; width: number; height: number } }> = [];
+          const ocrMarkdowns: string[] = [];
+          const ocrHtmlSnippets: string[] = [];
+          const ocrBlocks: PdfPageBlock[] = [];
 
           if (page.source === "ocr" && page.pagePngBase64) {
-            const result = await runFormattedOcr(c.env, `data:image/png;base64,${page.pagePngBase64}`);
+            const result = await runFormattedOcr(
+              c.env,
+              `data:image/png;base64,${page.pagePngBase64}`,
+              buildPdfRegionPrompt({ pageNumber: page.pageNumber, regionKind: "page" }),
+            );
             if (!result.ok) {
               throw new Error(result.error);
             }
             ocrTexts.push(result.payload.txt);
-            ocrBlocks.push({
-              id: `ocr-${page.pageNumber}`,
-              kind: "paragraph",
-              order: 0,
-              text: result.payload.txt,
-              source: "ocr",
-              bbox: { x: 0, y: 0, width: page.width, height: page.height },
-            });
+            ocrMarkdowns.push(result.payload.md);
+            ocrHtmlSnippets.push(result.payload.html);
+            ocrBlocks.push(
+              ...mapStructuredOcrBlocks({
+                idPrefix: `ocr-${page.pageNumber}`,
+                orderOffset: 0,
+                source: "ocr",
+                regionBbox: { x: 0, y: 0, width: page.width, height: page.height },
+                blocks: result.payload.blocks,
+              }),
+            );
           }
 
           if (page.source === "mixed") {
             let successfulRegions = 0;
             for (const [index, region] of page.ocrRegions.entries()) {
-              const result = await runFormattedOcr(c.env, `data:image/png;base64,${region.imageBase64}`);
+              const result = await runFormattedOcr(
+                c.env,
+                `data:image/png;base64,${region.imageBase64}`,
+                buildPdfRegionPrompt({ pageNumber: page.pageNumber, regionKind: "region" }),
+              );
               if (result.ok && result.payload.txt.trim()) {
                 successfulRegions += 1;
                 ocrTexts.push(result.payload.txt);
-                ocrBlocks.push({
-                  id: region.id,
-                  kind: "paragraph",
-                  order: index + page.nativeTextBlocks.length,
-                  text: result.payload.txt,
-                  source: "ocr",
-                  bbox: region.bbox,
-                });
+                ocrMarkdowns.push(result.payload.md);
+                ocrHtmlSnippets.push(result.payload.html);
+                ocrBlocks.push(
+                  ...mapStructuredOcrBlocks({
+                    idPrefix: region.id,
+                    orderOffset: page.nativeTextBlocks.length + index * 100,
+                    source: "ocr",
+                    regionBbox: region.bbox,
+                    blocks: result.payload.blocks,
+                  }),
+                );
               }
             }
             const nativeText = page.nativeTextBlocks.map((block: { text: string }) => block.text).join("\n");
@@ -862,6 +893,18 @@ app.post("/v1/pdf/ocr", async (c) => {
             }
 
             const status = successfulRegions === page.ocrRegions.length ? "success" : "partial";
+            const combinedStructuredBlocks = [
+              ...page.nativeTextBlocks.map((block: { text: string; bbox: { x: number; y: number; width: number; height: number } }, index: number) => ({
+                id: `native-${page.pageNumber}-${index}`,
+                kind: "p",
+                order: index,
+                text: block.text,
+                source: "text-layer" as const,
+                bbox: block.bbox,
+              })),
+              ...ocrBlocks,
+            ];
+            const formattedBlocks = toFormattedBlocks(combinedStructuredBlocks);
             return buildPdfPageResult({
               pageNumber: page.pageNumber,
               status,
@@ -869,23 +912,14 @@ app.post("/v1/pdf/ocr", async (c) => {
               width: page.width,
               height: page.height,
               text: combinedText,
-              markdown: combinedText,
-              html: `<p>${combinedText.replace(/\n/g, "<br />")}</p>`,
-              blocks: [
-                ...page.nativeTextBlocks.map((block: { text: string; bbox: { x: number; y: number; width: number; height: number } }, index: number) => ({
-                  id: `native-${page.pageNumber}-${index}`,
-                  kind: "paragraph",
-                  order: index,
-                  text: block.text,
-                  source: "text-layer" as const,
-                  bbox: block.bbox,
-                })),
-                ...ocrBlocks,
-              ],
+              markdown: blocksToMarkdown(formattedBlocks),
+              html: blocksToHtml(formattedBlocks),
+              blocks: combinedStructuredBlocks,
             });
           }
 
           const combinedText = ocrTexts.join("\n\n");
+          const formattedBlocks = toFormattedBlocks(ocrBlocks);
           return buildPdfPageResult({
             pageNumber: page.pageNumber,
             status: "success",
@@ -893,8 +927,8 @@ app.post("/v1/pdf/ocr", async (c) => {
             width: page.width,
             height: page.height,
             text: combinedText,
-            markdown: combinedText,
-            html: `<p>${combinedText.replace(/\n/g, "<br />")}</p>`,
+            markdown: formattedBlocks.length > 0 ? blocksToMarkdown(formattedBlocks) : ocrMarkdowns.join("\n\n"),
+            html: formattedBlocks.length > 0 ? blocksToHtml(formattedBlocks) : ocrHtmlSnippets.join("\n"),
             blocks: ocrBlocks,
           });
         } catch (error) {
@@ -1060,7 +1094,7 @@ async function runSimpleOcr(env: WorkerEnv, imageUrl: string) {
   };
 }
 
-async function runFormattedOcr(env: WorkerEnv, imageUrl: string) {
+async function runFormattedOcr(env: WorkerEnv, imageUrl: string, promptText = FORMATTED_PROMPT) {
   const response = await fetch(`${env.ARK_API_BASE}/chat/completions`, {
     method: "POST",
     headers: {
@@ -1078,7 +1112,7 @@ async function runFormattedOcr(env: WorkerEnv, imageUrl: string) {
         {
           role: "user",
           content: [
-            { type: "text", text: FORMATTED_PROMPT },
+            { type: "text", text: promptText },
             {
               type: "image_url",
               image_url: {

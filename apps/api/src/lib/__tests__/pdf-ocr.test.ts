@@ -28,6 +28,34 @@ describe("assemblePdfDocumentResult", () => {
     expect(result.exportManifest.failedPageNumbers).toEqual([3]);
     expect(result.exportManifest.pageLayouts).toHaveLength(3);
   });
+
+  it("does not inject page labels into whole-document exports", () => {
+    const result = assemblePdfDocumentResult({
+      documentId: "doc-2",
+      fileName: "single-page.pdf",
+      totalPages: 1,
+      pages: [
+        {
+          pageNumber: 1,
+          status: "success",
+          source: "mixed",
+          width: 600,
+          height: 800,
+          html: "<p>Conteudo real</p>",
+          markdown: "Conteudo real",
+          text: "Conteudo real",
+          blocks: [],
+        },
+      ],
+      lockedPages: 0,
+      remainingPdfPagesToday: 4,
+      exportToken: "signed",
+    });
+
+    expect(result.html).not.toContain("<!-- Page 1 -->");
+    expect(result.md).not.toContain("Page 1");
+    expect(result.txt).toBe("Conteudo real");
+  });
 });
 
 describe("buildPdfRouteOutcome", () => {

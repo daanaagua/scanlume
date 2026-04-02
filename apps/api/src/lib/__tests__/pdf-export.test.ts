@@ -2,6 +2,7 @@ import { PDFDocument, StandardFonts } from "pdf-lib";
 import { describe, expect, it } from "vitest";
 
 import {
+  buildSearchableOverlayDrawSpec,
   buildExportRouteConfig,
   buildReflowedPdfBytes,
   buildReflowedPdfPlan,
@@ -119,6 +120,26 @@ describe("buildSearchablePdfPlan", () => {
     expect(new TextDecoder().decode(bytes.slice(0, 8))).toContain("%PDF-");
     await expect(PDFDocument.load(bytes)).resolves.toBeTruthy();
   });
+
+  it("top-aligns searchable overlay text inside the OCR region instead of dropping it below", async () => {
+    const source = await PDFDocument.create();
+    const font = await source.embedFont(StandardFonts.Helvetica);
+
+    const spec = buildSearchableOverlayDrawSpec({
+      block: {
+        text: "O Scanlume reconhece texto em PDFs mistos.",
+        bbox: { x: 24, y: 180, width: 220, height: 28 },
+      },
+      pageLayout: { width: 300, height: 400 },
+      pageSize: { width: 300, height: 400 },
+      font,
+    });
+
+    expect(spec).not.toBeNull();
+    expect(spec?.text).toBe("O Scanlume reconhece texto em PDFs mistos.");
+    expect(spec?.y ?? 0).toBeGreaterThan(200);
+    expect(spec?.y ?? 0).toBeLessThan(212);
+  });
 });
 
 describe("buildReflowedPdfPlan", () => {
@@ -140,8 +161,8 @@ describe("buildReflowedPdfPlan", () => {
         {
           pageNumber: 1,
           blocks: [
-            { text: "Title" },
-            { text: "Body copy from the PDF export." },
+            { kind: "h1", text: "Title" },
+            { kind: "p", text: "Body copy from the PDF export." },
           ],
         },
       ],
@@ -149,6 +170,7 @@ describe("buildReflowedPdfPlan", () => {
 
     expect(new TextDecoder().decode(bytes.slice(0, 8))).toContain("%PDF-");
     await expect(PDFDocument.load(bytes)).resolves.toBeTruthy();
+    expect(Buffer.from(bytes).includes(Buffer.from("Page 1"))).toBe(false);
   });
 
   it("exposes the reflowed export route with the same manifest verification path", () => {
