@@ -11,11 +11,64 @@ type PreparedPdfPage = {
   ocrRegions: Array<{ id: string; imageBase64: string; bbox: { x: number; y: number; width: number; height: number } }>;
 };
 
-const PDF_JS_MODULE_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.296/legacy/build/pdf.min.mjs";
-const PDF_JS_WORKER_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.296/legacy/build/pdf.worker.min.mjs";
+declare global {
+  interface Window {
+    pdfjsLib?: {
+      GlobalWorkerOptions: { workerSrc: string };
+      getDocument: (input: { data: Uint8Array }) => {
+        promise: Promise<{
+          numPages: number;
+          getPage: (pageNumber: number) => Promise<{
+            getViewport: (input: { scale: number }) => { width: number; height: number };
+            render: (input: { canvas: HTMLCanvasElement; canvasContext: CanvasRenderingContext2D; viewport: { width: number; height: number } }) => { promise: Promise<void> };
+            getTextContent: () => Promise<{ items: Array<{ str?: string }> }>;
+          }>;
+        }>;
+      };
+    };
+  }
+}
+
+const PDF_JS_SCRIPT_URL = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+const PDF_JS_WORKER_URL = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+function loadScript(src: string) {
+  return new Promise<void>((resolve, reject) => {
+    const existing = document.querySelector(`script[data-pdfjs-src=\"${src}\"]`) as HTMLScriptElement | null;
+    if (existing) {
+      if ((existing as HTMLScriptElement).dataset.loaded === "true") {
+        resolve();
+        return;
+      }
+
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener("error", () => reject(new Error("Nao foi possivel carregar o PDF.js.")), { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.dataset.pdfjsSrc = src;
+    script.addEventListener("load", () => {
+      script.dataset.loaded = "true";
+      resolve();
+    }, { once: true });
+    script.addEventListener("error", () => reject(new Error("Nao foi possivel carregar o PDF.js.")), { once: true });
+    document.head.appendChild(script);
+  });
+}
 
 async function loadPdfJs() {
-  const pdfjs = await import(/* @vite-ignore */ PDF_JS_MODULE_URL);
+  if (!window.pdfjsLib) {
+    await loadScript(PDF_JS_SCRIPT_URL);
+  }
+
+  const pdfjs = window.pdfjsLib;
+  if (!pdfjs) {
+    throw new Error("Nao foi possivel inicializar o PDF.js.");
+  }
+
   if (!pdfjs.GlobalWorkerOptions.workerSrc) {
     pdfjs.GlobalWorkerOptions.workerSrc = PDF_JS_WORKER_URL;
   }
