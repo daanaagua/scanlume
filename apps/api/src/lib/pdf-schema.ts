@@ -3,6 +3,8 @@ import { z } from "zod";
 export const pdfPreparedPageSchema = z.object({
   pageNumber: z.number().int().positive(),
   source: z.enum(["text-layer", "ocr", "mixed"]),
+  width: z.number().positive(),
+  height: z.number().positive(),
   pagePngBase64: z.string().min(1).optional(),
   nativeTextBlocks: z.array(
     z.object({

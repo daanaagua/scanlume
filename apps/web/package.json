@@ -13,11 +13,13 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@swc/helpers": "^0.5.20",
     "jszip": "^3.10.1",
     "next": "16.1.6",
     "pdfjs-dist": "^5.4.296",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "styled-jsx": "^5.1.7"
   },
   "devDependencies": {
     "@opennextjs/cloudflare": "^1.17.1",

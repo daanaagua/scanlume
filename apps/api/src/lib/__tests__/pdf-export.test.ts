@@ -1,8 +1,11 @@
+import { PDFDocument, StandardFonts } from "pdf-lib";
 import { describe, expect, it } from "vitest";
 
 import {
   buildExportRouteConfig,
+  buildReflowedPdfBytes,
   buildReflowedPdfPlan,
+  buildSearchablePdfBytes,
   buildSearchablePdfPlan,
   filterOverlappingOcrBlocks,
   mapPdfExportError,
@@ -77,6 +80,45 @@ describe("buildSearchablePdfPlan", () => {
 
     expect(blocks).toEqual([{ source: "text-layer", bbox: { x: 10, y: 10, width: 100, height: 20 } }]);
   });
+
+  it("keeps non-overlapping OCR overlays for mixed pages", () => {
+    const blocks = filterOverlappingOcrBlocks([
+      { source: "text-layer", bbox: { x: 10, y: 10, width: 100, height: 20 } },
+      { source: "ocr", bbox: { x: 10, y: 120, width: 180, height: 90 } },
+    ]);
+
+    expect(blocks).toEqual([
+      { source: "text-layer", bbox: { x: 10, y: 10, width: 100, height: 20 } },
+      { source: "ocr", bbox: { x: 10, y: 120, width: 180, height: 90 } },
+    ]);
+  });
+
+  it("generates a real searchable PDF file instead of JSON bytes", async () => {
+    const source = await PDFDocument.create();
+    const font = await source.embedFont(StandardFonts.Helvetica);
+    const page = source.addPage([300, 400]);
+    page.drawText("Native text", { x: 24, y: 340, size: 12, font });
+
+    const bytes = await buildSearchablePdfBytes(new Uint8Array(await source.save()), {
+      totalPages: 1,
+      failedPageNumbers: [],
+      pageLayouts: [
+        {
+          pageNumber: 1,
+          source: "mixed",
+          width: 300,
+          height: 400,
+          blocks: [
+            { text: "Native text", source: "text-layer", bbox: { x: 24, y: 40, width: 80, height: 14 } },
+            { text: "Texto da imagem", source: "ocr", bbox: { x: 24, y: 180, width: 140, height: 20 } },
+          ],
+        },
+      ],
+    });
+
+    expect(new TextDecoder().decode(bytes.slice(0, 8))).toContain("%PDF-");
+    await expect(PDFDocument.load(bytes)).resolves.toBeTruthy();
+  });
 });
 
 describe("buildReflowedPdfPlan", () => {
@@ -90,6 +132,23 @@ describe("buildReflowedPdfPlan", () => {
 
     expect(plan.mode).toBe("reflowed");
     expect(plan.blocks.map((block) => block.text).join(" ")).toContain("Title");
+  });
+
+  it("generates a real reflowed PDF file instead of JSON bytes", async () => {
+    const bytes = await buildReflowedPdfBytes({
+      pageLayouts: [
+        {
+          pageNumber: 1,
+          blocks: [
+            { text: "Title" },
+            { text: "Body copy from the PDF export." },
+          ],
+        },
+      ],
+    });
+
+    expect(new TextDecoder().decode(bytes.slice(0, 8))).toContain("%PDF-");
+    await expect(PDFDocument.load(bytes)).resolves.toBeTruthy();
   });
 
   it("exposes the reflowed export route with the same manifest verification path", () => {

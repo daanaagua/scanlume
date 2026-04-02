@@ -17,6 +17,7 @@ export type PdfPageBlock = {
   order?: number;
   text?: string;
   source?: "text-layer" | "ocr";
+  bbox?: { x: number; y: number; width: number; height: number };
 };
 
 export type PageBuildInput = {

@@ -43,8 +43,8 @@ import { assemblePdfDocumentResult, buildPdfRouteOutcome } from "./lib/pdf-ocr";
 import { buildPdfRegionPrompt } from "./lib/pdf-prompts";
 import { buildPdfPageResult } from "./lib/pdf-segmentation";
 import {
-  buildReflowedPdfPlan,
-  buildSearchablePdfPlan,
+  buildReflowedPdfBytes,
+  buildSearchablePdfBytes,
   mapPdfExportError,
   signPdfExportToken,
   streamPdfResponse,
@@ -750,6 +750,8 @@ app.post("/v1/pdf/ocr", async (c) => {
     const preparedPages = parsePreparedPagesJson(preparedPagesRaw) as Array<{
       pageNumber: number;
       source: "text-layer" | "ocr" | "mixed";
+      width: number;
+      height: number;
       pagePngBase64?: string;
       nativeTextBlocks: Array<{ text: string; bbox: { x: number; y: number; width: number; height: number } }>;
       ocrRegions: Array<{ id: string; imageBase64: string; bbox: { x: number; y: number; width: number; height: number } }>;
@@ -792,17 +794,24 @@ app.post("/v1/pdf/ocr", async (c) => {
               pageNumber: page.pageNumber,
               status: "success",
               source: page.source,
-              width: 600,
-              height: 800,
+              width: page.width,
+              height: page.height,
               text,
               markdown: text,
               html: `<p>${text.replace(/\n/g, "<br />")}</p>`,
-              blocks: page.nativeTextBlocks.map((block: { text: string }, index: number) => ({ id: `native-${index}`, kind: "paragraph", order: index, text: block.text, source: "text-layer" })),
+              blocks: page.nativeTextBlocks.map((block: { text: string; bbox: { x: number; y: number; width: number; height: number } }, index: number) => ({
+                id: `native-${index}`,
+                kind: "paragraph",
+                order: index,
+                text: block.text,
+                source: "text-layer",
+                bbox: block.bbox,
+              })),
             });
           }
 
           const ocrTexts: string[] = [];
-          const ocrBlocks: Array<{ id: string; kind: string; order: number; text: string; source: "ocr" }> = [];
+          const ocrBlocks: Array<{ id: string; kind: string; order: number; text: string; source: "ocr"; bbox?: { x: number; y: number; width: number; height: number } }> = [];
 
           if (page.source === "ocr" && page.pagePngBase64) {
             const result = await runFormattedOcr(c.env, `data:image/png;base64,${page.pagePngBase64}`);
@@ -810,30 +819,67 @@ app.post("/v1/pdf/ocr", async (c) => {
               throw new Error(result.error);
             }
             ocrTexts.push(result.payload.txt);
-            ocrBlocks.push({ id: `ocr-${page.pageNumber}`, kind: "paragraph", order: 0, text: result.payload.txt, source: "ocr" });
+            ocrBlocks.push({
+              id: `ocr-${page.pageNumber}`,
+              kind: "paragraph",
+              order: 0,
+              text: result.payload.txt,
+              source: "ocr",
+              bbox: { x: 0, y: 0, width: page.width, height: page.height },
+            });
           }
 
           if (page.source === "mixed") {
+            let successfulRegions = 0;
             for (const [index, region] of page.ocrRegions.entries()) {
               const result = await runFormattedOcr(c.env, `data:image/png;base64,${region.imageBase64}`);
-              if (result.ok) {
+              if (result.ok && result.payload.txt.trim()) {
+                successfulRegions += 1;
                 ocrTexts.push(result.payload.txt);
-                ocrBlocks.push({ id: region.id, kind: "paragraph", order: index + page.nativeTextBlocks.length, text: result.payload.txt, source: "ocr" });
+                ocrBlocks.push({
+                  id: region.id,
+                  kind: "paragraph",
+                  order: index + page.nativeTextBlocks.length,
+                  text: result.payload.txt,
+                  source: "ocr",
+                  bbox: region.bbox,
+                });
               }
             }
             const nativeText = page.nativeTextBlocks.map((block: { text: string }) => block.text).join("\n");
             const combinedText = [nativeText, ...ocrTexts].filter(Boolean).join("\n\n");
+            if (page.ocrRegions.length > 0 && successfulRegions === 0) {
+              return buildPdfPageResult({
+                pageNumber: page.pageNumber,
+                status: "failed",
+                source: page.source,
+                width: page.width,
+                height: page.height,
+                errorCode: "ocr_failed",
+                errorMessage: "Mixed PDF OCR failed for all raster regions.",
+                blocks: [],
+              });
+            }
+
+            const status = successfulRegions === page.ocrRegions.length ? "success" : "partial";
             return buildPdfPageResult({
               pageNumber: page.pageNumber,
-              status: ocrTexts.length > 0 ? "partial" : "success",
+              status,
               source: page.source,
-              width: 600,
-              height: 800,
+              width: page.width,
+              height: page.height,
               text: combinedText,
               markdown: combinedText,
               html: `<p>${combinedText.replace(/\n/g, "<br />")}</p>`,
               blocks: [
-                ...page.nativeTextBlocks.map((block: { text: string }, index: number) => ({ id: `native-${page.pageNumber}-${index}`, kind: "paragraph", order: index, text: block.text, source: "text-layer" as const })),
+                ...page.nativeTextBlocks.map((block: { text: string; bbox: { x: number; y: number; width: number; height: number } }, index: number) => ({
+                  id: `native-${page.pageNumber}-${index}`,
+                  kind: "paragraph",
+                  order: index,
+                  text: block.text,
+                  source: "text-layer" as const,
+                  bbox: block.bbox,
+                })),
                 ...ocrBlocks,
               ],
             });
@@ -844,8 +890,8 @@ app.post("/v1/pdf/ocr", async (c) => {
             pageNumber: page.pageNumber,
             status: "success",
             source: page.source,
-            width: 600,
-            height: 800,
+            width: page.width,
+            height: page.height,
             text: combinedText,
             markdown: combinedText,
             html: `<p>${combinedText.replace(/\n/g, "<br />")}</p>`,
@@ -929,7 +975,7 @@ app.post("/v1/pdf/export/searchable", async (c) => {
       throw new Error("manifest invalid");
     }
 
-    const exportManifest = JSON.parse(await exportManifestPart.text()) as Parameters<typeof buildSearchablePdfPlan>[0];
+    const exportManifest = JSON.parse(await exportManifestPart.text()) as Parameters<typeof buildSearchablePdfBytes>[1];
     const inspection = await inspectPdfFile({ file, env: c.env });
     await verifyPdfExportToken(exportToken, {
       sourceHash: inspection.sourceHash,
@@ -937,8 +983,8 @@ app.post("/v1/pdf/export/searchable", async (c) => {
       now: Date.now(),
       secret: c.env.PDF_EXPORT_SIGNING_SECRET ?? "scanlume-dev-secret",
     });
-    const plan = await buildSearchablePdfPlan(exportManifest);
-    return streamPdfResponse(new Uint8Array(new TextEncoder().encode(JSON.stringify(plan))), `${file.name.replace(/\.[^.]+$/, "")}-searchable.pdf`);
+    const bytes = await buildSearchablePdfBytes(new Uint8Array(await file.arrayBuffer()), exportManifest);
+    return streamPdfResponse(bytes, `${file.name.replace(/\.[^.]+$/, "")}-searchable.pdf`);
   } catch (error) {
     const mapped = mapPdfExportError(error);
     return c.json(mapped, mapped.status as 400 | 502);
@@ -955,7 +1001,7 @@ app.post("/v1/pdf/export/reflowed", async (c) => {
       throw new Error("manifest invalid");
     }
 
-    const exportManifest = JSON.parse(await exportManifestPart.text()) as Parameters<typeof buildReflowedPdfPlan>[0];
+    const exportManifest = JSON.parse(await exportManifestPart.text()) as Parameters<typeof buildReflowedPdfBytes>[0];
     const inspection = await inspectPdfFile({ file, env: c.env });
     await verifyPdfExportToken(exportToken, {
       sourceHash: inspection.sourceHash,
@@ -963,8 +1009,8 @@ app.post("/v1/pdf/export/reflowed", async (c) => {
       now: Date.now(),
       secret: c.env.PDF_EXPORT_SIGNING_SECRET ?? "scanlume-dev-secret",
     });
-    const plan = await buildReflowedPdfPlan(exportManifest);
-    return streamPdfResponse(new Uint8Array(new TextEncoder().encode(JSON.stringify(plan))), `${file.name.replace(/\.[^.]+$/, "")}-reflowed.pdf`);
+    const bytes = await buildReflowedPdfBytes(exportManifest);
+    return streamPdfResponse(bytes, `${file.name.replace(/\.[^.]+$/, "")}-reflowed.pdf`);
   } catch (error) {
     const mapped = mapPdfExportError(error);
     return c.json(mapped, mapped.status as 400 | 502);

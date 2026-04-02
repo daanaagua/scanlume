@@ -1,3 +1,5 @@
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+
 import { sha256Hex } from "./store";
 
 type ExportManifest = {
@@ -134,9 +136,173 @@ export async function buildSearchablePdfPlan(manifest: ExportManifest) {
   };
 }
 
+function scaleX(x: number, sourceWidth: number | undefined, targetWidth: number) {
+  if (!sourceWidth || sourceWidth <= 0) {
+    return x;
+  }
+  return (x / sourceWidth) * targetWidth;
+}
+
+function scaleY(y: number, height: number, sourceHeight: number | undefined, targetHeight: number) {
+  if (!sourceHeight || sourceHeight <= 0) {
+    return targetHeight - y - height;
+  }
+  return targetHeight - ((y + height) / sourceHeight) * targetHeight;
+}
+
+function wrapTextByWords(text: string, maxChars = 90) {
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let current = "";
+
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word;
+    if (next.length > maxChars && current) {
+      lines.push(current);
+      current = word;
+      continue;
+    }
+    current = next;
+  }
+
+  if (current) {
+    lines.push(current);
+  }
+
+  return lines.length > 0 ? lines : [text.trim()];
+}
+
+function wrapTextToWidth(text: string, maxWidth: number, measure: (value: string) => number) {
+  const result: string[] = [];
+  for (const paragraph of text.split(/\n+/).map((line) => line.trim()).filter(Boolean)) {
+    const words = paragraph.split(/\s+/).filter(Boolean);
+    let current = "";
+    for (const word of words) {
+      const next = current ? `${current} ${word}` : word;
+      if (current && measure(next) > maxWidth) {
+        result.push(current);
+        current = word;
+      } else {
+        current = next;
+      }
+    }
+    if (current) {
+      result.push(current);
+    }
+    result.push("");
+  }
+
+  if (result[result.length - 1] === "") {
+    result.pop();
+  }
+  return result;
+}
+
+export async function buildSearchablePdfBytes(sourceBytes: Uint8Array, manifest: ExportManifest) {
+  const pdf = await PDFDocument.load(sourceBytes);
+  const font = await pdf.embedFont(StandardFonts.Helvetica);
+
+  for (const pageLayout of manifest.pageLayouts) {
+    const page = pdf.getPages()[pageLayout.pageNumber - 1];
+    if (!page) {
+      continue;
+    }
+
+    const overlayBlocks = filterOverlappingOcrBlocks(pageLayout.blocks)
+      .filter((block) => block.source === "ocr" && typeof block.text === "string" && block.text.trim().length > 0);
+    if (overlayBlocks.length === 0) {
+      continue;
+    }
+
+    const size = page.getSize();
+    let fallbackCursor = size.height - 32;
+    for (const block of overlayBlocks) {
+      const lines = wrapTextByWords(block.text ?? "");
+      const width = block.bbox ? scaleX(block.bbox.width, pageLayout.width, size.width) : size.width - 48;
+      const x = block.bbox ? scaleX(block.bbox.x, pageLayout.width, size.width) : 24;
+      const y = block.bbox
+        ? scaleY(block.bbox.y, block.bbox.height, pageLayout.height, size.height)
+        : fallbackCursor;
+      const text = lines.join("\n");
+
+      page.drawText(text, {
+        x: Math.max(24, x),
+        y: Math.max(24, y),
+        maxWidth: Math.max(120, Math.min(width, size.width - 48)),
+        size: 10,
+        lineHeight: 12,
+        font,
+        color: rgb(1, 1, 1),
+        opacity: 0.01,
+      });
+
+      fallbackCursor = Math.max(24, y - lines.length * 14 - 8);
+    }
+  }
+
+  return new Uint8Array(await pdf.save());
+}
+
 export async function buildReflowedPdfPlan(manifest: ExportManifest) {
   return {
     mode: "reflowed" as const,
     blocks: manifest.pageLayouts.flatMap((page) => page.blocks),
   };
+}
+
+export async function buildReflowedPdfBytes(manifest: ExportManifest) {
+  const pdf = await PDFDocument.create();
+  const font = await pdf.embedFont(StandardFonts.Helvetica);
+  const titleFont = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const pageWidth = 595;
+  const pageHeight = 842;
+  const margin = 48;
+  const bodySize = 12;
+  const bodyLineHeight = 18;
+  const headingSize = 16;
+
+  let page = pdf.addPage([pageWidth, pageHeight]);
+  let cursorY = pageHeight - margin;
+
+  const ensureSpace = (required: number) => {
+    if (cursorY - required >= margin) {
+      return;
+    }
+    page = pdf.addPage([pageWidth, pageHeight]);
+    cursorY = pageHeight - margin;
+  };
+
+  const drawLines = (lines: string[], size: number, lineHeight: number, bold = false) => {
+    const activeFont = bold ? titleFont : font;
+    for (const line of lines) {
+      ensureSpace(lineHeight);
+      if (line) {
+        page.drawText(line, {
+          x: margin,
+          y: cursorY,
+          size,
+          lineHeight,
+          font: activeFont,
+          color: rgb(0.07, 0.09, 0.12),
+        });
+      }
+      cursorY -= lineHeight;
+    }
+  };
+
+  for (const pageLayout of manifest.pageLayouts) {
+    drawLines([`Page ${pageLayout.pageNumber}`], headingSize, 22, true);
+    cursorY -= 6;
+
+    const texts = pageLayout.blocks.map((block) => block.text?.trim() ?? "").filter(Boolean);
+    for (const text of texts) {
+      const wrapped = wrapTextToWidth(text, pageWidth - margin * 2, (value) => font.widthOfTextAtSize(value, bodySize));
+      drawLines(wrapped.length > 0 ? wrapped : [text], bodySize, bodyLineHeight);
+      cursorY -= 6;
+    }
+
+    cursorY -= 10;
+  }
+
+  return new Uint8Array(await pdf.save());
 }

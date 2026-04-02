@@ -3,12 +3,27 @@ type NativeTextBlock = {
   bbox: { x: number; y: number; width: number; height: number };
 };
 
+type OcrRegion = {
+  id: string;
+  imageBase64: string;
+  bbox: { x: number; y: number; width: number; height: number };
+};
+
 type PreparedPdfPage = {
   pageNumber: number;
-  source: "text-layer" | "ocr";
+  source: "text-layer" | "ocr" | "mixed";
+  width: number;
+  height: number;
   pagePngBase64?: string;
   nativeTextBlocks: NativeTextBlock[];
-  ocrRegions: Array<{ id: string; imageBase64: string; bbox: { x: number; y: number; width: number; height: number } }>;
+  ocrRegions: OcrRegion[];
+};
+
+type PdfTextItem = {
+  str?: string;
+  width?: number;
+  height?: number;
+  transform?: number[];
 };
 
 declare global {
@@ -21,7 +36,7 @@ declare global {
           getPage: (pageNumber: number) => Promise<{
             getViewport: (input: { scale: number }) => { width: number; height: number };
             render: (input: { canvas: HTMLCanvasElement; canvasContext: CanvasRenderingContext2D; viewport: { width: number; height: number } }) => { promise: Promise<void> };
-            getTextContent: () => Promise<{ items: Array<{ str?: string }> }>;
+            getTextContent: () => Promise<{ items: PdfTextItem[] }>;
           }>;
         }>;
       };
@@ -75,6 +90,10 @@ async function loadPdfJs() {
   return pdfjs;
 }
 
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
 function blobToBase64(blob: Blob) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -87,15 +106,149 @@ function blobToBase64(blob: Blob) {
   });
 }
 
+export function buildNativeTextBlocks(items: PdfTextItem[], canvas: HTMLCanvasElement, renderScale = 1) {
+  return items
+    .map((item, index) => {
+      const maybeText = typeof item.str === "string" ? item.str.trim() : "";
+      if (!maybeText) {
+        return null;
+      }
+
+      const transform = Array.isArray(item.transform) && item.transform.length >= 6 ? item.transform : null;
+      const fallbackHeight = typeof item.height === "number" && Number.isFinite(item.height) ? Math.abs(item.height) : 14;
+      const rawHeight = Math.max(Math.ceil(Math.abs(transform?.[3] ?? fallbackHeight) * renderScale), 12);
+      const rawWidth = Math.max(Math.ceil((typeof item.width === "number" && Number.isFinite(item.width) ? item.width : maybeText.length * 8) * renderScale), 12);
+      const x = clamp(Math.floor((transform?.[4] ?? 0) * renderScale), 0, Math.max(canvas.width - 1, 0));
+      const pdfY = typeof transform?.[5] === "number" && Number.isFinite(transform[5]) ? transform[5] * renderScale : (index + 1) * 18;
+      const y = clamp(Math.floor(canvas.height - pdfY - rawHeight), 0, Math.max(canvas.height - rawHeight, 0));
+
+      return {
+        text: maybeText,
+        bbox: {
+          x,
+          y,
+          width: Math.min(rawWidth, Math.max(canvas.width - x, 12)),
+          height: Math.min(rawHeight, Math.max(canvas.height - y, 12)),
+        },
+      } satisfies NativeTextBlock;
+    })
+    .filter((block: NativeTextBlock | null): block is NativeTextBlock => block !== null);
+}
+
+function detectRasterRegion(input: {
+  pixels: Uint8ClampedArray;
+  width: number;
+  height: number;
+  nativeTextBlocks: NativeTextBlock[];
+}) {
+  const blockPadding = 8;
+  let minX = input.width;
+  let minY = input.height;
+  let maxX = -1;
+  let maxY = -1;
+
+  const isCoveredByNativeText = (x: number, y: number) =>
+    input.nativeTextBlocks.some((block) =>
+      x >= block.bbox.x - blockPadding &&
+      x <= block.bbox.x + block.bbox.width + blockPadding &&
+      y >= block.bbox.y - blockPadding &&
+      y <= block.bbox.y + block.bbox.height + blockPadding,
+    );
+
+  for (let y = 0; y < input.height; y += 2) {
+    for (let x = 0; x < input.width; x += 2) {
+      if (isCoveredByNativeText(x, y)) {
+        continue;
+      }
+
+      const offset = (y * input.width + x) * 4;
+      const alpha = input.pixels[offset + 3] ?? 0;
+      if (alpha < 24) {
+        continue;
+      }
+
+      const red = input.pixels[offset] ?? 255;
+      const green = input.pixels[offset + 1] ?? 255;
+      const blue = input.pixels[offset + 2] ?? 255;
+      const isNearlyWhite = red > 244 && green > 244 && blue > 244;
+      if (isNearlyWhite) {
+        continue;
+      }
+
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    }
+  }
+
+  if (maxX < minX || maxY < minY) {
+    return null;
+  }
+
+  const bbox = {
+    x: clamp(minX - 12, 0, input.width),
+    y: clamp(minY - 12, 0, input.height),
+    width: clamp(maxX - minX + 24, 1, input.width),
+    height: clamp(maxY - minY + 24, 1, input.height),
+  };
+
+  if (bbox.width < 24 || bbox.height < 16) {
+    return null;
+  }
+
+  return bbox;
+}
+
+async function cropCanvasRegionToBase64(canvas: HTMLCanvasElement, bbox: { x: number; y: number; width: number; height: number }) {
+  const cropped = document.createElement("canvas");
+  cropped.width = Math.max(Math.floor(bbox.width), 1);
+  cropped.height = Math.max(Math.floor(bbox.height), 1);
+  const context = cropped.getContext("2d");
+  if (!context) {
+    throw new Error("Nao foi possivel criar o recorte OCR do PDF.");
+  }
+
+  context.drawImage(canvas, bbox.x, bbox.y, bbox.width, bbox.height, 0, 0, cropped.width, cropped.height);
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    cropped.toBlob((value) => {
+      if (!value) {
+        reject(new Error("Nao foi possivel recortar a regiao OCR do PDF."));
+        return;
+      }
+      resolve(value);
+    }, "image/png");
+  });
+
+  return blobToBase64(blob);
+}
+
 export function buildPreparedPdfPagePayload(input: {
   pageNumber: number;
   pagePngBase64: string;
+  width: number;
+  height: number;
   nativeTextBlocks: NativeTextBlock[];
+  ocrRegions?: OcrRegion[];
 }): PreparedPdfPage {
+  const ocrRegions = input.ocrRegions ?? [];
+  if (input.nativeTextBlocks.length > 0 && ocrRegions.length > 0) {
+    return {
+      pageNumber: input.pageNumber,
+      source: "mixed",
+      width: input.width,
+      height: input.height,
+      nativeTextBlocks: input.nativeTextBlocks,
+      ocrRegions,
+    };
+  }
+
   if (input.nativeTextBlocks.length > 0) {
     return {
       pageNumber: input.pageNumber,
       source: "text-layer",
+      width: input.width,
+      height: input.height,
       nativeTextBlocks: input.nativeTextBlocks,
       ocrRegions: [],
     };
@@ -104,6 +257,8 @@ export function buildPreparedPdfPagePayload(input: {
   return {
     pageNumber: input.pageNumber,
     source: "ocr",
+    width: input.width,
+    height: input.height,
     pagePngBase64: input.pagePngBase64,
     nativeTextBlocks: [],
     ocrRegions: [],
@@ -119,13 +274,14 @@ export async function readPdfPageCount(file: File) {
 
 export async function buildPreparedPdfPages(file: File, processablePages: number) {
   const pdfjs = await loadPdfJs();
+  const renderScale = 1.5;
   const bytes = new Uint8Array(await file.arrayBuffer());
   const pdfDocument = await pdfjs.getDocument({ data: bytes }).promise;
   const pages: PreparedPdfPage[] = [];
 
   for (let pageNumber = 1; pageNumber <= Math.min(processablePages, pdfDocument.numPages); pageNumber += 1) {
     const page = await pdfDocument.getPage(pageNumber);
-    const viewport = page.getViewport({ scale: 1.5 });
+    const viewport = page.getViewport({ scale: renderScale });
     const canvas = document.createElement("canvas");
     canvas.width = Math.ceil(viewport.width);
     canvas.height = Math.ceil(viewport.height);
@@ -147,25 +303,32 @@ export async function buildPreparedPdfPages(file: File, processablePages: number
     const pagePngBase64 = await blobToBase64(blob);
 
     const textContent = await page.getTextContent();
-    const nativeTextBlocks: NativeTextBlock[] = textContent.items
-      .map((item: { str?: string }, index: number) => {
-        const maybeText = "str" in item && typeof item.str === "string" ? item.str.trim() : "";
-        if (!maybeText) {
-          return null;
-        }
-
-        return {
-          text: maybeText,
-          bbox: { x: 0, y: index * 14, width: canvas.width, height: 14 },
-        };
-      })
-      .filter((block: NativeTextBlock | null): block is NativeTextBlock => block !== null);
+    const nativeTextBlocks = buildNativeTextBlocks(textContent.items, canvas, renderScale);
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    const rasterRegion = detectRasterRegion({
+      pixels: imageData.data,
+      width: canvas.width,
+      height: canvas.height,
+      nativeTextBlocks,
+    });
+    const ocrRegions = rasterRegion
+      ? [
+          {
+            id: `page-${pageNumber}-region-1`,
+            imageBase64: await cropCanvasRegionToBase64(canvas, rasterRegion),
+            bbox: rasterRegion,
+          },
+        ]
+      : [];
 
     pages.push(
       buildPreparedPdfPagePayload({
         pageNumber,
         pagePngBase64,
+        width: canvas.width,
+        height: canvas.height,
         nativeTextBlocks,
+        ocrRegions: nativeTextBlocks.length > 0 ? ocrRegions : [],
       }),
     );
   }
