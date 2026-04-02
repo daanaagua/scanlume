@@ -11,10 +11,13 @@ type PreparedPdfPage = {
   ocrRegions: Array<{ id: string; imageBase64: string; bbox: { x: number; y: number; width: number; height: number } }>;
 };
 
+const PDF_JS_MODULE_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.296/legacy/build/pdf.min.mjs";
+const PDF_JS_WORKER_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.296/legacy/build/pdf.worker.min.mjs";
+
 async function loadPdfJs() {
-  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const pdfjs = await import(/* @vite-ignore */ PDF_JS_MODULE_URL);
   if (!pdfjs.GlobalWorkerOptions.workerSrc) {
-    pdfjs.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.4.296/pdf.worker.min.mjs";
+    pdfjs.GlobalWorkerOptions.workerSrc = PDF_JS_WORKER_URL;
   }
   return pdfjs;
 }
@@ -92,7 +95,7 @@ export async function buildPreparedPdfPages(file: File, processablePages: number
 
     const textContent = await page.getTextContent();
     const nativeTextBlocks: NativeTextBlock[] = textContent.items
-      .map((item, index) => {
+      .map((item: { str?: string }, index: number) => {
         const maybeText = "str" in item && typeof item.str === "string" ? item.str.trim() : "";
         if (!maybeText) {
           return null;
@@ -103,7 +106,7 @@ export async function buildPreparedPdfPages(file: File, processablePages: number
           bbox: { x: 0, y: index * 14, width: canvas.width, height: 14 },
         };
       })
-      .filter((block): block is NativeTextBlock => block !== null);
+      .filter((block: NativeTextBlock | null): block is NativeTextBlock => block !== null);
 
     pages.push(
       buildPreparedPdfPagePayload({
