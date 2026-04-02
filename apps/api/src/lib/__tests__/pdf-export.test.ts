@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildSearchableOverlayDrawSpec,
+  buildSearchableRegionLayoutSpec,
   buildExportRouteConfig,
   buildReflowedPdfBytes,
   buildReflowedPdfPlan,
@@ -140,6 +141,20 @@ describe("buildSearchablePdfPlan", () => {
     expect(spec?.y ?? 0).toBeGreaterThan(200);
     expect(spec?.y ?? 0).toBeLessThan(212);
   });
+
+  it("reconstructs OCR text inside the original region footprint with a backdrop", () => {
+    const spec = buildSearchableRegionLayoutSpec({
+      region: { x: 24, y: 160, width: 220, height: 120 },
+      blocks: [
+        { type: "h1", text: "Titulo", order: 0 },
+        { type: "p", text: "Paragrafo de teste", order: 1 },
+      ],
+    });
+
+    expect(spec.backdrop).toEqual({ x: 24, y: 160, width: 220, height: 120 });
+    expect(spec.drawnBlocks[0]?.bbox.y ?? 0).toBeGreaterThanOrEqual(160);
+    expect(spec.drawnBlocks.at(-1)?.bbox.y ?? 0).toBeLessThan(280);
+  });
 });
 
 describe("buildReflowedPdfPlan", () => {
@@ -171,6 +186,23 @@ describe("buildReflowedPdfPlan", () => {
     expect(new TextDecoder().decode(bytes.slice(0, 8))).toContain("%PDF-");
     await expect(PDFDocument.load(bytes)).resolves.toBeTruthy();
     expect(Buffer.from(bytes).includes(Buffer.from("Page 1"))).toBe(false);
+  });
+
+  it("keeps page region grouping instead of injecting page labels into reflowed PDF", async () => {
+    const bytes = await buildReflowedPdfBytes({
+      pageLayouts: [
+        {
+          pageNumber: 1,
+          blocks: [
+            { kind: "h1", text: "Titulo", order: 0, bbox: { x: 24, y: 80, width: 200, height: 30 } },
+            { kind: "p", text: "Texto do bloco", order: 1, bbox: { x: 24, y: 120, width: 200, height: 80 } },
+          ],
+        },
+      ],
+    });
+
+    expect(Buffer.from(bytes).includes(Buffer.from("Page 1"))).toBe(false);
+    expect(Buffer.from(bytes).includes(Buffer.from("Titulo"))).toBe(true);
   });
 
   it("exposes the reflowed export route with the same manifest verification path", () => {
