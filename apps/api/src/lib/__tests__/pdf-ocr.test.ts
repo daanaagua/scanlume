@@ -56,6 +56,43 @@ describe("assemblePdfDocumentResult", () => {
     expect(result.md).not.toContain("Page 1");
     expect(result.txt).toBe("Conteudo real");
   });
+
+  it("preserves structured block output through mixed-page document assembly", () => {
+    const result = assemblePdfDocumentResult({
+      documentId: "doc-3",
+      fileName: "mixed.pdf",
+      totalPages: 1,
+      pages: [
+        {
+          pageNumber: 1,
+          status: "success",
+          source: "mixed",
+          width: 600,
+          height: 800,
+          html: "<h1>Titulo</h1>\n<p>Paragrafo</p>",
+          markdown: "# Titulo\n\nParagrafo",
+          text: "Titulo\n\nParagrafo",
+          blocks: [
+            { id: "native-0", kind: "p", order: 0, text: "Texto nativo", source: "text-layer" },
+            { id: "ocr-0", kind: "h1", order: 1, text: "Titulo", source: "ocr" },
+            { id: "ocr-1", kind: "p", order: 2, text: "Paragrafo", source: "ocr" },
+          ],
+        },
+      ],
+      lockedPages: 0,
+      remainingPdfPagesToday: 4,
+      exportToken: "signed",
+    });
+
+    expect(result.md).toContain("# Titulo");
+    expect(result.html).toContain("<h1>Titulo</h1>");
+    expect(result.exportManifest.pageLayouts[0]?.blocks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: "h1", text: "Titulo" }),
+        expect.objectContaining({ kind: "p", text: "Paragrafo" }),
+      ]),
+    );
+  });
 });
 
 describe("buildPdfRouteOutcome", () => {
