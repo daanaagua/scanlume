@@ -11,7 +11,9 @@ type ExportManifest = {
     width?: number;
     height?: number;
     blocks: Array<{
+      id?: string;
       kind?: string;
+      order?: number;
       text?: string;
       source?: "text-layer" | "ocr";
       bbox?: { x: number; y: number; width: number; height: number };

@@ -1,6 +1,6 @@
 import { inflateSync } from "node:zlib";
 
-import { PDFArray, PDFDocument, StandardFonts } from "pdf-lib";
+import { PDFArray, PDFDocument, PDFRawStream, StandardFonts } from "pdf-lib";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -242,9 +242,10 @@ describe("buildReflowedPdfPlan", () => {
     const page = pdf.getPages()[0];
     const contents = pdf.context.lookup(page.node.Contents());
     expect(contents).toBeInstanceOf(PDFArray);
+    const contentArray = contents as PDFArray;
 
-    const operators = Array.from({ length: contents.size() }, (_, index) => {
-      const stream = pdf.context.lookup(contents.get(index)) as { contents: Uint8Array };
+    const operators = Array.from({ length: contentArray.size() }, (_, index) => {
+      const stream = pdf.context.lookup(contentArray.get(index)) as PDFRawStream;
       return inflateSync(stream.contents).toString("latin1");
     }).join("\n");
 
