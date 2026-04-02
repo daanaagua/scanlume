@@ -20,6 +20,10 @@ export interface WorkerEnv {
   SOFT_BUDGET_RMB?: string;
   HARD_BUDGET_RMB?: string;
   MAX_IMAGE_MB?: string;
+  PDF_MAX_FILE_MB?: string;
+  PDF_MAX_PAGES_PER_DOCUMENT?: string;
+  PDF_DAILY_PAGE_LIMIT_LOGGED_IN?: string;
+  PDF_EXPORT_SIGNING_SECRET?: string;
   MAX_BATCH_FILES?: string;
   MAX_BATCH_TOTAL_MB?: string;
   SUPPORT_N8N_WEBHOOK_URL?: string;
@@ -47,9 +51,14 @@ export interface UserDailyUsageState {
   usedCredits: number;
 }
 
+export interface UserDailyPdfUsageState {
+  usedPages: number;
+}
+
 const memoryRates = new Map<string, RateState>();
 const memoryBudgets = new Map<string, BudgetState>();
 const memoryUserUsage = new Map<string, UserDailyUsageState>();
+const memoryUserPdfUsage = new Map<string, UserDailyPdfUsageState>();
 
 export function todayKey() {
   return new Date().toISOString().slice(0, 10);
@@ -162,6 +171,48 @@ export async function writeUserDailyUsage(
   }
 
   memoryUserUsage.set(storageKey, state);
+}
+
+export async function readUserDailyPdfUsage(env: WorkerEnv, userId: string, date: string) {
+  const storageKey = `user-pdf-usage:${date}:${userId}`;
+  if (env.DB) {
+    const row = await env.DB.prepare(
+      `SELECT used_pages FROM daily_pdf_usage WHERE user_id = ? AND date = ? LIMIT 1;`,
+    )
+      .bind(userId, date)
+      .first<{ used_pages: number }>();
+
+    if (row) {
+      const state = { usedPages: row.used_pages ?? 0 };
+      memoryUserPdfUsage.set(storageKey, state);
+      return state;
+    }
+  }
+
+  return memoryUserPdfUsage.get(storageKey) ?? { usedPages: 0 };
+}
+
+export async function writeUserDailyPdfUsage(
+  env: WorkerEnv,
+  userId: string,
+  date: string,
+  state: UserDailyPdfUsageState,
+  updatedAt: string,
+) {
+  const storageKey = `user-pdf-usage:${date}:${userId}`;
+  if (env.DB) {
+    await env.DB.prepare(
+      `INSERT INTO daily_pdf_usage (user_id, date, used_pages, updated_at)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT(user_id, date) DO UPDATE SET
+         used_pages = excluded.used_pages,
+         updated_at = excluded.updated_at;`,
+    )
+      .bind(userId, date, state.usedPages, updatedAt)
+      .run();
+  }
+
+  memoryUserPdfUsage.set(storageKey, state);
 }
 
 export async function persistUsageEvent(

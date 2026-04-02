@@ -11,4 +11,18 @@ describe("pdf OCR contract", () => {
 
     expect(parsed.success).toBe(false);
   });
+
+  it("parses the stable pdf limits snapshot used by the web workspace", async () => {
+    const { pdfLimitSnapshotSchema } = await import("../pdf-schema");
+
+    expect(
+      pdfLimitSnapshotSchema.parse({
+        maxFileMb: 15,
+        maxPagesPerDocument: 50,
+        requestPageLimitAnonymous: 5,
+        dailyPageLimitLoggedIn: 20,
+        remainingPages: 12,
+      }),
+    ).toBeTruthy();
+  });
 });

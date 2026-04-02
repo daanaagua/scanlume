@@ -51,6 +51,7 @@ import {
   supportChatRequestSchema,
   type SupportAssistant,
 } from "./lib/schema";
+import { pdfLimitSnapshotSchema } from "./lib/pdf-schema";
 import {
   appendSupportMessage,
   ensureSupportConversation,
@@ -69,12 +70,14 @@ import {
   readBudgetState,
   readNumber,
   readRateState,
+  readUserDailyPdfUsage,
   readUserDailyUsage,
   sha256Hex,
   todayKey,
   type WorkerEnv,
   writeBudgetState,
   writeRateState,
+  writeUserDailyPdfUsage,
   writeUserDailyUsage,
 } from "./lib/store";
 
@@ -536,6 +539,7 @@ app.get("/v1/limits", async (c) => {
   const softBudgetRmb = readNumber(c.env.SOFT_BUDGET_RMB, 18);
   const hardBudgetRmb = readNumber(c.env.HARD_BUDGET_RMB, 20);
   const viewer = await resolveViewerContext(c, c.req.query("browserId") ?? undefined);
+  const remainingPdfPagesToday = await resolveRemainingPdfPagesToday(c.env, viewer);
 
   return c.json({
     viewer: {
@@ -556,6 +560,13 @@ app.get("/v1/limits", async (c) => {
       maxBatchTotalMb: viewer.currentPlan.entitlements.maxBatchTotalMb,
       softBudgetRmb,
       hardBudgetRmb,
+      pdf: pdfLimitSnapshotSchema.parse({
+        maxFileMb: readNumber(c.env.PDF_MAX_FILE_MB, 15),
+        maxPagesPerDocument: readNumber(c.env.PDF_MAX_PAGES_PER_DOCUMENT, 50),
+        requestPageLimitAnonymous: 5,
+        dailyPageLimitLoggedIn: readNumber(c.env.PDF_DAILY_PAGE_LIMIT_LOGGED_IN, 20),
+        remainingPages: viewer.type === "user" ? remainingPdfPagesToday : 5,
+      }),
     },
     usage: {
       usedImages: viewer.usage.usedImages,
@@ -854,6 +865,16 @@ async function resolveViewerContext(c: Context<AppBindings>, browserId?: string)
     dailyImageLimit: resolvedPlan.currentPlan.entitlements.dailyImages,
     dailyCreditLimit: resolvedPlan.currentPlan.entitlements.dailyCredits,
   };
+}
+
+async function resolveRemainingPdfPagesToday(env: WorkerEnv, viewer: ViewerContext) {
+  if (viewer.type !== "user" || !viewer.user) {
+    return 5;
+  }
+
+  const usage = await readUserDailyPdfUsage(env, viewer.user.id, todayKey());
+  const dailyLimit = readNumber(env.PDF_DAILY_PAGE_LIMIT_LOGGED_IN, 20);
+  return Math.max(dailyLimit - usage.usedPages, 0);
 }
 
 function buildWebRedirect(env: WorkerEnv, redirectTo: string, status: string, error?: string) {
