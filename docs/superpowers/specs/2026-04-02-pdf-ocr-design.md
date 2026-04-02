@@ -27,6 +27,21 @@ Expand Scanlume from an image-only OCR product into a mixed image + PDF OCR prod
 - Do not build the real recharge flow yet.
 - Reserve a visible upgrade CTA and API fields that later billing work can attach to.
 
+### Quota contract
+
+- Anonymous users are request-scoped for PDF in v1: each request may process at most 5 pages, with no cross-request carry-over.
+- Logged-in users are session-authenticated using the same cookie-backed viewer resolution that already powers the account and image OCR flows.
+- Logged-in PDF usage resets by `todayKey()` in UTC, matching the current worker-side daily usage model.
+- Logged-in PDF usage should be stored separately from image counts, either by extending `daily_user_usage` with `used_pdf_pages` or by adding a dedicated daily PDF usage table keyed by `user_id + date`.
+- Preflight should compute `remainingPdfPagesToday` before work starts, but page debit should happen after processing finishes.
+- To avoid concurrent overspend in v1, the worker should acquire a short-lived per-user PDF processing lock before starting a logged-in PDF job.
+- If another PDF job is already active for the same logged-in user, the API should reject with `409` and code `pdf_job_in_progress`.
+- A processed page counts against quota only when that page reaches `success` or `partial` status in the final response.
+- Pages that fail before producing a usable page result do not consume PDF quota.
+- Every successful PDF response should return `remainingPdfPagesToday`.
+- For logged-in users, `remainingPdfPagesToday` means the actual daily pages left after this request finishes.
+- For anonymous users, `remainingPdfPagesToday` must still be present for contract stability and should be interpreted as the remaining pages inside the fixed 5-page request allowance after this response. The frontend must treat it as request-local only and must not present it as a cross-request daily balance.
+
 ### Explicit non-goals for v1
 
 - Multiple PDFs in a single processing run
@@ -68,6 +83,77 @@ This keeps the main product experience simple while preserving clean service bou
 
 Add a dedicated PDF OCR route, such as `POST /v1/pdf/ocr`, plus PDF-specific helpers under `apps/api/src/lib/`.
 
+Transport contract for v1:
+
+- Upload should use `multipart/form-data`, not JSON base64, to avoid request bloat.
+- The form should include the raw PDF file plus lightweight fields defined by the frozen upload contract below.
+- PDF preflight limits for v1 should be explicit:
+  - max file size: 15 MB
+  - max pages accepted per document: 50
+  - max pages actually processable in one run: 20
+  - target synchronous processing budget: 30 seconds
+- If the source PDF exceeds the accepted hard limits, reject it before OCR starts.
+- `POST /v1/pdf/ocr` should return preview-ready document metadata plus text exports inline (`txt`, `md`, `html`), but it should not inline full PDF binaries.
+- Downloading `searchable PDF` or `reflowed PDF` should use dedicated export endpoints that stream the generated file on demand from the original client-held PDF plus the normalized OCR result.
+- `POST /v1/pdf/ocr` must also return a short-lived signed `exportToken` that binds the source PDF hash, allowed page range, page status summary, and normalized result hash.
+
+Recommended download endpoints:
+
+- `POST /v1/pdf/export/searchable`
+- `POST /v1/pdf/export/reflowed`
+
+The frontend should keep the original PDF `File` in memory after OCR completes so those export endpoints can be called without object storage or async job infrastructure.
+The export endpoints should accept:
+
+- the original PDF file
+- an `exportManifest` payload needed for rendering
+- the signed `exportToken`
+
+The worker must verify that:
+
+- the uploaded PDF hash matches the token
+- the `exportManifest` hash matches the token
+- only the allowed processed pages are rendered
+- locked or tampered pages are rejected server-side
+
+`exportManifest` contract for v1:
+
+- It must use fixed field names and stable key order for hashing.
+- It should contain only the fields needed for export generation:
+  - `documentId`
+  - `totalPages`
+  - `processedPageNumbers`
+  - `failedPageNumbers`
+  - `pageLayouts` with page number, source, width, height, and ordered export blocks
+  - `billingUpsell` summary when truncation occurred
+- The hash should be calculated from a canonical JSON serialization with lexicographically sorted object keys and original array order preserved.
+- The OCR response may still include richer UI fields, but the export endpoints should trust only the signed token plus canonical `exportManifest`.
+
+Frozen PDF export multipart contract:
+
+- multipart field `file`: the original PDF binary
+- multipart field `exportToken`: plain text token string
+- multipart field `exportManifest`: UTF-8 JSON string with `Content-Type: application/json`
+- the worker should parse `exportManifest` JSON, canonicalize it with the frozen key-order rules, and verify the canonicalized hash against the token
+- the worker must not trust raw client field ordering or whitespace; canonicalization happens server-side after parsing
+
+Frozen PDF OCR upload request contract:
+
+```ts
+type PdfOcrUploadFields = {
+  file: File; // multipart field name: file
+  browserId: string; // multipart field name: browserId
+  sourcePath?: string; // multipart field name: sourcePath
+};
+```
+
+Rules:
+
+- `file` is required and must be the exact multipart field name.
+- `browserId` is required for both anonymous and logged-in viewers so the PDF flow stays aligned with the existing workspace identity contract.
+- `sourcePath` is optional and carries the current page path, such as `/imagem-para-texto` or `/pdf-para-texto`, for analytics and future billing attribution.
+- No extra mode field is needed because PDF uploads always follow the PDF pipeline.
+
 Recommended module split:
 
 - `pdf-schema.ts` or an expanded `schema.ts`
@@ -95,6 +181,28 @@ Upgrade `apps/web/components/ocr-workspace.tsx` into a document workspace that:
 - rejects mixed batches containing both types in one run
 - shows image-specific or PDF-specific helper text after file selection
 - routes images to the existing image flow and PDFs to the new PDF flow
+
+Pre-submit PDF messaging contract:
+
+- Extend the existing `/v1/limits` response with a stable `pdf` object:
+
+```ts
+type PdfLimitSnapshot = {
+  maxFileMb: number;
+  maxPagesPerDocument: number;
+  requestPageLimitAnonymous: number;
+  dailyPageLimitLoggedIn: number;
+  remainingPages: number;
+};
+```
+
+- After file selection, the frontend should read the selected PDF page count locally.
+- The workspace should combine local page count with `/v1/limits.pdf` to show:
+  - whether the file is accepted
+  - how many pages will be processed
+  - whether truncation will happen
+  - whether the upgrade CTA should be expected after processing
+- No separate PDF preflight API is required in v1 as long as `/v1/limits.pdf` exists and `POST /v1/pdf/ocr` remains the final server-authoritative preflight.
 
 ### Dedicated PDF page
 
@@ -134,9 +242,30 @@ Preflight result fields should include:
 - `processablePages`
 - `lockedPages`
 - `truncated`
-- `upgradeRequired`
-- `upgradeMessage`
-- `upgradeCta`
+- `remainingPdfPagesToday`
+
+Preflight should map directly into the final response using the frozen `billingUpsell` object described in the wire contract below. Do not introduce a second set of `upgrade*` field names.
+
+If `processablePages` is `0`, the route should return `429` with a stable body shape such as:
+
+```json
+{
+  "error": "No PDF pages remaining today.",
+  "code": "pdf_page_limit_reached",
+  "remainingPdfPagesToday": 0,
+  "totalPages": 30,
+  "processablePages": 0,
+  "lockedPages": 30,
+  "billingUpsell": {
+    "required": true,
+    "message": "Seu limite gratuito de paginas PDF acabou. Desbloqueie mais paginas quando a cobranca estiver ativa.",
+    "ctaLabel": "Desbloquear mais paginas",
+    "ctaHref": "/conta"
+  }
+}
+```
+
+Rule: if the worker can read document metadata, zero-quota errors must still return the real `totalPages` and `lockedPages` for the uploaded PDF. They must not be zeroed out.
 
 ### Step 2: page classification
 
@@ -189,12 +318,15 @@ Suggested response shape:
 ```ts
 type PdfPageResult = {
   pageNumber: number;
+  status: "success" | "partial" | "failed";
   source: "text-layer" | "ocr" | "mixed";
   width: number;
   height: number;
-  text: string;
-  markdown: string;
-  html: string;
+  text?: string;
+  markdown?: string;
+  html?: string;
+  errorCode?: string;
+  errorMessage?: string;
   blocks: Array<{
     id: string;
     kind: "heading" | "paragraph" | "image" | "caption" | "separator";
@@ -211,16 +343,51 @@ type PdfDocumentResult = {
   processedPages: number;
   lockedPages: number;
   truncated: boolean;
-  searchablePdfBase64: string;
-  reflowedPdfBase64: string;
   html: string;
   md: string;
   txt: string;
-  preview: string;
+  previewHtml: string;
+  remainingPdfPagesToday: number;
+  exportToken: string;
+  exportManifest: {
+    documentId: string;
+    totalPages: number;
+    processedPageNumbers: number[];
+    failedPageNumbers: number[];
+    pageLayouts: Array<{
+      pageNumber: number;
+      source: "text-layer" | "ocr" | "mixed";
+      width: number;
+      height: number;
+      blocks: Array<{
+        id: string;
+        kind: "heading" | "paragraph" | "image" | "caption" | "separator";
+        order: number;
+        text?: string;
+        bbox?: { x: number; y: number; width: number; height: number };
+        source: "text-layer" | "ocr";
+      }>;
+    }>;
+    billingUpsell?: {
+      required: boolean;
+      message: string;
+      ctaLabel: string;
+      ctaHref: string;
+    };
+  };
   pageStats: {
     textLayerPages: number;
     ocrPages: number;
     mixedPages: number;
+  };
+  failedPages: Array<{
+    pageNumber: number;
+    errorCode: string;
+    errorMessage: string;
+  }>;
+  exportSupport: {
+    searchablePdf: boolean;
+    reflowedPdf: boolean;
   };
   billingUpsell?: {
     required: boolean;
@@ -232,7 +399,13 @@ type PdfDocumentResult = {
 };
 ```
 
-The exact field names can change, but the response should preserve those semantics.
+This is the frozen v1 wire contract for the OCR response. Frontend and backend should implement these field names as written.
+
+For implementation alignment:
+
+- `processedPages` in v1 means the number of pages with final status `success` or `partial`. It does not include `failed` pages and it does not include locked pages outside the processed prefix.
+- `previewHtml` is the only preview field in the OCR response. It should contain sanitized HTML for the processed portion only and is the canonical source for the PDF result panel preview.
+- The frontend should not guess between `html`, `txt`, or another field when rendering the preview panel; it should render `previewHtml` directly.
 
 ## Export Design
 
@@ -242,10 +415,11 @@ Goal: preserve the original visual page appearance while adding a searchable and
 
 Behavior:
 
-- render the original page visuals as the background for each processed page
-- overlay extracted text and OCR text at matching page positions
+- `text-layer` page: pass through the original page content without adding a duplicate text layer
+- `ocr` page: render the original page visuals as the background and add a hidden OCR text layer
+- `mixed` page: preserve the original page content and add hidden OCR text only for image-only or OCR-derived regions, with overlap suppression against native text boxes
 - keep page dimensions identical to the source page where possible
-- if exact positioning is imperfect, prioritize text searchability and stable copy behavior
+- if exact positioning is imperfect, prioritize text searchability and stable copy behavior over visual micro-alignment
 
 ### Reflowed PDF
 
@@ -268,10 +442,49 @@ Recommended structure:
 - page separators such as `<!-- Page 3 -->` in HTML and `---` plus page labels in Markdown where needed
 - ordered headings and paragraphs from the normalized block stream
 - optional image placeholders only if they add value to comprehension
+- if the document was truncated by quota, exports should contain only processed pages and append one closing note that the remaining pages were locked for upgrade
 
 ### TXT
 
 Keep a full-document text export as a fallback and preview source even if PDF marketing emphasizes HTML, Markdown, and PDF outputs.
+
+### Export delivery contract
+
+- `POST /v1/pdf/ocr` returns metadata, page-level results, and inline text exports for preview.
+- PDF file downloads are generated on demand by the export endpoints, not embedded in the OCR response.
+- Export endpoints receive the original PDF file, the canonical `exportManifest` returned by the OCR response, and the signed `exportToken`.
+- The token must be checked server-side before rendering any export so clients cannot unlock extra pages by mutating payload fields.
+- If the OCR response is truncated, every export should cover only the processed prefix pages and include a trailing locked-pages note in text-based outputs.
+- PDF exports should omit locked pages rather than inserting synthetic blank pages.
+- Searchable PDF should keep failed pages as visual-only original pages with no added OCR text layer and should mark the document as degraded in export metadata.
+- Reflowed PDF, HTML, Markdown, and TXT should exclude failed pages from generated text output and append a short note listing omitted page numbers.
+
+Frozen export request contracts:
+
+```ts
+type PdfExportRequest = {
+  file: File; // multipart field name: file
+  exportToken: string; // multipart field name: exportToken
+  exportManifest: PdfDocumentResult["exportManifest"]; // multipart field name: exportManifest as JSON string part
+};
+
+type PdfExportError = {
+  ok: false;
+  error: string;
+  code:
+    | "pdf_export_token_invalid"
+    | "pdf_export_manifest_invalid"
+    | "pdf_export_source_mismatch"
+    | "pdf_export_generation_failed";
+};
+```
+
+The export endpoints should stream the file body on success with these headers:
+
+- `Content-Type: application/pdf`
+- `Content-Disposition: attachment; filename="<generated-name>.pdf"`
+
+They should return `PdfExportError` JSON only on failure.
 
 ## Frontend Workspace Changes
 
@@ -350,6 +563,56 @@ Required categories:
 - export generation failure
 
 The frontend should avoid collapsing all PDF failures into a single generic banner.
+
+Failure contract:
+
+- A document may still return `200` with `partial` document success when at least one page is usable.
+- Failed pages must appear in `failedPages` and in the per-page `status` fields.
+- `success` page: full text and block result available.
+- `partial` page: some regions failed, but the page still contributes text and exportable output.
+- `failed` page: the page does not debit quota; searchable PDF may keep the original visual page without OCR text, while text-based exports omit that page and document the omission. In `pages[]`, `failed` pages should omit `text`, `markdown`, and `html` rather than returning placeholder strings.
+- Locked pages outside the processable prefix are represented only through document-level metadata such as `lockedPages`, not as page objects in `pages[]`.
+
+Frozen v1 error/status matrix:
+
+| Scenario | HTTP | Code | Body shape |
+| --- | --- | --- | --- |
+| another logged-in PDF job active | `409` | `pdf_job_in_progress` | top-level error JSON |
+| no PDF pages remaining today | `429` | `pdf_page_limit_reached` | top-level error JSON |
+| unsupported file type | `400` | `pdf_file_type_invalid` | top-level error JSON |
+| file too large | `413` | `pdf_file_too_large` | top-level error JSON |
+| unreadable or invalid PDF | `400` | `pdf_invalid` | top-level error JSON |
+| page counting failed | `400` | `pdf_page_count_failed` | top-level error JSON |
+| OCR route partial success | `200` | none | `PdfDocumentResult` with `failedPages` and/or `billingUpsell` |
+| no usable output from any processable page | `502` | `pdf_processing_failed` | top-level error JSON |
+| export token or manifest invalid | `400` | export-specific code | `PdfExportError` |
+| export rendering failed | `502` | `pdf_export_generation_failed` | `PdfExportError` |
+
+Top-level OCR error body for non-200 responses:
+
+```ts
+type PdfOcrError = {
+  error: string;
+  code:
+    | "pdf_job_in_progress"
+    | "pdf_page_limit_reached"
+    | "pdf_file_type_invalid"
+    | "pdf_file_too_large"
+    | "pdf_invalid"
+    | "pdf_page_count_failed"
+    | "pdf_processing_failed";
+  remainingPdfPagesToday: number;
+  totalPages?: number;
+  processablePages?: number;
+  lockedPages?: number;
+  billingUpsell?: {
+    required: boolean;
+    message: string;
+    ctaLabel: string;
+    ctaHref: string;
+  };
+};
+```
 
 ## Testing Strategy
 
