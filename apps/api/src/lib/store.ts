@@ -132,6 +132,17 @@ export interface ApiCreditPackState {
   expiresAt: string;
 }
 
+export interface ApiJobState {
+  id: string;
+  userId: string;
+  kind: string;
+  status: string;
+  payloadJson: string;
+  resultJson: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 const memoryRates = new Map<string, RateState>();
 const memoryBudgets = new Map<string, BudgetState>();
 const memoryUserUsage = new Map<string, UserDailyUsageState>();
@@ -141,6 +152,7 @@ const memoryBillingPurchases = new Map<string, BillingPurchaseState>();
 const memoryWebSubscriptionTerms = new Map<string, WebSubscriptionTermState>();
 const memoryUserSubscriptions = new Map<string, UserSubscriptionState>();
 const memoryApiCreditPacks = new Map<string, ApiCreditPackState>();
+const memoryApiJobs = new Map<string, ApiJobState>();
 
 export function todayKey() {
   return new Date().toISOString().slice(0, 10);
@@ -689,6 +701,64 @@ export async function listApiCreditPacks(env: WorkerEnv, userId: string) {
   }
 
   return memoryPacks.sort((left, right) => left.expiresAt.localeCompare(right.expiresAt));
+}
+
+export async function writeApiJob(env: WorkerEnv, job: ApiJobState) {
+  if (env.DB) {
+    await env.DB.prepare(
+      `INSERT INTO api_jobs (
+        id, user_id, kind, status, payload_json, result_json, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        status = excluded.status,
+        payload_json = excluded.payload_json,
+        result_json = excluded.result_json,
+        updated_at = excluded.updated_at;`,
+    )
+      .bind(job.id, job.userId, job.kind, job.status, job.payloadJson, job.resultJson, job.createdAt, job.updatedAt)
+      .run();
+  }
+
+  memoryApiJobs.set(job.id, job);
+}
+
+export async function readApiJobState(env: WorkerEnv, id: string) {
+  if (env.DB) {
+    const row = await env.DB.prepare(
+      `SELECT id, user_id, kind, status, payload_json, result_json, created_at, updated_at
+       FROM api_jobs
+       WHERE id = ?
+       LIMIT 1;`,
+    )
+      .bind(id)
+      .first<{
+        id: string;
+        user_id: string;
+        kind: string;
+        status: string;
+        payload_json: string;
+        result_json: string | null;
+        created_at: string;
+        updated_at: string;
+      }>();
+
+    if (row) {
+      const job = {
+        id: row.id,
+        userId: row.user_id,
+        kind: row.kind,
+        status: row.status,
+        payloadJson: row.payload_json,
+        resultJson: row.result_json,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      } satisfies ApiJobState;
+      memoryApiJobs.set(job.id, job);
+      return job;
+    }
+  }
+
+  return memoryApiJobs.get(id) ?? null;
 }
 
 export async function persistUsageEvent(
