@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { buildPdfSelectionSummary, mapPdfOcrError, parseJsonResponse } from "@/lib/pdf-client";
-import { buildNativeTextBlocks, buildPreparedPdfPagePayload } from "@/lib/pdf-renderer";
+import { PDF_PAGE_RENDER_INTENT, buildNativeTextBlocks, buildPdfPageRenderInput, buildPreparedPdfPagePayload } from "@/lib/pdf-renderer";
 
 describe("buildPdfSelectionSummary", () => {
   it("marks a PDF as truncated when local pages exceed the remaining allowance", () => {
@@ -133,6 +133,26 @@ describe("buildNativeTextBlocks", () => {
         width: 258,
         height: 33,
       },
+    });
+  });
+});
+
+describe("PDF_PAGE_RENDER_INTENT", () => {
+  it("locks the browser PDF renderer to the print intent", () => {
+    expect(PDF_PAGE_RENDER_INTENT).toBe("print");
+  });
+
+  it("builds page render options with the print intent", () => {
+    const canvasContext = { canvas: document.createElement("canvas") } as CanvasRenderingContext2D;
+    expect(
+      buildPdfPageRenderInput({
+        canvasContext,
+        viewport: { width: 892, height: 1263 },
+      }),
+    ).toMatchObject({
+      canvasContext,
+      viewport: { width: 892, height: 1263 },
+      intent: "print",
     });
   });
 });

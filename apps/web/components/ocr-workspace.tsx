@@ -682,8 +682,9 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
   const remainingImagesLabel = limits?.viewer.authenticated
     ? `${limits.usage.remainingImages} / ${limits.limits.dailyImages}`
     : `${maxBatchFiles} imagens`;
+  const remainingPdfPagesLabel = limits?.viewer.authenticated ? `${limits.limits.pdf.remainingPages} / ${limits.limits.pdf.dailyPageLimitLoggedIn}` : null;
   const statusFootnote = limits?.viewer.authenticated
-    ? `OCR simples = 1 credito • Texto formatado = 3 creditos • Atualizado apos cada OCR.`
+    ? `OCR simples = 1 credito • Texto formatado = 3 creditos • PDF desconta paginas da cota diaria • Atualizado apos cada OCR.`
     : `OCR simples = 1 credito • Texto formatado = 3 creditos • Lote atual aceita ate ${maxBatchFiles} imagens.`;
 
   return (
@@ -875,6 +876,12 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
                 <span>{limits.viewer.authenticated ? "Imagens" : "Lote maximo"}</span>
                 <strong>{remainingImagesLabel}</strong>
               </div>
+              {remainingPdfPagesLabel ? (
+                <div className="status-compact-card">
+                  <span>Paginas PDF</span>
+                  <strong>{remainingPdfPagesLabel}</strong>
+                </div>
+              ) : null}
               <p className="status-board-note">{statusFootnote}</p>
             </div>
           )}

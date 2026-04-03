@@ -19,6 +19,17 @@ type PreparedPdfPage = {
   ocrRegions: OcrRegion[];
 };
 
+type PdfRenderViewport = {
+  width: number;
+  height: number;
+};
+
+type PdfPageRenderInput = {
+  canvasContext: CanvasRenderingContext2D;
+  viewport: PdfRenderViewport;
+  intent?: "display" | "print";
+};
+
 type PdfTextItem = {
   str?: string;
   width?: number;
@@ -34,8 +45,8 @@ declare global {
         promise: Promise<{
           numPages: number;
           getPage: (pageNumber: number) => Promise<{
-            getViewport: (input: { scale: number }) => { width: number; height: number };
-            render: (input: { canvas: HTMLCanvasElement; canvasContext: CanvasRenderingContext2D; viewport: { width: number; height: number } }) => { promise: Promise<void> };
+            getViewport: (input: { scale: number }) => PdfRenderViewport;
+            render: (input: PdfPageRenderInput) => { promise: Promise<void> };
             getTextContent: () => Promise<{ items: PdfTextItem[] }>;
           }>;
         }>;
@@ -46,6 +57,18 @@ declare global {
 
 const PDF_JS_SCRIPT_URL = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
 const PDF_JS_WORKER_URL = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+export const PDF_PAGE_RENDER_INTENT = "print";
+
+export function buildPdfPageRenderInput(input: {
+  canvasContext: CanvasRenderingContext2D;
+  viewport: PdfRenderViewport;
+}): PdfPageRenderInput {
+  return {
+    canvasContext: input.canvasContext,
+    viewport: input.viewport,
+    intent: PDF_PAGE_RENDER_INTENT,
+  };
+}
 
 function loadScript(src: string) {
   return new Promise<void>((resolve, reject) => {
@@ -290,7 +313,7 @@ export async function buildPreparedPdfPages(file: File, processablePages: number
       throw new Error("Nao foi possivel criar o canvas para o PDF.");
     }
 
-    await page.render({ canvas, canvasContext: context, viewport }).promise;
+    await page.render(buildPdfPageRenderInput({ canvasContext: context, viewport })).promise;
     const blob = await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob((value) => {
         if (!value) {
