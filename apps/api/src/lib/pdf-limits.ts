@@ -21,9 +21,15 @@ export function defaultPdfUpsell() {
 export function buildPdfAllowance(input: {
   viewerType: "anonymous" | "user";
   totalPages: number;
-  remainingPdfPagesToday: number;
+  remainingCredits?: number;
+  remainingPdfPagesToday?: number;
+  maxPagesPerDocument?: number;
 }) {
-  const processablePages = Math.min(input.totalPages, Math.max(input.remainingPdfPagesToday, 0));
+  const maxPagesPerDocument = input.maxPagesPerDocument ?? input.totalPages;
+  const creditLimitedPages = typeof input.remainingCredits === "number"
+    ? Math.floor(Math.max(input.remainingCredits, 0) / 2)
+    : Math.max(input.remainingPdfPagesToday ?? 0, 0);
+  const processablePages = Math.min(input.totalPages, Math.max(creditLimitedPages, 0), maxPagesPerDocument);
 
   return {
     totalPages: input.totalPages,

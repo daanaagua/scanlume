@@ -5,14 +5,15 @@ describe("buildPdfAllowance", () => {
     delete (globalThis as { __pdfLocks?: Set<string> }).__pdfLocks;
   });
 
-  it("returns real metadata and upsell details when logged-in quota is zero", async () => {
+  it("returns real metadata and upsell details when remaining credits are exhausted", async () => {
     const { buildPdfAllowance } = await import("../pdf-limits");
 
     const result = buildPdfAllowance({
       viewerType: "user",
       totalPages: 30,
-      remainingPdfPagesToday: 0,
-    });
+      remainingCredits: 0,
+      maxPagesPerDocument: 50,
+    } as never);
 
     expect(result).toMatchObject({
       processablePages: 0,
@@ -21,6 +22,23 @@ describe("buildPdfAllowance", () => {
         required: true,
         ctaHref: "/conta",
       },
+    });
+  });
+
+  it("derives processable pages from floor(remainingCredits / 2)", async () => {
+    const { buildPdfAllowance } = await import("../pdf-limits");
+
+    const result = buildPdfAllowance({
+      viewerType: "user",
+      totalPages: 6,
+      remainingCredits: 3,
+      maxPagesPerDocument: 50,
+    } as never);
+
+    expect(result).toMatchObject({
+      processablePages: 1,
+      lockedPages: 5,
+      truncated: true,
     });
   });
 

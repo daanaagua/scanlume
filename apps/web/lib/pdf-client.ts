@@ -1,9 +1,13 @@
 export function buildPdfSelectionSummary(input: {
   totalPages: number;
-  remainingPages: number;
+  remainingCredits?: number;
+  remainingPages?: number;
   maxPagesPerDocument: number;
 }) {
-  const processablePages = Math.min(input.totalPages, input.remainingPages, input.maxPagesPerDocument);
+  const remainingPages = typeof input.remainingCredits === "number"
+    ? Math.floor(Math.max(input.remainingCredits, 0) / 2)
+    : Math.max(input.remainingPages ?? 0, 0);
+  const processablePages = Math.min(input.totalPages, remainingPages, input.maxPagesPerDocument);
   return {
     processablePages,
     lockedPages: Math.max(input.totalPages - processablePages, 0),

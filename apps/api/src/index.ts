@@ -573,7 +573,8 @@ app.get("/v1/limits", async (c) => {
   const softBudgetRmb = readNumber(c.env.SOFT_BUDGET_RMB, 18);
   const hardBudgetRmb = readNumber(c.env.HARD_BUDGET_RMB, 20);
   const viewer = await resolveViewerContext(c, c.req.query("browserId") ?? undefined);
-  const remainingPdfPagesToday = await resolveRemainingPdfPagesToday(c.env, viewer);
+  const derivedRemainingPdfPages = Math.floor(Math.max(viewer.balance.remainingCredits, 0) / 2);
+  const derivedGrantedPdfPages = Math.max(Math.floor(Math.max(viewer.balance.grantedCredits, 0) / 2), 1);
 
   return c.json({
     viewer: {
@@ -588,7 +589,7 @@ app.get("/v1/limits", async (c) => {
     },
     limits: {
       dailyImages: viewer.dailyImageLimit,
-      dailyCredits: viewer.dailyCreditLimit,
+      dailyCredits: viewer.balance.grantedCredits,
       maxImageMb: viewer.currentPlan.entitlements.maxImageMb,
       maxBatchFiles: viewer.currentPlan.entitlements.maxBatchFiles,
       maxBatchTotalMb: viewer.currentPlan.entitlements.maxBatchTotalMb,
@@ -597,16 +598,16 @@ app.get("/v1/limits", async (c) => {
       pdf: pdfLimitSnapshotSchema.parse({
         maxFileMb: readNumber(c.env.PDF_MAX_FILE_MB, 15),
         maxPagesPerDocument: readNumber(c.env.PDF_MAX_PAGES_PER_DOCUMENT, 50),
-        requestPageLimitAnonymous: 5,
-        dailyPageLimitLoggedIn: readNumber(c.env.PDF_DAILY_PAGE_LIMIT_LOGGED_IN, 20),
-        remainingPages: viewer.type === "user" ? remainingPdfPagesToday : 5,
+        requestPageLimitAnonymous: Math.max(Math.floor(Math.max(viewer.type === "anonymous" ? viewer.balance.grantedCredits : 5, 0) / 2), 1),
+        dailyPageLimitLoggedIn: derivedGrantedPdfPages,
+        remainingPages: derivedRemainingPdfPages,
       }),
     },
     usage: {
       usedImages: viewer.usage.usedImages,
-      usedCredits: viewer.usage.usedCredits,
+      usedCredits: viewer.balance.usedCredits,
       remainingImages: Math.max(viewer.dailyImageLimit - viewer.usage.usedImages, 0),
-      remainingCredits: Math.max(viewer.dailyCreditLimit - viewer.usage.usedCredits, 0),
+      remainingCredits: viewer.balance.remainingCredits,
     },
     budget,
     status: {

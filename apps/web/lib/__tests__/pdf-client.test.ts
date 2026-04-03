@@ -6,14 +6,14 @@ import { PDF_PAGE_RENDER_INTENT, buildNativeTextBlocks, buildPdfPageRenderInput,
 describe("buildPdfSelectionSummary", () => {
   it("marks a PDF as truncated when local pages exceed the remaining allowance", () => {
     const summary = buildPdfSelectionSummary({
-      totalPages: 12,
-      remainingPages: 5,
+      totalPages: 6,
+      remainingCredits: 3,
       maxPagesPerDocument: 50,
-    });
+    } as never);
 
     expect(summary).toMatchObject({
-      processablePages: 5,
-      lockedPages: 7,
+      processablePages: 1,
+      lockedPages: 5,
       truncated: true,
     });
   });
