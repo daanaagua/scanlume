@@ -2,6 +2,10 @@ import { Hono, type Context } from "hono";
 import { cors } from "hono/cors";
 
 import { buildAccountSnapshot, joinWaitlist, resolveCurrentPlan, type AccountPlan } from "./lib/account";
+import { authenticateApiKey, checkApiRateLimit, createApiKey, regenerateApiKey } from "./lib/api-auth";
+import { createApiJob, readApiJob } from "./lib/api-jobs";
+import { consumeApiCredits, readApiBalance } from "./lib/api-usage";
+import { createCheckoutSession } from "./lib/billing";
 import {
   authenticatePasswordViewer,
   buildGoogleAuthorizationUrl,
@@ -80,6 +84,7 @@ import {
 } from "./lib/support";
 import {
   getClientIp,
+  listApiKeys,
   persistUsageEvent,
   readBudgetState,
   readCreditBalance,
@@ -92,6 +97,7 @@ import {
   todayKey,
   type WorkerEnv,
   writeBudgetState,
+  writeApiKey,
   writeRateState,
   writeUserDailyPdfUsage,
   writeUserDailyUsage,
@@ -132,6 +138,24 @@ type SupportReplyResult = {
 };
 
 const app = new Hono<AppBindings>();
+
+async function getRequestViewer(c: Context<AppBindings>) {
+  const testUserId = !c.env.DB ? c.req.header("x-test-user-id") : null;
+  if (testUserId) {
+    return {
+      id: testUserId,
+      email: `${testUserId}@example.com`,
+      name: `Test ${testUserId}`,
+      avatarUrl: null,
+      emailVerified: true,
+      emailVerifiedAt: null,
+      hasPassword: true,
+      authProviders: ["password"],
+    };
+  }
+
+  return getSessionViewer(c, c.env);
+}
 
 function normalizeFormattedBlockType(value?: string): "h1" | "h2" | "p" | "br" {
   return value === "h1" || value === "h2" || value === "br" ? value : "p";
@@ -207,7 +231,176 @@ app.get("/v1/me", async (c) => {
 app.get("/v1/account", async (c) => {
   const viewer = await resolveViewerContext(c, c.req.query("browserId") ?? undefined);
   const account = await buildAccountSnapshot(c.env, viewer);
-  return c.json(account);
+  const api = viewer.type === "user" && viewer.user
+    ? await readApiAccountSummary(c.env, viewer.user.id)
+    : { remainingCredits: 0, effectiveTier: null, keys: [] };
+  return c.json({
+    ...account,
+    api,
+  });
+});
+
+app.post("/v1/billing/checkout", async (c) => {
+  const user = await getRequestViewer(c);
+  if (!user) {
+    return c.json({ error: "Authentication required.", code: "auth_required" }, 401);
+  }
+
+  const payload = await c.req.json().catch(() => null) as { product?: string } | null;
+  if (!payload?.product) {
+    return c.json({ error: "Product is required.", code: "product_required" }, 400);
+  }
+
+  const session = await createCheckoutSession(c.env, {
+    userId: user.id,
+    product: payload.product as never,
+  });
+
+  return c.json(session, 201);
+});
+
+app.get("/v1/api/keys", async (c) => {
+  const user = await getRequestViewer(c);
+  if (!user) {
+    return c.json({ error: "Authentication required.", code: "auth_required" }, 401);
+  }
+
+  const api = await readApiAccountSummary(c.env, user.id);
+  return c.json({ keys: api.keys, remainingCredits: api.remainingCredits, effectiveTier: api.effectiveTier });
+});
+
+app.post("/v1/api/keys", async (c) => {
+  const user = await getRequestViewer(c);
+  if (!user) {
+    return c.json({ error: "Authentication required.", code: "auth_required" }, 401);
+  }
+
+  const payload = await c.req.json().catch(() => null) as { label?: string } | null;
+  if (!payload?.label) {
+    return c.json({ error: "Label is required.", code: "label_required" }, 400);
+  }
+
+  try {
+    const created = await createApiKey(c.env, { userId: user.id, label: payload.label });
+    return c.json(created, 201);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "api_key_create_failed";
+    const status = message === "api_entitlement_required" ? 403 : 400;
+    return c.json({ error: message, code: message }, status as 400 | 403);
+  }
+});
+
+app.post("/v1/api/keys/:id/regenerate", async (c) => {
+  const user = await getRequestViewer(c);
+  if (!user) {
+    return c.json({ error: "Authentication required.", code: "auth_required" }, 401);
+  }
+
+  try {
+    const regenerated = await regenerateApiKey(c.env, { userId: user.id, keyId: c.req.param("id") });
+    return c.json(regenerated);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "api_key_regenerate_failed";
+    return c.json({ error: message, code: message }, 404);
+  }
+});
+
+app.delete("/v1/api/keys/:id", async (c) => {
+  const user = await getRequestViewer(c);
+  if (!user) {
+    return c.json({ error: "Authentication required.", code: "auth_required" }, 401);
+  }
+
+  const keys = await listApiKeys(c.env, user.id);
+  const existing = keys.find((key) => key.id === c.req.param("id") && !key.revokedAt);
+  if (!existing) {
+    return c.json({ error: "API key not found.", code: "api_key_not_found" }, 404);
+  }
+  await writeApiKey(c.env, {
+    ...existing,
+    revokedAt: new Date().toISOString(),
+  });
+  return c.json({ ok: true });
+});
+
+app.post("/v1/api/ocr", async (c) => {
+  const auth = await authenticateApiRequest(c);
+  if ("response" in auth) {
+    return auth.response;
+  }
+
+  const payload = await c.req.json().catch(() => null) as { mode?: "simple" | "formatted"; base64?: string } | null;
+  if (!payload?.mode || !payload?.base64) {
+    return c.json({ error: "mode and base64 are required.", code: "api_invalid_payload" }, 400);
+  }
+
+  const amount = payload.mode === "formatted" ? 2 : 1;
+
+  const result = payload.mode === "formatted"
+    ? await runFormattedOcr(c.env, payload.base64)
+    : await runSimpleOcr(c.env, payload.base64);
+  if (!result.ok) {
+    return c.json({ error: result.error, code: "api_ocr_failed" }, 502);
+  }
+
+  const charged = await consumeApiCredits(c.env, { userId: auth.key.userId, amount });
+  if (!charged.ok) {
+    return c.json({ error: "Insufficient API credits.", code: "api_account_rate_limit" }, 429);
+  }
+
+  const balance = await readApiBalance(c.env, auth.key.userId);
+  return c.json({
+    request_id: crypto.randomUUID(),
+    status: "success",
+    plan: balance.effectiveTier,
+    mode: payload.mode,
+    result: result.payload,
+    credits_charged: amount,
+    remaining_credits: balance.remainingCredits,
+  });
+});
+
+app.post("/v1/api/pdf/jobs", async (c) => {
+  const auth = await authenticateApiRequest(c);
+  if ("response" in auth) {
+    return auth.response;
+  }
+
+  const payload = await c.req.json().catch(() => null) as { fileName?: string; totalPages?: number } | null;
+  if (!payload?.fileName || typeof payload.totalPages !== "number") {
+    return c.json({ error: "fileName and totalPages are required.", code: "api_invalid_payload" }, 400);
+  }
+
+  const jobId = crypto.randomUUID();
+  await createApiJob(c.env, {
+    id: jobId,
+    userId: auth.key.userId,
+    kind: "pdf_ocr",
+    status: "queued",
+    payload,
+  });
+
+  return c.json({ job_id: jobId, status: "queued", credits_charged: 0, billing_mode: "settle_on_completion" }, 202);
+});
+
+app.get("/v1/api/jobs/:id", async (c) => {
+  const auth = await authenticateApiRequest(c);
+  if ("response" in auth) {
+    return auth.response;
+  }
+
+  const job = await readApiJob(c.env, c.req.param("id"));
+  if (!job || job.userId !== auth.key.userId) {
+    return c.json({ error: "API job not found.", code: "api_job_not_found" }, 404);
+  }
+
+  return c.json({
+    job_id: job.id,
+    status: job.status,
+    processed_pages: job.processedPages,
+    failed_pages: job.failedPages,
+    credits_charged: job.creditsCharged,
+  });
 });
 
 app.post("/v1/waitlist/join", async (c) => {
@@ -1194,7 +1387,7 @@ async function runFormattedOcr(env: WorkerEnv, imageUrl: string, promptText = FO
 async function resolveViewerContext(c: Context<AppBindings>, browserId?: string): Promise<ViewerContext> {
   const date = todayKey();
   const clientIp = getClientIp(c.req.raw);
-  const user = await getSessionViewer(c, c.env);
+  const user = await getRequestViewer(c);
 
   if (user) {
     const usage = await readUserDailyUsage(c.env, user.id, date);
@@ -1248,6 +1441,48 @@ async function resolveRemainingPdfPagesToday(env: WorkerEnv, viewer: ViewerConte
   const usage = await readUserDailyPdfUsage(env, viewer.user.id, todayKey());
   const dailyLimit = readNumber(env.PDF_DAILY_PAGE_LIMIT_LOGGED_IN, 20);
   return Math.max(dailyLimit - usage.usedPages, 0);
+}
+
+async function readApiAccountSummary(env: WorkerEnv, userId: string) {
+  const balance = await readApiBalance(env, userId);
+  const keys = await listApiKeys(env, userId);
+  return {
+    remainingCredits: balance.remainingCredits,
+    effectiveTier: balance.effectiveTier,
+    keys: keys.filter((key) => !key.revokedAt).map((key) => ({
+      id: key.id,
+      label: key.label,
+      lastFour: key.lastFour,
+      lastUsedAt: key.lastUsedAt,
+      createdAt: key.createdAt,
+    })),
+  };
+}
+
+async function authenticateApiRequest(c: Context<AppBindings>) {
+  const authorization = c.req.header("authorization") ?? "";
+  const secret = authorization.startsWith("Bearer ") ? authorization.slice(7).trim() : "";
+  if (!secret) {
+    return { response: c.json({ error: "Missing API key.", code: "api_key_missing" }, 401) };
+  }
+
+  const key = await authenticateApiKey(c.env, secret);
+  if (!key) {
+    return { response: c.json({ error: "Invalid API key.", code: "api_key_invalid" }, 401) };
+  }
+
+  const balance = await readApiBalance(c.env, key.userId);
+  if (!balance.effectiveTier) {
+    return { response: c.json({ error: "Active API entitlement required.", code: "api_entitlement_required" }, 403) };
+  }
+
+  const limits = await checkApiRateLimit(c.env, {
+    userId: key.userId,
+    apiKeyId: key.id,
+    effectiveTier: balance.effectiveTier,
+  });
+
+  return { key, balance, limits };
 }
 
 function buildWebRedirect(env: WorkerEnv, redirectTo: string, status: string, error?: string) {
