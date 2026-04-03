@@ -774,7 +774,7 @@ app.post("/v1/pdf/ocr", async (c) => {
   const viewer = await resolveViewerContext(c, browserId);
   const lock = viewer.type === "user" && viewer.user ? await acquirePdfProcessingLock({ lockKey: `pdf:${viewer.user.id}` }).catch((error) => null) : null;
   if (viewer.type === "user" && viewer.user && !lock) {
-    return c.json({ error: "Another PDF job is already running.", code: "pdf_job_in_progress", remainingPdfPagesToday: await resolveRemainingPdfPagesToday(c.env, viewer) }, 409);
+    return c.json({ error: "Another PDF job is already running.", code: "pdf_job_in_progress", remainingPdfPagesToday: Math.floor(Math.max(viewer.balance.remainingCredits, 0) / 2) }, 409);
   }
 
   try {
@@ -789,22 +789,22 @@ app.post("/v1/pdf/ocr", async (c) => {
     }>;
     const parsed = pdfOcrUploadSchema.safeParse({ file, browserId, totalPages, sourcePath: sourcePath || undefined, preparedPages });
     if (!parsed.success) {
-      return c.json({ error: "Invalid request payload.", code: "pdf_invalid", remainingPdfPagesToday: viewer.type === "user" ? await resolveRemainingPdfPagesToday(c.env, viewer) : 5 }, 400);
+      return c.json({ error: "Invalid request payload.", code: "pdf_invalid", remainingPdfPagesToday: Math.floor(Math.max(viewer.balance.remainingCredits, 0) / 2) }, 400);
     }
 
     const inspection = await inspectPdfFile({ file, env: c.env });
     const resolvedTotalPages = parsed.data.totalPages;
-    const remainingPdfPagesToday = await resolveRemainingPdfPagesToday(c.env, viewer);
     const allowance = buildPdfAllowance({
       viewerType: viewer.type,
       totalPages: resolvedTotalPages,
-      remainingPdfPagesToday,
+      remainingCredits: viewer.balance.remainingCredits,
+      maxPagesPerDocument: readNumber(c.env.PDF_MAX_PAGES_PER_DOCUMENT, 50),
     });
 
     if (allowance.processablePages === 0) {
       return c.json(
         {
-          error: "No PDF pages remaining today.",
+          error: "Insufficient credits for another PDF page.",
           code: "pdf_page_limit_reached",
           remainingPdfPagesToday: 0,
           totalPages: resolvedTotalPages,
@@ -966,6 +966,19 @@ app.post("/v1/pdf/ocr", async (c) => {
     const billablePages = countBillablePdfPages(routedPages);
     const date = todayKey();
     const createdAt = new Date().toISOString();
+    const creditActor = viewer.type === "user" && viewer.user
+      ? { type: "user" as const, key: viewer.user.id }
+      : { type: "anonymous" as const, key: viewer.rateKey ?? "anonymous-browser" };
+    const chargedCredits = billablePages * 2;
+    const creditSettlement = await tryConsumeCredits(c.env, {
+      actor: creditActor,
+      amount: chargedCredits,
+      now: createdAt,
+    });
+    if (!creditSettlement.ok) {
+      return c.json({ error: "Insufficient credits.", code: "credit_limit", remainingPdfPagesToday: Math.floor(Math.max(creditSettlement.remainingCredits, 0) / 2) }, 429);
+    }
+    const nextBalance = await readCreditBalance(c.env, creditActor);
     if (viewer.type === "user" && viewer.user) {
       const currentPdfUsage = await readUserDailyPdfUsage(c.env, viewer.user.id, date);
       await writeUserDailyPdfUsage(c.env, viewer.user.id, date, { usedPages: currentPdfUsage.usedPages + billablePages }, createdAt);
@@ -977,7 +990,7 @@ app.post("/v1/pdf/ocr", async (c) => {
       totalPages: resolvedTotalPages,
       pages: routedPages,
       lockedPages: allowance.lockedPages,
-      remainingPdfPagesToday: Math.max(remainingPdfPagesToday - billablePages, 0),
+      remainingPdfPagesToday: Math.floor(Math.max(nextBalance.remainingCredits, 0) / 2),
       exportToken: "pending",
     });
     const manifestHash = await sha256Hex(JSON.stringify(draft.exportManifest));
@@ -1002,14 +1015,14 @@ app.post("/v1/pdf/ocr", async (c) => {
         {
           error: pdfError.message,
           code: pdfError.code,
-          remainingPdfPagesToday: viewer.type === "user" ? await resolveRemainingPdfPagesToday(c.env, viewer) : 5,
+          remainingPdfPagesToday: Math.floor(Math.max(viewer.balance.remainingCredits, 0) / 2),
           ...(pdfError.details ?? {}),
         },
         pdfError.status as 400 | 413 | 429 | 502,
       );
     }
 
-    return c.json({ error: error instanceof Error ? error.message : "PDF processing failed.", code: "pdf_processing_failed", remainingPdfPagesToday: viewer.type === "user" ? await resolveRemainingPdfPagesToday(c.env, viewer) : 5 }, 502);
+    return c.json({ error: error instanceof Error ? error.message : "PDF processing failed.", code: "pdf_processing_failed", remainingPdfPagesToday: Math.floor(Math.max(viewer.balance.remainingCredits, 0) / 2) }, 502);
   } finally {
     await releasePdfProcessingLock(lock);
   }

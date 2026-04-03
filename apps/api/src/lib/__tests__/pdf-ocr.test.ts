@@ -1,6 +1,47 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import app from "../../index";
 import { assemblePdfDocumentResult, buildPdfRouteOutcome, sanitizePreviewHtml } from "../pdf-ocr";
+import { readCreditBalance, sha256Hex, tryConsumeCredits } from "../store";
+
+function createEnv() {
+  return {
+    ARK_API_BASE: "https://ark.test",
+    ARK_MODEL: "mock-model",
+    ARK_API_KEY: "mock-key",
+  };
+}
+
+async function readAnonymousBalance(env: ReturnType<typeof createEnv>, browserId: string) {
+  const actorKey = await sha256Hex(`0.0.0.0:${browserId}`);
+  return readCreditBalance(env as never, { type: "anonymous", key: actorKey });
+}
+
+async function createPdfRequest(input: {
+  browserId: string;
+  totalPages: number;
+  preparedPages: unknown[];
+}) {
+  const formData = new FormData();
+  formData.set("file", new File(["%PDF-1.4\n%mock\n"], "sample.pdf", { type: "application/pdf" }));
+  formData.set("browserId", input.browserId);
+  formData.set("totalPages", String(input.totalPages));
+  formData.set("sourcePath", "/pdf-para-texto");
+  formData.set("preparedPages", JSON.stringify(input.preparedPages));
+
+  return new Request("https://api.scanlume.com/v1/pdf/ocr", {
+    method: "POST",
+    body: formData,
+  });
+}
+
+beforeEach(() => {
+  vi.stubGlobal("fetch", vi.fn());
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe("assemblePdfDocumentResult", () => {
   it("builds previewHtml, pageStats, failedPages, and exportManifest together", () => {
@@ -109,5 +150,56 @@ describe("buildPdfRouteOutcome", () => {
 describe("sanitizePreviewHtml", () => {
   it("removes script tags before returning previewHtml", () => {
     expect(sanitizePreviewHtml('<p>ok</p><script>alert(1)</script>')).toBe("<p>ok</p>");
+  });
+});
+
+describe("/v1/pdf/ocr credit settlement", () => {
+  it("deducts 2 credits for one processed PDF page", async () => {
+    const env = createEnv();
+    const browserId = "anon-pdf-1page";
+    const response = await app.fetch(
+      await createPdfRequest({
+        browserId,
+        totalPages: 1,
+        preparedPages: [
+          {
+            pageNumber: 1,
+            source: "text-layer",
+            width: 600,
+            height: 800,
+            nativeTextBlocks: [{ text: "Page 1", bbox: { x: 0, y: 0, width: 120, height: 24 } }],
+            ocrRegions: [],
+          },
+        ],
+      }),
+      env as never,
+    );
+
+    expect(response.status).toBe(200);
+    await expect(readAnonymousBalance(env, browserId)).resolves.toMatchObject({ remainingCredits: 3 });
+  });
+
+  it("truncates PDF processing to pages that fit in remaining credits", async () => {
+    const env = createEnv();
+    const browserId = "anon-pdf-truncate";
+    const actorKey = await sha256Hex(`0.0.0.0:${browserId}`);
+    await tryConsumeCredits(env as never, { actor: { type: "anonymous", key: actorKey }, amount: 2 });
+
+    const response = await app.fetch(
+      await createPdfRequest({
+        browserId,
+        totalPages: 3,
+        preparedPages: [
+          { pageNumber: 1, source: "text-layer", width: 600, height: 800, nativeTextBlocks: [{ text: "Page 1", bbox: { x: 0, y: 0, width: 120, height: 24 } }], ocrRegions: [] },
+          { pageNumber: 2, source: "text-layer", width: 600, height: 800, nativeTextBlocks: [{ text: "Page 2", bbox: { x: 0, y: 0, width: 120, height: 24 } }], ocrRegions: [] },
+          { pageNumber: 3, source: "text-layer", width: 600, height: 800, nativeTextBlocks: [{ text: "Page 3", bbox: { x: 0, y: 0, width: 120, height: 24 } }], ocrRegions: [] },
+        ],
+      }),
+      env as never,
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload).toMatchObject({ processedPages: 1, lockedPages: 2 });
   });
 });
