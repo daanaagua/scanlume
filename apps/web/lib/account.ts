@@ -137,3 +137,76 @@ export async function joinWaitlist() {
     waitlist: AccountResponse["waitlist"];
   };
 }
+
+export async function createBillingCheckout(product: string) {
+  const response = await fetch(`${API_BASE_URL}/v1/billing/checkout`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ product }),
+  });
+
+  if (!response.ok) {
+    throw new Error(response.status === 401 ? "auth_required" : "checkout_failed");
+  }
+
+  return (await response.json()) as {
+    checkoutUrl: string;
+    product: string;
+  };
+}
+
+export async function createApiKey(label: string) {
+  const response = await fetch(`${API_BASE_URL}/v1/api/keys`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ label }),
+  });
+
+  if (!response.ok) {
+    throw new Error("api_key_create_failed");
+  }
+
+  return (await response.json()) as {
+    id: string;
+    label: string;
+    lastFour: string;
+    secret: string;
+  };
+}
+
+export async function regenerateApiKey(id: string) {
+  const response = await fetch(`${API_BASE_URL}/v1/api/keys/${id}/regenerate`, {
+    method: "POST",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    throw new Error("api_key_regenerate_failed");
+  }
+
+  return (await response.json()) as {
+    id: string;
+    label: string;
+    lastFour: string;
+    secret: string;
+  };
+}
+
+export async function revokeApiKey(id: string) {
+  const response = await fetch(`${API_BASE_URL}/v1/api/keys/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    throw new Error("api_key_revoke_failed");
+  }
+
+  return (await response.json()) as { ok: true };
+}

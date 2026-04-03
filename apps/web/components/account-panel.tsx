@@ -6,7 +6,7 @@ import { ApiKeyPanel } from "@/components/api-key-panel";
 import { AuthDialog } from "@/components/auth-dialog";
 import { getOrCreateBrowserId } from "@/lib/browser-id";
 import { requestPasswordReset, resendVerificationEmail } from "@/lib/auth";
-import { fetchAccount, joinWaitlist, type AccountResponse } from "@/lib/account";
+import { createApiKey, fetchAccount, joinWaitlist, regenerateApiKey, revokeApiKey, type AccountResponse } from "@/lib/account";
 import { subscribeUsageRefresh } from "@/lib/usage-sync";
 
 function formatBillingStatus(status: AccountResponse["billing"]["status"]) {
@@ -58,6 +58,35 @@ export function AccountPanel() {
 
     return `${account.usage.remainingCredits}/${account.usage.grantedCredits} creditos disponiveis no total`;
   }, [account]);
+
+  async function refreshAccount() {
+    const browserId = getOrCreateBrowserId();
+    const next = await fetchAccount(browserId);
+    setAccount(next);
+    setError(null);
+  }
+
+  async function handleCreateApiKey() {
+    const label = window.prompt("Nome da nova API key", "build-bot");
+    if (!label) {
+      return;
+    }
+
+    const created = await createApiKey(label);
+    window.alert(`Nova API key criada: ${created.secret}`);
+    await refreshAccount();
+  }
+
+  async function handleRegenerateApiKey(id: string) {
+    const regenerated = await regenerateApiKey(id);
+    window.alert(`API key regenerada: ${regenerated.secret}`);
+    await refreshAccount();
+  }
+
+  async function handleRevokeApiKey(id: string) {
+    await revokeApiKey(id);
+    await refreshAccount();
+  }
 
   async function handleJoinWaitlist() {
     setIsJoiningWaitlist(true);
@@ -216,9 +245,9 @@ export function AccountPanel() {
 
         <ApiKeyPanel
           api={account.api}
-          onCreateKey={() => undefined}
-          onRegenerateKey={() => undefined}
-          onRevokeKey={() => undefined}
+          onCreateKey={() => void handleCreateApiKey()}
+          onRegenerateKey={(id) => void handleRegenerateApiKey(id)}
+          onRevokeKey={(id) => void handleRevokeApiKey(id)}
         />
 
         {account.viewer.authenticated && account.viewer.user && (

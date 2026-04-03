@@ -69,3 +69,34 @@ export async function readWebSubscription(env: WorkerEnv, userId: string): Promi
     rollover: false,
   };
 }
+
+export async function consumeWebSubscriptionCredits(
+  env: WorkerEnv,
+  input: { userId: string; amount: number; now?: string },
+): Promise<{ ok: boolean; remainingCredits: number; grantedCredits: number }> {
+  const amount = Math.max(Math.trunc(input.amount), 0);
+  const term = await readActiveWebSubscriptionTerm(env, input.userId, input.now);
+  if (!term) {
+    return { ok: false, remainingCredits: 0, grantedCredits: 0 };
+  }
+
+  if (amount === 0) {
+    return { ok: true, remainingCredits: term.creditsRemaining, grantedCredits: term.creditsTotal };
+  }
+
+  if (term.creditsRemaining < amount) {
+    return { ok: false, remainingCredits: term.creditsRemaining, grantedCredits: term.creditsTotal };
+  }
+
+  await writeWebSubscriptionTerm(env, {
+    ...term,
+    creditsRemaining: term.creditsRemaining - amount,
+    updatedAt: input.now ?? new Date().toISOString(),
+  });
+
+  return {
+    ok: true,
+    remainingCredits: term.creditsRemaining - amount,
+    grantedCredits: term.creditsTotal,
+  };
+}

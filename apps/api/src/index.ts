@@ -3,9 +3,8 @@ import { cors } from "hono/cors";
 
 import { buildAccountSnapshot, joinWaitlist, resolveCurrentPlan, type AccountPlan } from "./lib/account";
 import { authenticateApiKey, checkApiRateLimit, createApiKey, regenerateApiKey } from "./lib/api-auth";
-import { createApiJob, readApiJob } from "./lib/api-jobs";
 import { consumeApiCredits, readApiBalance } from "./lib/api-usage";
-import { createCheckoutSession } from "./lib/billing";
+import { createCheckoutSession, handleBillingWebhook } from "./lib/billing";
 import {
   authenticatePasswordViewer,
   buildGoogleAuthorizationUrl,
@@ -82,6 +81,7 @@ import {
   toSupportNotificationPayload,
   type SupportMessage,
 } from "./lib/support";
+import { consumeWebSubscriptionCredits, readWebSubscription } from "./lib/web-subscriptions";
 import {
   getClientIp,
   listApiKeys,
@@ -259,6 +259,36 @@ app.post("/v1/billing/checkout", async (c) => {
   return c.json(session, 201);
 });
 
+app.post("/v1/billing/webhook", async (c) => {
+  const payload = await c.req.json().catch(() => null) as {
+    id?: string;
+    provider?: string;
+    type?: string;
+    userId?: string;
+    productId?: string;
+    sessionId?: string;
+    occurredAt?: string;
+    billingEmail?: string | null;
+  } | null;
+
+  if (!payload?.id || !payload?.provider || !payload?.type || !payload?.userId || !payload?.productId || !payload?.sessionId || !payload?.occurredAt) {
+    return c.json({ error: "Invalid webhook payload.", code: "billing_webhook_invalid" }, 400);
+  }
+
+  await handleBillingWebhook(c.env, {
+    id: payload.id,
+    provider: payload.provider,
+    type: payload.type,
+    userId: payload.userId,
+    productId: payload.productId as never,
+    sessionId: payload.sessionId,
+    occurredAt: payload.occurredAt,
+    billingEmail: payload.billingEmail ?? null,
+  });
+
+  return c.json({ ok: true });
+});
+
 app.get("/v1/api/keys", async (c) => {
   const user = await getRequestViewer(c);
   if (!user) {
@@ -366,21 +396,11 @@ app.post("/v1/api/pdf/jobs", async (c) => {
     return auth.response;
   }
 
-  const payload = await c.req.json().catch(() => null) as { fileName?: string; totalPages?: number } | null;
-  if (!payload?.fileName || typeof payload.totalPages !== "number") {
-    return c.json({ error: "fileName and totalPages are required.", code: "api_invalid_payload" }, 400);
-  }
-
-  const jobId = crypto.randomUUID();
-  await createApiJob(c.env, {
-    id: jobId,
-    userId: auth.key.userId,
-    kind: "pdf_ocr",
-    status: "queued",
-    payload,
-  });
-
-  return c.json({ job_id: jobId, status: "queued", credits_charged: 0, billing_mode: "settle_on_completion" }, 202);
+  return c.json({
+    error: "PDF OCR API beta is not publicly available yet.",
+    code: "pdf_api_beta_waitlist",
+    message: "Join the beta waitlist to get access once async PDF processing is ready.",
+  }, 501);
 });
 
 app.get("/v1/api/jobs/:id", async (c) => {
@@ -389,18 +409,11 @@ app.get("/v1/api/jobs/:id", async (c) => {
     return auth.response;
   }
 
-  const job = await readApiJob(c.env, c.req.param("id"));
-  if (!job || job.userId !== auth.key.userId) {
-    return c.json({ error: "API job not found.", code: "api_job_not_found" }, 404);
-  }
-
   return c.json({
-    job_id: job.id,
-    status: job.status,
-    processed_pages: job.processedPages,
-    failed_pages: job.failedPages,
-    credits_charged: job.creditsCharged,
-  });
+    error: "PDF OCR API beta is not publicly available yet.",
+    code: "pdf_api_beta_waitlist",
+    message: "Join the beta waitlist to get access once async PDF processing is ready.",
+  }, 501);
 });
 
 app.post("/v1/waitlist/join", async (c) => {
@@ -869,18 +882,27 @@ app.post("/v1/ocr", async (c) => {
   }
 
   const actualCost = calcCost(result.usage);
-  const creditActor = viewer.type === "user" && viewer.user
-    ? { type: "user" as const, key: viewer.user.id }
-    : { type: "anonymous" as const, key: viewer.rateKey ?? "anonymous-browser" };
-  const creditSettlement = await tryConsumeCredits(c.env, {
-    actor: creditActor,
-    amount: requestedCredits,
-    now: new Date().toISOString(),
-  });
+  const creditSettlement = viewer.type === "user" && viewer.user
+    ? await consumeWebSubscriptionCredits(c.env, {
+        userId: viewer.user.id,
+        amount: requestedCredits,
+        now: new Date().toISOString(),
+      })
+    : await tryConsumeCredits(c.env, {
+        actor: { type: "anonymous" as const, key: viewer.rateKey ?? "anonymous-browser" },
+        amount: requestedCredits,
+        now: new Date().toISOString(),
+      });
   if (!creditSettlement.ok) {
     return c.json({ error: "Insufficient credits.", code: "credit_limit" }, 429);
   }
-  const nextBalance = await readCreditBalance(c.env, creditActor);
+  const nextBalance = viewer.type === "user" && viewer.user
+    ? {
+        grantedCredits: creditSettlement.grantedCredits,
+        usedCredits: Math.max(creditSettlement.grantedCredits - creditSettlement.remainingCredits, 0),
+        remainingCredits: creditSettlement.remainingCredits,
+      }
+    : await readCreditBalance(c.env, { type: "anonymous", key: viewer.rateKey ?? "anonymous-browser" });
   const nextUsageState = {
     usedImages: viewer.usage.usedImages + 1,
     usedCredits: viewer.usage.usedCredits + requestedCredits,
@@ -1159,19 +1181,28 @@ app.post("/v1/pdf/ocr", async (c) => {
     const billablePages = countBillablePdfPages(routedPages);
     const date = todayKey();
     const createdAt = new Date().toISOString();
-    const creditActor = viewer.type === "user" && viewer.user
-      ? { type: "user" as const, key: viewer.user.id }
-      : { type: "anonymous" as const, key: viewer.rateKey ?? "anonymous-browser" };
     const chargedCredits = billablePages * 2;
-    const creditSettlement = await tryConsumeCredits(c.env, {
-      actor: creditActor,
-      amount: chargedCredits,
-      now: createdAt,
-    });
+    const creditSettlement = viewer.type === "user" && viewer.user
+      ? await consumeWebSubscriptionCredits(c.env, {
+          userId: viewer.user.id,
+          amount: chargedCredits,
+          now: createdAt,
+        })
+      : await tryConsumeCredits(c.env, {
+          actor: { type: "anonymous" as const, key: viewer.rateKey ?? "anonymous-browser" },
+          amount: chargedCredits,
+          now: createdAt,
+        });
     if (!creditSettlement.ok) {
       return c.json({ error: "Insufficient credits.", code: "credit_limit", remainingPdfPagesToday: Math.floor(Math.max(creditSettlement.remainingCredits, 0) / 2) }, 429);
     }
-    const nextBalance = await readCreditBalance(c.env, creditActor);
+    const nextBalance = viewer.type === "user" && viewer.user
+      ? {
+          grantedCredits: creditSettlement.grantedCredits,
+          usedCredits: Math.max(creditSettlement.grantedCredits - creditSettlement.remainingCredits, 0),
+          remainingCredits: creditSettlement.remainingCredits,
+        }
+      : await readCreditBalance(c.env, { type: "anonymous", key: viewer.rateKey ?? "anonymous-browser" });
     if (viewer.type === "user" && viewer.user) {
       const currentPdfUsage = await readUserDailyPdfUsage(c.env, viewer.user.id, date);
       await writeUserDailyPdfUsage(c.env, viewer.user.id, date, { usedPages: currentPdfUsage.usedPages + billablePages }, createdAt);
@@ -1391,7 +1422,14 @@ async function resolveViewerContext(c: Context<AppBindings>, browserId?: string)
 
   if (user) {
     const usage = await readUserDailyUsage(c.env, user.id, date);
-    const balance = await readCreditBalance(c.env, { type: "user", key: user.id });
+    const subscription = await readWebSubscription(c.env, user.id);
+    const balance = subscription
+      ? {
+          grantedCredits: subscription.creditsTotal,
+          usedCredits: Math.max(subscription.creditsTotal - subscription.creditsRemaining, 0),
+          remainingCredits: subscription.creditsRemaining,
+        }
+      : await readCreditBalance(c.env, { type: "user", key: user.id });
     const resolvedPlan = await resolveCurrentPlan(c.env, {
       type: "user",
       user,
@@ -1455,6 +1493,12 @@ async function readApiAccountSummary(env: WorkerEnv, userId: string) {
       lastFour: key.lastFour,
       lastUsedAt: key.lastUsedAt,
       createdAt: key.createdAt,
+    })),
+    packs: balance.packs.map((pack) => ({
+      id: pack.id,
+      tier: pack.tier,
+      creditsRemaining: pack.creditsRemaining,
+      expiresAt: pack.expiresAt,
     })),
   };
 }

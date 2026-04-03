@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 
 import {
   API_CODE_EXAMPLES,
@@ -8,8 +11,27 @@ import {
   WEB_PRICING,
 } from "../../api/src/lib/api-docs";
 import { CodeExampleTabs } from "@/components/code-example-tabs";
+import { createBillingCheckout } from "@/lib/account";
 
 export function PricingPage() {
+  const [pendingProduct, setPendingProduct] = useState<string | null>(null);
+
+  async function handleCheckout(product: string) {
+    try {
+      setPendingProduct(product);
+      const session = await createBillingCheckout(product);
+      window.location.href = session.checkoutUrl;
+    } catch (error) {
+      if (error instanceof Error && error.message === "auth_required") {
+        window.location.href = "/conta";
+        return;
+      }
+      window.alert("Nao foi possivel abrir o checkout agora.");
+    } finally {
+      setPendingProduct(null);
+    }
+  }
+
   return (
     <div className="container" style={{ display: "grid", gap: "2rem" }}>
       <section>
@@ -31,6 +53,14 @@ export function PricingPage() {
               <p>{plan.annualCredits}</p>
               <p>{plan.usage}</p>
               <p>{plan.limits}</p>
+              <div className="hero-actions">
+                <button type="button" className="solid-button" onClick={() => void handleCheckout(`web_${plan.id}_monthly`)} disabled={pendingProduct === `web_${plan.id}_monthly`}>
+                  {pendingProduct === `web_${plan.id}_monthly` ? "Abrindo..." : "Assinar mensal"}
+                </button>
+                <button type="button" className="ghost-button" onClick={() => void handleCheckout(`web_${plan.id}_yearly`)} disabled={pendingProduct === `web_${plan.id}_yearly`}>
+                  {pendingProduct === `web_${plan.id}_yearly` ? "Abrindo..." : "Assinar anual"}
+                </button>
+              </div>
             </article>
           ))}
         </div>
@@ -47,6 +77,11 @@ export function PricingPage() {
               <p>{plan.credits}</p>
               <p>{plan.rpm}</p>
               <p>{plan.inputs}</p>
+              <div className="hero-actions">
+                <button type="button" className="solid-button" onClick={() => void handleCheckout(`api_${plan.id}`)} disabled={pendingProduct === `api_${plan.id}`}>
+                  {pendingProduct === `api_${plan.id}` ? "Abrindo..." : "Comprar API pack"}
+                </button>
+              </div>
             </article>
           ))}
           <article className="related-card">
@@ -82,13 +117,10 @@ export function PricingPage() {
 
       <section>
         <h2>PDF OCR API Beta</h2>
-        <p>PDF OCR API is currently in beta and uses async jobs.</p>
-        <pre>
-          <code>{`curl -X POST "https://api.scanlume.com/v1/api/pdf/jobs" \\
-  -H "Authorization: Bearer YOUR_API_KEY" \\
-  -H "Content-Type: application/json" \\
-  -d '{"fileName":"sample.pdf","totalPages":3}'`}</code>
-        </pre>
+        <p>PDF OCR API ainda nao esta aberto ao publico. Vamos liberar o beta em uma fase seguinte, depois que a execucao assincrona estiver pronta para uso real.</p>
+        <div className="hero-actions">
+          <Link href="/contato" className="ghost-button">Entrar na lista do beta</Link>
+        </div>
       </section>
 
       <section>
