@@ -36,3 +36,30 @@ export async function readApiBalance(env: WorkerEnv, userId: string, now = new D
     packs,
   };
 }
+
+export async function consumeApiCredits(env: WorkerEnv, input: { userId: string; amount: number; now?: string }) {
+  const amount = Math.max(Math.trunc(input.amount), 0);
+  const balance = await readApiBalance(env, input.userId, input.now);
+  if (amount === 0) {
+    return { ok: true, remainingCredits: balance.remainingCredits };
+  }
+  if (balance.remainingCredits < amount) {
+    return { ok: false, remainingCredits: balance.remainingCredits };
+  }
+
+  let remainingToConsume = amount;
+  for (const pack of balance.packs) {
+    if (remainingToConsume === 0) {
+      break;
+    }
+    const consumed = Math.min(pack.creditsRemaining, remainingToConsume);
+    remainingToConsume -= consumed;
+    await writeApiCreditPack(env, {
+      ...pack,
+      creditsRemaining: pack.creditsRemaining - consumed,
+    });
+  }
+
+  const next = await readApiBalance(env, input.userId, input.now);
+  return { ok: true, remainingCredits: next.remainingCredits };
+}

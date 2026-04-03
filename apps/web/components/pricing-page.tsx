@@ -23,7 +23,7 @@ export function PricingPage() {
         <div className="related-grid">
           {WEB_PRICING.monthly.map((plan) => (
             <article key={plan.id} className="related-card">
-              <span>{plan.recommended ? "Recommended" : "Web plan"}</span>
+              <span>{("recommended" in plan && plan.recommended) ? "Recommended" : "Web plan"}</span>
               <strong>{plan.name}</strong>
               <p>{plan.price}</p>
               <p>{plan.credits}</p>
@@ -41,7 +41,7 @@ export function PricingPage() {
         <div className="related-grid">
           {API_PRICING.map((plan) => (
             <article key={plan.id} className="related-card">
-              <span>{plan.recommended ? "Recommended" : "API pack"}</span>
+              <span>{("recommended" in plan && plan.recommended) ? "Recommended" : "API pack"}</span>
               <strong>{plan.name}</strong>
               <p>{plan.price}</p>
               <p>{plan.credits}</p>
