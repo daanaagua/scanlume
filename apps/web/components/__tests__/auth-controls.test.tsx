@@ -24,7 +24,8 @@ describe("AuthControls", () => {
     fetchAccountMock
       .mockResolvedValueOnce({
         viewer: { authenticated: true, user: { id: "u1", email: "jam@scanlume.com", name: "Jam", avatarUrl: null, emailVerified: true, emailVerifiedAt: null, hasPassword: false, authProviders: ["google"] } },
-        currentPlan: { id: "free", label: "Conta gratuita", shortLabel: "Gratis", description: "", priceLabel: "Gratis", isPaid: false, isCurrent: true, comingSoon: false, entitlements: { dailyImages: 100, dailyCredits: 100, maxBatchFiles: 10, maxImageMb: 5, maxBatchTotalMb: 20 }, features: [] },
+        currentPlan: { id: "free", label: "Conta gratuita", shortLabel: "Gratis", description: "", priceLabel: "Gratis", isPaid: false, isCurrent: true, comingSoon: false, entitlements: { dailyImages: 100, dailyCredits: 50, maxBatchFiles: 10, maxImageMb: 5, maxBatchTotalMb: 20 }, features: [] },
+        usage: { grantedCredits: 50, usedCredits: 0, remainingCredits: 50 },
         usageToday: { usedImages: 0, usedCredits: 0, remainingImages: 100, remainingCredits: 100 },
         billing: { status: "inactive", provider: null, billingEmail: null, currentPeriodStart: null, currentPeriodEnd: null, cancelAtPeriodEnd: false },
         waitlist: { joined: true, count: 2, joinedAt: null, canJoin: false },
@@ -33,7 +34,8 @@ describe("AuthControls", () => {
       })
       .mockResolvedValueOnce({
         viewer: { authenticated: true, user: { id: "u1", email: "jam@scanlume.com", name: "Jam", avatarUrl: null, emailVerified: true, emailVerifiedAt: null, hasPassword: false, authProviders: ["google"] } },
-        currentPlan: { id: "free", label: "Conta gratuita", shortLabel: "Gratis", description: "", priceLabel: "Gratis", isPaid: false, isCurrent: true, comingSoon: false, entitlements: { dailyImages: 100, dailyCredits: 100, maxBatchFiles: 10, maxImageMb: 5, maxBatchTotalMb: 20 }, features: [] },
+        currentPlan: { id: "free", label: "Conta gratuita", shortLabel: "Gratis", description: "", priceLabel: "Gratis", isPaid: false, isCurrent: true, comingSoon: false, entitlements: { dailyImages: 100, dailyCredits: 50, maxBatchFiles: 10, maxImageMb: 5, maxBatchTotalMb: 20 }, features: [] },
+        usage: { grantedCredits: 50, usedCredits: 3, remainingCredits: 47 },
         usageToday: { usedImages: 1, usedCredits: 3, remainingImages: 99, remainingCredits: 97 },
         billing: { status: "inactive", provider: null, billingEmail: null, currentPeriodStart: null, currentPeriodEnd: null, cancelAtPeriodEnd: false },
         waitlist: { joined: true, count: 2, joinedAt: null, canJoin: false },
@@ -43,12 +45,13 @@ describe("AuthControls", () => {
 
     render(<AuthControls />);
 
-    await screen.findByText("100/100 hoje");
+    await screen.findByText("50/50 creditos");
+    expect(screen.queryByText(/\/50 hoje/i)).not.toBeInTheDocument();
 
     await act(async () => {
       announceUsageRefresh();
     });
 
-    await waitFor(() => expect(screen.getByText("97/100 hoje")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("47/50 creditos")).toBeInTheDocument());
   });
 });

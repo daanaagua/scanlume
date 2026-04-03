@@ -465,7 +465,7 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
             const pageCount = item.pageCount ?? (await readPdfPageCount(item.file));
             const pdfSummary = buildPdfSelectionSummary({
               totalPages: pageCount,
-              remainingPages: limits?.limits.pdf.remainingPages ?? 5,
+              remainingCredits: limits?.usage.remainingCredits ?? 5,
               maxPagesPerDocument: limits?.limits.pdf.maxPagesPerDocument ?? 50,
             });
             const preparedPages = await buildPreparedPdfPages(item.file, pdfSummary.processablePages);
@@ -676,16 +676,10 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
   const maxImageMb = limits?.limits.maxImageMb ?? 5;
   const maxBatchTotalMb = limits?.limits.maxBatchTotalMb ?? 20;
   const maxBatchFiles = limits?.limits.maxBatchFiles ?? 10;
-  const remainingCreditsLabel = limits?.viewer.authenticated
-    ? `${limits.usage.remainingCredits} / ${limits.limits.dailyCredits}`
-    : `${limits?.limits.dailyImages ?? maxBatchFiles} imagens`;
-  const remainingImagesLabel = limits?.viewer.authenticated
-    ? `${limits.usage.remainingImages} / ${limits.limits.dailyImages}`
-    : `${maxBatchFiles} imagens`;
-  const remainingPdfPagesLabel = limits?.viewer.authenticated ? `${limits.limits.pdf.remainingPages} / ${limits.limits.pdf.dailyPageLimitLoggedIn}` : null;
+  const remainingCreditsLabel = `${limits?.usage.remainingCredits ?? 5} / ${limits?.limits.dailyCredits ?? 5}`;
   const statusFootnote = limits?.viewer.authenticated
-    ? `OCR simples = 1 credito • Texto formatado = 3 creditos • PDF desconta paginas da cota diaria • Atualizado apos cada OCR.`
-    : `OCR simples = 1 credito • Texto formatado = 3 creditos • Lote atual aceita ate ${maxBatchFiles} imagens.`;
+    ? `OCR simples = 1 credito • Texto formatado = 2 credits • PDF = 2 credits por pagina • O saldo total diminui apos cada OCR.`
+    : `Voce comeca com 5 credits anonimos. Entre para liberar 50 credits totais e continuar processando imagens e PDFs.`;
 
   return (
     <section className={`workspace-shell${priorityLayout ? " workspace-shell-priority" : ""}`}>
@@ -726,14 +720,15 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
                   </button>
                   <div className={`workspace-help-popover${isPricingHintOpen ? " is-open" : ""}`} role="tooltip">
                     <strong>Como calculamos o teste gratis</strong>
-                    <span>Limite diario: {brlFormatter.format(budgetLimit)}.</span>
+                    <span>Saldo atual: {remainingCreditsLabel} credits.</span>
                     <span>{SIMPLE_MODE_LABEL} consome 1 credito por imagem.</span>
-                    <span>{FORMATTED_MODE_LABEL} consome 3 creditos por imagem.</span>
+                    <span>{FORMATTED_MODE_LABEL} consome 2 credits por imagem.</span>
+                    <span>PDF consome 2 credits por pagina processada.</span>
                   </div>
                 </div>
               </div>
               <p>
-                Abra JPG, PNG e screenshots no navegador e escolha a saida que faz sentido para copiar, revisar ou baixar.
+                Abra JPG, PNG, screenshots ou um PDF e escolha a saida que faz sentido para copiar, revisar ou baixar usando o mesmo saldo de credits.
               </p>
             </div>
           </div>
@@ -846,7 +841,7 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
             <div className="login-promo">
               <div className="login-promo-copy">
                 <strong>Entre com email ou Google para transformar seu teste em uma conta gratuita</strong>
-                <small>Usuarios conectados recebem uma cota diaria maior e um espaco de conta proprio.</small>
+                <small>Usuarios conectados recebem 50 credits totais e acompanham o saldo direto na conta.</small>
               </div>
               <button type="button" className="solid-button" onClick={() => setIsAuthDialogOpen(true)}>
                 Entrar agora
@@ -869,19 +864,9 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
                 <small>{limits.plan.label}</small>
               </div>
               <div className="status-compact-card">
-                <span>{limits.viewer.authenticated ? "Creditos" : "Cota anonima"}</span>
+                <span>{limits.viewer.authenticated ? "Creditos" : "Creditos anonimos"}</span>
                 <strong>{remainingCreditsLabel}</strong>
               </div>
-              <div className="status-compact-card">
-                <span>{limits.viewer.authenticated ? "Imagens" : "Lote maximo"}</span>
-                <strong>{remainingImagesLabel}</strong>
-              </div>
-              {remainingPdfPagesLabel ? (
-                <div className="status-compact-card">
-                  <span>Paginas PDF</span>
-                  <strong>{remainingPdfPagesLabel}</strong>
-                </div>
-              ) : null}
               <p className="status-board-note">{statusFootnote}</p>
             </div>
           )}

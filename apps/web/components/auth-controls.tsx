@@ -108,8 +108,8 @@ export function AuthControls() {
     );
   }
 
-  const remainingCredits = account.usageToday.remainingCredits;
-  const dailyCredits = account.currentPlan.entitlements.dailyCredits;
+  const remainingCredits = account.usage.remainingCredits;
+  const grantedCredits = account.usage.grantedCredits;
   const waitlistTooltip = account.waitlist.joined
     ? `Voce ja esta na lista. Hoje temos ${account.waitlist.count} pessoa(s) aguardando o lancamento de abril.`
     : `Entre na lista de espera para receber aviso por email quando os planos pagos abrirem. Hoje temos ${account.waitlist.count} pessoa(s) na fila.`;
@@ -149,7 +149,7 @@ export function AuthControls() {
           <small>{account.currentPlan.label}</small>
         </span>
 
-        <span className="account-usage-pill">{remainingCredits}/{dailyCredits} hoje</span>
+        <span className="account-usage-pill">{remainingCredits}/{grantedCredits} creditos</span>
       </button>
 
       {isMenuOpen && (
@@ -162,11 +162,7 @@ export function AuthControls() {
           <div className="account-dropdown-stats">
             <div>
               <span>Creditos</span>
-              <strong>{account.usageToday.remainingCredits}/{account.currentPlan.entitlements.dailyCredits}</strong>
-            </div>
-            <div>
-              <span>Imagens</span>
-              <strong>{account.usageToday.remainingImages}/{account.currentPlan.entitlements.dailyImages}</strong>
+              <strong>{account.usage.remainingCredits}/{account.usage.grantedCredits}</strong>
             </div>
           </div>
 

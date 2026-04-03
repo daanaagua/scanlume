@@ -55,7 +55,7 @@ export function AccountPanel() {
       return null;
     }
 
-    return `${account.usageToday.remainingCredits}/${account.currentPlan.entitlements.dailyCredits} creditos disponiveis hoje`;
+    return `${account.usage.remainingCredits}/${account.usage.grantedCredits} creditos disponiveis no total`;
   }, [account]);
 
   async function handleJoinWaitlist() {
@@ -173,7 +173,7 @@ export function AccountPanel() {
         <p>
           {account.viewer.authenticated
             ? `Seu plano atual e ${account.currentPlan.label}. ${usageLabel ?? ""}`
-            : "Entre com email ou Google para transformar o uso atual em uma conta permanente do Scanlume."}
+            : "Entre com email ou Google para transformar os 5 creditos iniciais em uma conta gratuita com 50 creditos totais."}
         </p>
         {!account.viewer.authenticated && (
           <div className="hero-actions">
@@ -193,16 +193,16 @@ export function AccountPanel() {
         </article>
 
         <article className="account-card">
-          <span>Uso de hoje</span>
-          <strong>{account.usageToday.usedCredits} creditos usados</strong>
-          <p>{account.usageToday.remainingCredits} creditos ainda disponiveis hoje.</p>
-          <small>{account.usageToday.usedImages} imagem(ns) processada(s).</small>
+          <span>Saldo de creditos</span>
+          <strong>{account.usage.remainingCredits} creditos restantes</strong>
+          <p>{account.usage.usedCredits} creditos ja foram usados desde a criacao do saldo atual.</p>
+          <small>{account.usage.grantedCredits} creditos totais disponiveis neste plano.</small>
         </article>
 
         <article className="account-card">
           <span>Limites do plano</span>
-          <strong>{account.currentPlan.entitlements.dailyCredits} creditos / dia</strong>
-          <p>{account.currentPlan.entitlements.dailyImages} imagens por dia.</p>
+          <strong>{account.currentPlan.entitlements.dailyCredits} creditos totais</strong>
+          <p>OCR simples custa 1 credito, Texto formatado custa 2 e PDF custa 2 por pagina.</p>
           <small>{account.currentPlan.entitlements.maxBatchFiles} arquivos por lote.</small>
         </article>
 
@@ -295,7 +295,7 @@ export function AccountPanel() {
               ))}
             </ul>
             <div className="plan-card-meta">
-              <span>{plan.entitlements.dailyCredits} creditos/dia</span>
+              <span>{plan.entitlements.dailyCredits} creditos totais</span>
               <span>{plan.entitlements.maxBatchFiles} arquivos/lote</span>
             </div>
             <small>{plan.isCurrent ? "Plano atual" : plan.comingSoon ? "Lancamento futuro" : "Disponivel"}</small>

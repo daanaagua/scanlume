@@ -21,7 +21,7 @@ const authenticatedLimitsResponse = {
   },
   limits: {
     dailyImages: 100,
-    dailyCredits: 100,
+    dailyCredits: 50,
     maxImageMb: 5,
     maxBatchFiles: 10,
     maxBatchTotalMb: 20,
@@ -31,8 +31,8 @@ const authenticatedLimitsResponse = {
       maxFileMb: 15,
       maxPagesPerDocument: 50,
       requestPageLimitAnonymous: 5,
-      dailyPageLimitLoggedIn: 20,
-      remainingPages: 19,
+      dailyPageLimitLoggedIn: 25,
+      remainingPages: 25,
     },
   },
   budget: {
@@ -42,7 +42,7 @@ const authenticatedLimitsResponse = {
     usedImages: 0,
     usedCredits: 0,
     remainingImages: 100,
-    remainingCredits: 100,
+    remainingCredits: 50,
   },
   status: {
     softStopped: false,
@@ -82,11 +82,11 @@ describe("OcrWorkspace", () => {
     expect(input).toHaveAttribute("accept", "image/*,application/pdf");
   });
 
-  it("shows the authenticated PDF page quota in formatted mode", async () => {
+  it("shows unified total credits instead of a PDF page quota card", async () => {
     render(<OcrWorkspace defaultMode="formatted" priorityLayout />);
 
-    expect(await screen.findByText("Paginas PDF")).not.toBeNull();
-    expect(screen.getByText("19 / 20")).not.toBeNull();
-    expect(screen.getByText(/pdf desconta paginas da cota diaria/i)).not.toBeNull();
+    expect(await screen.findByText("50 / 50")).not.toBeNull();
+    expect(screen.getByText(/pdf = 2 credits por pagina/i)).not.toBeNull();
+    expect(screen.queryByText("Paginas PDF")).toBeNull();
   });
 });

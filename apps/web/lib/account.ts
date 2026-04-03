@@ -34,6 +34,11 @@ export type AccountResponse = {
     };
     features: string[];
   };
+  usage: {
+    grantedCredits: number;
+    usedCredits: number;
+    remainingCredits: number;
+  };
   usageToday: {
     usedImages: number;
     usedCredits: number;
