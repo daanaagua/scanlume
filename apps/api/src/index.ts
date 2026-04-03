@@ -82,6 +82,7 @@ import {
   getClientIp,
   persistUsageEvent,
   readBudgetState,
+  readCreditBalance,
   readNumber,
   readRateState,
   readUserDailyPdfUsage,
@@ -104,6 +105,11 @@ type AppBindings = {
 };
 
 type ViewerContext = {
+  balance: {
+    grantedCredits: number;
+    remainingCredits: number;
+    usedCredits: number;
+  };
   browserId: string;
   clientIp: string;
   currentPlan: AccountPlan;
@@ -1169,11 +1175,13 @@ async function resolveViewerContext(c: Context<AppBindings>, browserId?: string)
 
   if (user) {
     const usage = await readUserDailyUsage(c.env, user.id, date);
+    const balance = await readCreditBalance(c.env, { type: "user", key: user.id });
     const resolvedPlan = await resolveCurrentPlan(c.env, {
       type: "user",
       user,
     });
     return {
+      balance,
       type: "user",
       user,
       usage,
@@ -1189,12 +1197,14 @@ async function resolveViewerContext(c: Context<AppBindings>, browserId?: string)
   const resolvedBrowserId = browserId ?? "anonymous-browser";
   const rateKey = await sha256Hex(`${clientIp}:${resolvedBrowserId}`);
   const usage = await readRateState(c.env, rateKey, date);
+  const balance = await readCreditBalance(c.env, { type: "anonymous", key: rateKey });
   const resolvedPlan = await resolveCurrentPlan(c.env, {
     type: "anonymous",
     user: null,
   });
 
   return {
+    balance,
     type: "anonymous",
     user: null,
     usage,

@@ -51,6 +51,11 @@ export type AccountSnapshot = {
     authenticated: boolean;
     user: SessionViewer | null;
   };
+  usage: {
+    grantedCredits: number;
+    usedCredits: number;
+    remainingCredits: number;
+  };
   currentPlan: AccountPlan;
   usageToday: {
     usedImages: number;
@@ -92,6 +97,11 @@ type AccountViewerInput = {
     usedImages: number;
     usedCredits: number;
   };
+  balance: {
+    grantedCredits: number;
+    usedCredits: number;
+    remainingCredits: number;
+  };
 };
 
 export async function buildAccountSnapshot(env: WorkerEnv, viewer: AccountViewerInput): Promise<AccountSnapshot> {
@@ -110,6 +120,11 @@ export async function buildAccountSnapshot(env: WorkerEnv, viewer: AccountViewer
     viewer: {
       authenticated: viewer.type === "user",
       user: viewer.user,
+    },
+    usage: {
+      grantedCredits: viewer.balance.grantedCredits,
+      usedCredits: viewer.balance.usedCredits,
+      remainingCredits: viewer.balance.remainingCredits,
     },
     currentPlan,
     usageToday: {
