@@ -30,6 +30,11 @@ describe("AccountPanel", () => {
       currentPlan: { id: "free", label: "Conta gratuita", shortLabel: "Gratis", description: "Conta com 50 creditos totais.", priceLabel: "Gratis", isPaid: false, isCurrent: true, comingSoon: false, entitlements: { dailyImages: 100, dailyCredits: 50, maxBatchFiles: 10, maxImageMb: 5, maxBatchTotalMb: 20 }, features: [] },
       usage: { grantedCredits: 50, usedCredits: 0, remainingCredits: 50 },
       usageToday: { usedImages: 0, usedCredits: 0, remainingImages: 100, remainingCredits: 50 },
+      api: {
+        remainingCredits: 40000,
+        effectiveTier: "growth",
+        keys: [{ id: "key_1", label: "build-bot", lastFour: "1a2b", lastUsedAt: null, createdAt: "2026-04-03T00:00:00.000Z" }],
+      },
       billing: { status: "inactive", provider: null, billingEmail: null, currentPeriodStart: null, currentPeriodEnd: null, cancelAtPeriodEnd: false },
       waitlist: { joined: false, count: 2, joinedAt: null, canJoin: true },
       availablePlans: [],
@@ -39,6 +44,8 @@ describe("AccountPanel", () => {
     render(<AccountPanel />);
 
     expect(await screen.findByText(/50 creditos restantes/i)).toBeInTheDocument();
+    expect(screen.getByText(/API credits restantes/i)).toBeInTheDocument();
+    expect(screen.getByText(/40.000/i)).toBeInTheDocument();
     expect(screen.queryByText(/uso de hoje/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/creditos \/ dia/i)).not.toBeInTheDocument();
   });

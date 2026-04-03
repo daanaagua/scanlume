@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { ApiKeyPanel } from "@/components/api-key-panel";
 import { AuthDialog } from "@/components/auth-dialog";
 import { getOrCreateBrowserId } from "@/lib/browser-id";
 import { requestPasswordReset, resendVerificationEmail } from "@/lib/auth";
@@ -212,6 +213,13 @@ export function AccountPanel() {
           <p>{account.notes.subscriptions}</p>
           <small>{account.notes.replyWindow}</small>
         </article>
+
+        <ApiKeyPanel
+          api={account.api}
+          onCreateKey={() => undefined}
+          onRegenerateKey={() => undefined}
+          onRevokeKey={() => undefined}
+        />
 
         {account.viewer.authenticated && account.viewer.user && (
           <article className="account-card">

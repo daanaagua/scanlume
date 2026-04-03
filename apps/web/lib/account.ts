@@ -81,6 +81,23 @@ export type AccountResponse = {
     replyWindow: string;
     subscriptions: string;
   };
+  api: {
+    remainingCredits: number;
+    effectiveTier: string | null;
+    keys: Array<{
+      id: string;
+      label: string;
+      lastFour: string;
+      lastUsedAt: string | null;
+      createdAt: string;
+    }>;
+    packs?: Array<{
+      id: string;
+      tier: string;
+      creditsRemaining: number;
+      expiresAt: string;
+    }>;
+  };
 };
 
 export async function fetchAccount(browserId?: string) {
