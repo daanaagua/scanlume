@@ -3,6 +3,13 @@ export interface WorkerEnv {
   APP_BASE_URL?: string;
   WEB_ORIGIN?: string;
   COOKIE_DOMAIN?: string;
+  BILLING_PROVIDER?: string;
+  BILLING_SUCCESS_URL?: string;
+  BILLING_CANCEL_URL?: string;
+  BILLING_WEBHOOK_SECRET?: string;
+  CREEM_API_KEY?: string;
+  CREEM_API_BASE?: string;
+  CREEM_ENV?: string;
   ARK_API_BASE: string;
   ARK_MODEL: string;
   ARK_API_KEY: string;
@@ -73,11 +80,67 @@ type StoredCreditBalance = {
   updatedAt: string;
 };
 
+export type BillingPurchaseKind = "web_subscription" | "api_pack";
+
+export interface BillingPurchaseState {
+  id: string;
+  userId: string;
+  productId: string;
+  kind: BillingPurchaseKind;
+  provider: string;
+  providerSessionId: string | null;
+  providerEventId: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WebSubscriptionTermState {
+  id: string;
+  userId: string;
+  planId: string;
+  billingInterval: "month" | "year";
+  creditsTotal: number;
+  creditsRemaining: number;
+  startsAt: string;
+  endsAt: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserSubscriptionState {
+  userId: string;
+  planId: string;
+  status: string;
+  provider: string | null;
+  billingEmail: string | null;
+  currentPeriodStart: string | null;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: number;
+}
+
+export type ApiPackTier = "starter" | "growth" | "scale";
+
+export interface ApiCreditPackState {
+  id: string;
+  userId: string;
+  tier: ApiPackTier;
+  creditsTotal: number;
+  creditsRemaining: number;
+  purchasedAt: string;
+  expiresAt: string;
+}
+
 const memoryRates = new Map<string, RateState>();
 const memoryBudgets = new Map<string, BudgetState>();
 const memoryUserUsage = new Map<string, UserDailyUsageState>();
 const memoryUserPdfUsage = new Map<string, UserDailyPdfUsageState>();
 const memoryCreditBalances = new Map<string, StoredCreditBalance>();
+const memoryBillingPurchases = new Map<string, BillingPurchaseState>();
+const memoryWebSubscriptionTerms = new Map<string, WebSubscriptionTermState>();
+const memoryUserSubscriptions = new Map<string, UserSubscriptionState>();
+const memoryApiCreditPacks = new Map<string, ApiCreditPackState>();
 
 export function todayKey() {
   return new Date().toISOString().slice(0, 10);
@@ -375,6 +438,257 @@ export async function tryConsumeCredits(
     ok: true,
     remainingCredits: Math.max(updated.grantedCredits - updated.usedCredits, 0),
   };
+}
+
+export async function writeBillingPurchase(env: WorkerEnv, purchase: BillingPurchaseState) {
+  if (env.DB) {
+    await env.DB.prepare(
+      `INSERT INTO billing_purchases (
+        id, user_id, product_id, kind, provider, provider_session_id, provider_event_id, status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        product_id = excluded.product_id,
+        kind = excluded.kind,
+        provider = excluded.provider,
+        provider_session_id = excluded.provider_session_id,
+        provider_event_id = excluded.provider_event_id,
+        status = excluded.status,
+        updated_at = excluded.updated_at;`,
+    )
+      .bind(
+        purchase.id,
+        purchase.userId,
+        purchase.productId,
+        purchase.kind,
+        purchase.provider,
+        purchase.providerSessionId,
+        purchase.providerEventId,
+        purchase.status,
+        purchase.createdAt,
+        purchase.updatedAt,
+      )
+      .run();
+  }
+
+  memoryBillingPurchases.set(purchase.id, purchase);
+}
+
+export async function writeWebSubscriptionTerm(env: WorkerEnv, term: WebSubscriptionTermState) {
+  if (env.DB) {
+    await env.DB.prepare(
+      `INSERT INTO web_subscription_terms (
+        id, user_id, plan_id, billing_interval, credits_total, credits_remaining, starts_at, ends_at, status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        plan_id = excluded.plan_id,
+        billing_interval = excluded.billing_interval,
+        credits_total = excluded.credits_total,
+        credits_remaining = excluded.credits_remaining,
+        starts_at = excluded.starts_at,
+        ends_at = excluded.ends_at,
+        status = excluded.status,
+        updated_at = excluded.updated_at;`,
+    )
+      .bind(
+        term.id,
+        term.userId,
+        term.planId,
+        term.billingInterval,
+        term.creditsTotal,
+        term.creditsRemaining,
+        term.startsAt,
+        term.endsAt,
+        term.status,
+        term.createdAt,
+        term.updatedAt,
+      )
+      .run();
+  }
+
+  memoryWebSubscriptionTerms.set(term.id, term);
+}
+
+export async function readActiveWebSubscriptionTerm(env: WorkerEnv, userId: string, now = new Date().toISOString()) {
+  const memoryTerms = [...memoryWebSubscriptionTerms.values()]
+    .filter((term) => term.userId === userId && term.status === "active" && term.endsAt > now)
+    .sort((left, right) => left.endsAt.localeCompare(right.endsAt));
+
+  if (env.DB) {
+    const row = await env.DB.prepare(
+      `SELECT id, user_id, plan_id, billing_interval, credits_total, credits_remaining, starts_at, ends_at, status, created_at, updated_at
+       FROM web_subscription_terms
+       WHERE user_id = ? AND status = 'active' AND ends_at > ?
+       ORDER BY ends_at DESC
+       LIMIT 1;`,
+    )
+      .bind(userId, now)
+      .first<{
+        id: string;
+        user_id: string;
+        plan_id: string;
+        billing_interval: "month" | "year";
+        credits_total: number;
+        credits_remaining: number;
+        starts_at: string;
+        ends_at: string;
+        status: string;
+        created_at: string;
+        updated_at: string;
+      }>();
+
+    if (row) {
+      const term = {
+        id: row.id,
+        userId: row.user_id,
+        planId: row.plan_id,
+        billingInterval: row.billing_interval,
+        creditsTotal: row.credits_total,
+        creditsRemaining: row.credits_remaining,
+        startsAt: row.starts_at,
+        endsAt: row.ends_at,
+        status: row.status,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      } satisfies WebSubscriptionTermState;
+      memoryWebSubscriptionTerms.set(term.id, term);
+      return term;
+    }
+  }
+
+  return memoryTerms.at(-1) ?? null;
+}
+
+export async function writeUserSubscriptionState(env: WorkerEnv, subscription: UserSubscriptionState) {
+  if (env.DB) {
+    await env.DB.prepare(
+      `INSERT INTO user_subscriptions (
+        user_id, plan_id, status, provider, billing_email, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id) DO UPDATE SET
+        plan_id = excluded.plan_id,
+        status = excluded.status,
+        provider = excluded.provider,
+        billing_email = excluded.billing_email,
+        current_period_start = excluded.current_period_start,
+        current_period_end = excluded.current_period_end,
+        cancel_at_period_end = excluded.cancel_at_period_end,
+        updated_at = excluded.updated_at;`,
+    )
+      .bind(
+        subscription.userId,
+        subscription.planId,
+        subscription.status,
+        subscription.provider,
+        subscription.billingEmail,
+        subscription.currentPeriodStart,
+        subscription.currentPeriodEnd,
+        subscription.cancelAtPeriodEnd,
+        subscription.currentPeriodStart ?? new Date().toISOString(),
+        subscription.currentPeriodEnd ?? new Date().toISOString(),
+      )
+      .run();
+  }
+
+  memoryUserSubscriptions.set(subscription.userId, subscription);
+}
+
+export async function readUserSubscriptionState(env: WorkerEnv, userId: string) {
+  if (env.DB) {
+    const row = await env.DB.prepare(
+      `SELECT plan_id, status, provider, billing_email, current_period_start, current_period_end, cancel_at_period_end
+       FROM user_subscriptions
+       WHERE user_id = ?
+       LIMIT 1;`,
+    )
+      .bind(userId)
+      .first<{
+        plan_id: string;
+        status: string;
+        provider: string | null;
+        billing_email: string | null;
+        current_period_start: string | null;
+        current_period_end: string | null;
+        cancel_at_period_end: number;
+      }>();
+
+    if (row) {
+      const subscription = {
+        userId,
+        planId: row.plan_id,
+        status: row.status,
+        provider: row.provider,
+        billingEmail: row.billing_email,
+        currentPeriodStart: row.current_period_start,
+        currentPeriodEnd: row.current_period_end,
+        cancelAtPeriodEnd: row.cancel_at_period_end ?? 0,
+      } satisfies UserSubscriptionState;
+      memoryUserSubscriptions.set(userId, subscription);
+      return subscription;
+    }
+  }
+
+  return memoryUserSubscriptions.get(userId) ?? null;
+}
+
+export async function writeApiCreditPack(env: WorkerEnv, pack: ApiCreditPackState) {
+  if (env.DB) {
+    await env.DB.prepare(
+      `INSERT INTO api_credit_packs (
+        id, user_id, tier, credits_total, credits_remaining, purchased_at, expires_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        tier = excluded.tier,
+        credits_total = excluded.credits_total,
+        credits_remaining = excluded.credits_remaining,
+        purchased_at = excluded.purchased_at,
+        expires_at = excluded.expires_at;`,
+    )
+      .bind(pack.id, pack.userId, pack.tier, pack.creditsTotal, pack.creditsRemaining, pack.purchasedAt, pack.expiresAt)
+      .run();
+  }
+
+  memoryApiCreditPacks.set(pack.id, pack);
+}
+
+export async function listApiCreditPacks(env: WorkerEnv, userId: string) {
+  const memoryPacks = [...memoryApiCreditPacks.values()].filter((pack) => pack.userId === userId);
+
+  if (env.DB) {
+    const { results } = await env.DB.prepare(
+      `SELECT id, user_id, tier, credits_total, credits_remaining, purchased_at, expires_at
+       FROM api_credit_packs
+       WHERE user_id = ?
+       ORDER BY expires_at ASC;`,
+    )
+      .bind(userId)
+      .all<{
+        id: string;
+        user_id: string;
+        tier: ApiPackTier;
+        credits_total: number;
+        credits_remaining: number;
+        purchased_at: string;
+        expires_at: string;
+      }>();
+
+    if (results.length > 0) {
+      const packs = results.map((row) => ({
+        id: row.id,
+        userId: row.user_id,
+        tier: row.tier,
+        creditsTotal: row.credits_total,
+        creditsRemaining: row.credits_remaining,
+        purchasedAt: row.purchased_at,
+        expiresAt: row.expires_at,
+      } satisfies ApiCreditPackState));
+      for (const pack of packs) {
+        memoryApiCreditPacks.set(pack.id, pack);
+      }
+      return packs;
+    }
+  }
+
+  return memoryPacks.sort((left, right) => left.expiresAt.localeCompare(right.expiresAt));
 }
 
 export async function persistUsageEvent(

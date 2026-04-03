@@ -1,5 +1,5 @@
 import { getLoggedInDailyCreditLimit, getLoggedInDailyImageLimit, type SessionViewer } from "./auth";
-import { readNumber, type WorkerEnv } from "./store";
+import { readNumber, readUserSubscriptionState, type WorkerEnv } from "./store";
 
 export type AccountPlanId = "anonymous" | "free" | "starter" | "pro" | "business";
 export type BillingStatus = "inactive" | "active" | "trialing" | "past_due" | "canceled";
@@ -309,22 +309,20 @@ function getPlanCatalog(env: WorkerEnv) {
 }
 
 async function readUserSubscription(env: WorkerEnv, userId: string) {
-  if (!env.DB) {
+  const state = await readUserSubscriptionState(env, userId);
+  if (!state) {
     return null;
   }
 
-  try {
-    return await env.DB.prepare(
-      `SELECT plan_id, status, provider, billing_email, current_period_start, current_period_end, cancel_at_period_end
-       FROM user_subscriptions
-       WHERE user_id = ?
-       LIMIT 1;`,
-    )
-      .bind(userId)
-      .first<SubscriptionRow>();
-  } catch {
-    return null;
-  }
+  return {
+    plan_id: state.planId,
+    status: state.status,
+    provider: state.provider,
+    billing_email: state.billingEmail,
+    current_period_start: state.currentPeriodStart,
+    current_period_end: state.currentPeriodEnd,
+    cancel_at_period_end: state.cancelAtPeriodEnd,
+  } satisfies SubscriptionRow;
 }
 
 function resolveUserPlan(
