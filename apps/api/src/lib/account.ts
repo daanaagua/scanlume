@@ -1,7 +1,7 @@
 import { getLoggedInDailyCreditLimit, getLoggedInDailyImageLimit, type SessionViewer } from "./auth";
 import { readNumber, type WorkerEnv } from "./store";
 
-export type AccountPlanId = "anonymous" | "free" | "starter" | "pro";
+export type AccountPlanId = "anonymous" | "free" | "starter" | "pro" | "business";
 export type BillingStatus = "inactive" | "active" | "trialing" | "past_due" | "canceled";
 
 export type AccountPlan = {
@@ -139,10 +139,11 @@ export async function buildAccountSnapshot(env: WorkerEnv, viewer: AccountViewer
       withCurrentFlag(catalog.free, currentPlan.id === "free"),
       withCurrentFlag(catalog.starter, currentPlan.id === "starter"),
       withCurrentFlag(catalog.pro, currentPlan.id === "pro"),
+      withCurrentFlag(catalog.business, currentPlan.id === "business"),
     ],
     notes: {
       replyWindow: "Respondemos em ate 1 dia.",
-      subscriptions: "Assinaturas pagas e cobranca recorrente entram na proxima fase do produto.",
+      subscriptions: "Planos anuais aprovados: Starter $48 / ano (100.000 creditos), Pro $82 / ano (240.000 creditos), Business $228 / ano (800.000 creditos).",
     },
   };
 }
@@ -236,7 +237,7 @@ function getPlanCatalog(env: WorkerEnv) {
       id: "free",
       label: "Conta gratuita",
       shortLabel: "Gratis",
-      description: "Conta com limites diarios maiores para uso recorrente.",
+      description: "Conta gratuita com 50 creditos totais para uso recorrente em OCR simples, formatado e PDF.",
       priceLabel: "Gratis",
       isPaid: false,
       isCurrent: false,
@@ -248,43 +249,61 @@ function getPlanCatalog(env: WorkerEnv) {
         maxImageMb,
         maxBatchTotalMb,
       },
-      features: ["Login com Google", "Mais creditos diarios", "Historico de conta"],
+      features: ["50 creditos totais", "Login com Google", "Historico de conta"],
     } satisfies AccountPlan,
     starter: {
       id: "starter",
-      label: "Inicial",
-      shortLabel: "Inicial",
-      description: "Primeiro plano pago para lotes maiores e uso mais frequente.",
-      priceLabel: "Em breve",
+      label: "Starter",
+      shortLabel: "Starter",
+      description: "Primeiro plano pago para quem precisa mais creditos e lotes maiores sem sair do fluxo self-serve.",
+      priceLabel: "$5 / mes",
       isPaid: true,
       isCurrent: false,
-      comingSoon: true,
+      comingSoon: false,
       entitlements: {
-        dailyImages: 500,
-        dailyCredits: 500,
+        dailyImages: 8000,
+        dailyCredits: 8000,
         maxBatchFiles: 30,
-        maxImageMb,
-        maxBatchTotalMb: 60,
+        maxImageMb: 20,
+        maxBatchTotalMb: 40,
       },
-      features: ["Lotes maiores", "Prioridade futura", "Base para cobranca recorrente"],
+      features: ["8.000 creditos", "30 arquivos por lote", "20 MB por imagem", "40 MB por lote"],
     } satisfies AccountPlan,
     pro: {
       id: "pro",
       label: "Pro",
       shortLabel: "Pro",
-      description: "Preparado para operacao pesada e assinaturas futuras.",
-      priceLabel: "Em breve",
+      description: "Plano recomendado para uso serio com mais creditos, lotes maiores e melhor custo por rotina recorrente.",
+      priceLabel: "$9 / mes",
       isPaid: true,
       isCurrent: false,
-      comingSoon: true,
+      comingSoon: false,
       entitlements: {
-        dailyImages: 2000,
-        dailyCredits: 2000,
+        dailyImages: 24000,
+        dailyCredits: 24000,
+        maxBatchFiles: 50,
+        maxImageMb: 20,
+        maxBatchTotalMb: 80,
+      },
+      features: ["24.000 creditos", "50 arquivos por lote", "20 MB por imagem", "80 MB por lote", "Plano recomendado"],
+    } satisfies AccountPlan,
+    business: {
+      id: "business",
+      label: "Business",
+      shortLabel: "Business",
+      description: "Mais creditos, lotes amplos e suporte prioritario para equipes que operam OCR em alta frequencia.",
+      priceLabel: "$24 / mes",
+      isPaid: true,
+      isCurrent: false,
+      comingSoon: false,
+      entitlements: {
+        dailyImages: 60000,
+        dailyCredits: 60000,
         maxBatchFiles: 80,
-        maxImageMb,
+        maxImageMb: 30,
         maxBatchTotalMb: 120,
       },
-      features: ["Uso intenso", "Base para equipe", "Suporte comercial futuro"],
+      features: ["60.000 creditos", "80 arquivos por lote", "30 MB por imagem", "120 MB por lote", "Suporte prioritario"],
     } satisfies AccountPlan,
   };
 }
@@ -324,7 +343,7 @@ function resolveUserPlan(
 }
 
 function normalizePlanId(value: string | null | undefined): AccountPlanId {
-  if (value === "starter" || value === "pro" || value === "free") {
+  if (value === "starter" || value === "pro" || value === "business" || value === "free") {
     return value;
   }
 
