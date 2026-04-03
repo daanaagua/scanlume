@@ -85,6 +85,7 @@ import {
   readCreditBalance,
   readNumber,
   readRateState,
+  tryConsumeCredits,
   readUserDailyPdfUsage,
   readUserDailyUsage,
   sha256Hex,
@@ -643,17 +644,13 @@ app.post("/v1/ocr", async (c) => {
   const date = todayKey();
   const budgetState = await readBudgetState(c.env, date);
 
-  const requestedCredits = mode === "formatted" ? 3 : 1;
+  const requestedCredits = mode === "formatted" ? 2 : 1;
   const softBudgetRmb = readNumber(c.env.SOFT_BUDGET_RMB, 18);
   const hardBudgetRmb = readNumber(c.env.HARD_BUDGET_RMB, 20);
   const preflightEstimate = estimatePreflightCost(mode, image.size);
 
-  if (viewer.usage.usedImages + 1 > viewer.dailyImageLimit) {
-    return c.json({ error: "Daily image limit reached.", code: "daily_image_limit" }, 429);
-  }
-
-  if (viewer.usage.usedCredits + requestedCredits > viewer.dailyCreditLimit) {
-    return c.json({ error: "Daily credits exhausted.", code: "daily_credit_limit" }, 429);
+  if (viewer.balance.remainingCredits < requestedCredits) {
+    return c.json({ error: "Insufficient credits.", code: "credit_limit" }, 429);
   }
 
   if (budgetState.totalCostRmb >= hardBudgetRmb) {
@@ -679,6 +676,18 @@ app.post("/v1/ocr", async (c) => {
   }
 
   const actualCost = calcCost(result.usage);
+  const creditActor = viewer.type === "user" && viewer.user
+    ? { type: "user" as const, key: viewer.user.id }
+    : { type: "anonymous" as const, key: viewer.rateKey ?? "anonymous-browser" };
+  const creditSettlement = await tryConsumeCredits(c.env, {
+    actor: creditActor,
+    amount: requestedCredits,
+    now: new Date().toISOString(),
+  });
+  if (!creditSettlement.ok) {
+    return c.json({ error: "Insufficient credits.", code: "credit_limit" }, 429);
+  }
+  const nextBalance = await readCreditBalance(c.env, creditActor);
   const nextUsageState = {
     usedImages: viewer.usage.usedImages + 1,
     usedCredits: viewer.usage.usedCredits + requestedCredits,
@@ -736,12 +745,12 @@ app.post("/v1/ocr", async (c) => {
     },
     limits: {
       remainingImages: Math.max(viewer.dailyImageLimit - nextUsageState.usedImages, 0),
-      remainingCredits: Math.max(viewer.dailyCreditLimit - nextUsageState.usedCredits, 0),
+      remainingCredits: nextBalance.remainingCredits,
       softBudgetReached: nextBudgetState.totalCostRmb >= softBudgetRmb,
       hardBudgetReached: nextBudgetState.totalCostRmb >= hardBudgetRmb,
       totalBudgetRmb: nextBudgetState.totalCostRmb,
       dailyImageLimit: viewer.dailyImageLimit,
-      dailyCreditLimit: viewer.dailyCreditLimit,
+      dailyCreditLimit: nextBalance.grantedCredits,
     },
   });
 });
