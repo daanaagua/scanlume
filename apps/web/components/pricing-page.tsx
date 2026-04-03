@@ -9,7 +9,7 @@ import {
   BILLING_DISCLOSURES,
   CREDIT_EXPLAINER,
   WEB_PRICING,
-} from "../../api/src/lib/api-docs";
+} from "@/lib/pricing";
 import { CodeExampleTabs } from "@/components/code-example-tabs";
 import { createBillingCheckout } from "@/lib/account";
 

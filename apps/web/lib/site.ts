@@ -5,7 +5,7 @@ export const SITE_URL = "https://www.scanlume.com";
 export const SOCIAL_IMAGE_PATH = "/opengraph-image.png";
 export const SOCIAL_IMAGE_ALT = "Previa da pagina inicial do Scanlume com OCR simples e texto formatado em pt-BR";
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8787";
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://api.scanlume.com";
 export const OCR_WORKSPACE_ID = "ocr-workspace";
 export const SIMPLE_MODE_LABEL = "OCR simples";
 export const FORMATTED_MODE_LABEL = "Texto formatado";

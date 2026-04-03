@@ -1,8 +1,8 @@
 import Link from "next/link";
 
 import { CodeExampleTabs } from "@/components/code-example-tabs";
+import { API_CODE_EXAMPLES } from "@/lib/pricing";
 import { buildMetadata } from "@/lib/site";
-import { API_CODE_EXAMPLES } from "../../../api/src/lib/api-docs";
 
 export const metadata = buildMetadata({
   title: "API do Scanlume",
