@@ -91,6 +91,9 @@ export default function Home() {
               <Link href="/imagem-para-word" className="ghost-button large-button">
                 Ver modo formatado
               </Link>
+              <Link href="/precos" className="ghost-button large-button">
+                Ver planos
+              </Link>
             </div>
           </div>
 
