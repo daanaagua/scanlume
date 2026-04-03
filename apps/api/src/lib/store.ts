@@ -143,6 +143,17 @@ export interface ApiJobState {
   updatedAt: string;
 }
 
+export interface ApiKeyState {
+  id: string;
+  userId: string;
+  label: string;
+  keyHash: string;
+  lastFour: string;
+  lastUsedAt: string | null;
+  revokedAt: string | null;
+  createdAt: string;
+}
+
 const memoryRates = new Map<string, RateState>();
 const memoryBudgets = new Map<string, BudgetState>();
 const memoryUserUsage = new Map<string, UserDailyUsageState>();
@@ -153,6 +164,7 @@ const memoryWebSubscriptionTerms = new Map<string, WebSubscriptionTermState>();
 const memoryUserSubscriptions = new Map<string, UserSubscriptionState>();
 const memoryApiCreditPacks = new Map<string, ApiCreditPackState>();
 const memoryApiJobs = new Map<string, ApiJobState>();
+const memoryApiKeys = new Map<string, ApiKeyState>();
 
 export function todayKey() {
   return new Date().toISOString().slice(0, 10);
@@ -701,6 +713,108 @@ export async function listApiCreditPacks(env: WorkerEnv, userId: string) {
   }
 
   return memoryPacks.sort((left, right) => left.expiresAt.localeCompare(right.expiresAt));
+}
+
+export async function writeApiKey(env: WorkerEnv, key: ApiKeyState) {
+  if (env.DB) {
+    await env.DB.prepare(
+      `INSERT INTO api_keys (
+        id, user_id, label, key_hash, last_four, last_used_at, revoked_at, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        label = excluded.label,
+        key_hash = excluded.key_hash,
+        last_four = excluded.last_four,
+        last_used_at = excluded.last_used_at,
+        revoked_at = excluded.revoked_at;`,
+    )
+      .bind(key.id, key.userId, key.label, key.keyHash, key.lastFour, key.lastUsedAt, key.revokedAt, key.createdAt)
+      .run();
+  }
+
+  memoryApiKeys.set(key.id, key);
+}
+
+export async function listApiKeys(env: WorkerEnv, userId: string) {
+  const memoryKeys = [...memoryApiKeys.values()].filter((key) => key.userId === userId).sort((left, right) => left.createdAt.localeCompare(right.createdAt));
+
+  if (env.DB) {
+    const { results } = await env.DB.prepare(
+      `SELECT id, user_id, label, key_hash, last_four, last_used_at, revoked_at, created_at
+       FROM api_keys
+       WHERE user_id = ?
+       ORDER BY created_at ASC;`,
+    )
+      .bind(userId)
+      .all<{
+        id: string;
+        user_id: string;
+        label: string;
+        key_hash: string;
+        last_four: string;
+        last_used_at: string | null;
+        revoked_at: string | null;
+        created_at: string;
+      }>();
+
+    if (results.length > 0) {
+      const keys = results.map((row) => ({
+        id: row.id,
+        userId: row.user_id,
+        label: row.label,
+        keyHash: row.key_hash,
+        lastFour: row.last_four,
+        lastUsedAt: row.last_used_at,
+        revokedAt: row.revoked_at,
+        createdAt: row.created_at,
+      } satisfies ApiKeyState));
+      for (const key of keys) {
+        memoryApiKeys.set(key.id, key);
+      }
+      return keys;
+    }
+  }
+
+  return memoryKeys;
+}
+
+export async function readApiKeyByHash(env: WorkerEnv, keyHash: string) {
+  if (env.DB) {
+    const row = await env.DB.prepare(
+      `SELECT id, user_id, label, key_hash, last_four, last_used_at, revoked_at, created_at
+       FROM api_keys
+       WHERE key_hash = ?
+       LIMIT 1;`,
+    )
+      .bind(keyHash)
+      .first<{
+        id: string;
+        user_id: string;
+        label: string;
+        key_hash: string;
+        last_four: string;
+        last_used_at: string | null;
+        revoked_at: string | null;
+        created_at: string;
+      }>();
+
+    if (row) {
+      const key = {
+        id: row.id,
+        userId: row.user_id,
+        label: row.label,
+        keyHash: row.key_hash,
+        lastFour: row.last_four,
+        lastUsedAt: row.last_used_at,
+        revokedAt: row.revoked_at,
+        createdAt: row.created_at,
+      } satisfies ApiKeyState;
+      memoryApiKeys.set(key.id, key);
+      return key;
+    }
+  }
+
+  return [...memoryApiKeys.values()].find((key) => key.keyHash === keyHash) ?? null;
 }
 
 export async function writeApiJob(env: WorkerEnv, job: ApiJobState) {
