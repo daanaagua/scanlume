@@ -28,6 +28,11 @@ export function SiteHeader() {
         </nav>
 
         <div className="header-actions">
+          <Link href="/precos" className="header-price-tag" aria-label="Ver precos do Scanlume, desde $5 por mes">
+            <span className="header-price-tag-kicker">Planos</span>
+            <strong>Desde $5</strong>
+            <small>Ver precos</small>
+          </Link>
           <AuthControls />
         </div>
       </div>

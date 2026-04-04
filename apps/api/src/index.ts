@@ -4,7 +4,7 @@ import { cors } from "hono/cors";
 import { buildAccountSnapshot, joinWaitlist, resolveCurrentPlan, type AccountPlan } from "./lib/account";
 import { authenticateApiKey, checkApiRateLimit, createApiKey, regenerateApiKey } from "./lib/api-auth";
 import { consumeApiCredits, readApiBalance } from "./lib/api-usage";
-import { createCheckoutSession, handleBillingWebhook } from "./lib/billing";
+import { createCheckoutSession, handleBillingWebhook, parseCreemWebhookEvent, verifyBillingWebhookSignature } from "./lib/billing";
 import {
   authenticatePasswordViewer,
   buildGoogleAuthorizationUrl,
@@ -254,13 +254,40 @@ app.post("/v1/billing/checkout", async (c) => {
   const session = await createCheckoutSession(c.env, {
     userId: user.id,
     product: payload.product as never,
-  });
+  }).catch((error) => ({ error }));
+
+  if ("error" in session) {
+    return c.json({ error: session.error instanceof Error ? session.error.message : "Checkout creation failed." }, 502);
+  }
 
   return c.json(session, 201);
 });
 
 app.post("/v1/billing/webhook", async (c) => {
-  const payload = await c.req.json().catch(() => null) as {
+  const rawPayload = await c.req.text();
+  const creemSignature = c.req.header("creem-signature");
+
+  if (creemSignature) {
+    if (!c.env.BILLING_WEBHOOK_SECRET) {
+      return c.json({ error: "Missing BILLING_WEBHOOK_SECRET.", code: "billing_webhook_not_configured" }, 500);
+    }
+
+    const verified = await verifyBillingWebhookSignature(rawPayload, c.env.BILLING_WEBHOOK_SECRET, creemSignature);
+    if (!verified) {
+      return c.json({ error: "Invalid webhook signature.", code: "billing_webhook_signature_invalid" }, 401);
+    }
+
+    const creemPayload = JSON.parse(rawPayload) as unknown;
+    const event = parseCreemWebhookEvent(c.env, creemPayload);
+    if (!event) {
+      return c.json({ ok: true, ignored: true });
+    }
+
+    await handleBillingWebhook(c.env, event);
+    return c.json({ ok: true });
+  }
+
+  const payload = JSON.parse(rawPayload) as {
     id?: string;
     provider?: string;
     type?: string;

@@ -11,12 +11,16 @@ export function AuthDialog({
   open,
   onClose,
   defaultMode = "login",
+  googleRedirectTo,
   onSuccess,
+  reloadOnSuccess = true,
 }: {
   open: boolean;
   onClose: () => void;
   defaultMode?: AuthDialogMode;
+  googleRedirectTo?: string;
   onSuccess?: () => void;
+  reloadOnSuccess?: boolean;
 }) {
   const [mode, setMode] = useState<AuthDialogMode>(defaultMode);
   const [name, setName] = useState("");
@@ -71,7 +75,9 @@ export function AuthDialog({
         await loginWithPassword({ email, password });
         onSuccess?.();
         onClose();
-        window.location.reload();
+        if (reloadOnSuccess) {
+          window.location.reload();
+        }
       } else {
         const result = await registerWithPassword({ name, email, password });
         setNotice(
@@ -90,7 +96,7 @@ export function AuthDialog({
   }
 
   function handleGoogleClick() {
-    startGoogleLogin();
+    startGoogleLogin(googleRedirectTo);
   }
 
   return (

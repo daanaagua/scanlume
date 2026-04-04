@@ -1,13 +1,43 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { ApiKeyPanel } from "@/components/api-key-panel";
 import { AuthDialog } from "@/components/auth-dialog";
 import { getOrCreateBrowserId } from "@/lib/browser-id";
 import { requestPasswordReset, resendVerificationEmail } from "@/lib/auth";
-import { createApiKey, fetchAccount, joinWaitlist, regenerateApiKey, revokeApiKey, type AccountResponse } from "@/lib/account";
+import { createApiKey, createBillingCheckout, fetchAccount, joinWaitlist, regenerateApiKey, revokeApiKey, type AccountResponse } from "@/lib/account";
+import { clearPurchaseIntent, readPurchaseIntent, savePurchaseIntent, type PurchaseIntent } from "@/lib/purchase-intent";
 import { subscribeUsageRefresh } from "@/lib/usage-sync";
+
+const PURCHASE_PRODUCTS = {
+  api_starter: { label: "API Starter", kind: "api", tier: "starter" },
+  api_growth: { label: "API Growth", kind: "api", tier: "growth" },
+  api_scale: { label: "API Scale", kind: "api", tier: "scale" },
+  web_starter_monthly: { label: "Starter mensal", kind: "web", planId: "starter" },
+  web_pro_monthly: { label: "Pro mensal", kind: "web", planId: "pro" },
+  web_business_monthly: { label: "Business mensal", kind: "web", planId: "business" },
+  web_starter_yearly: { label: "Starter anual", kind: "web", planId: "starter" },
+  web_pro_yearly: { label: "Pro anual", kind: "web", planId: "pro" },
+  web_business_yearly: { label: "Business anual", kind: "web", planId: "business" },
+} as const;
+
+type PurchaseProductId = keyof typeof PURCHASE_PRODUCTS;
+
+function isPurchaseProductId(value: string | null): value is PurchaseProductId {
+  return !!value && value in PURCHASE_PRODUCTS;
+}
+
+function hasCompletedPurchase(account: AccountResponse, product: PurchaseProductId) {
+  const purchase = PURCHASE_PRODUCTS[product];
+
+  if (purchase.kind === "api") {
+    return account.api.effectiveTier === purchase.tier && account.api.remainingCredits > 0;
+  }
+
+  return account.currentPlan.id === purchase.planId && account.currentPlan.isPaid;
+}
 
 function formatBillingStatus(status: AccountResponse["billing"]["status"]) {
   switch (status) {
@@ -33,6 +63,9 @@ export function AccountPanel() {
   const [authActionMessage, setAuthActionMessage] = useState<string | null>(null);
   const [isSendingVerification, setIsSendingVerification] = useState(false);
   const [isSendingResetLink, setIsSendingResetLink] = useState(false);
+  const [purchaseIntent, setPurchaseIntent] = useState<PurchaseIntent | null>(null);
+  const [completedProduct, setCompletedProduct] = useState<PurchaseProductId | null>(null);
+  const [checkoutProduct, setCheckoutProduct] = useState<string | null>(null);
 
   useEffect(() => {
     const browserId = getOrCreateBrowserId();
@@ -51,6 +84,40 @@ export function AccountPanel() {
     return subscribeUsageRefresh(loadAccount);
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const flow = params.get("flow");
+    const product = params.get("product");
+
+    if (flow === "checkout" && isPurchaseProductId(product)) {
+      const existingIntent = readPurchaseIntent();
+      if (!existingIntent || existingIntent.product !== product) {
+        savePurchaseIntent({ product, source: "pricing", stage: "auth" });
+      }
+      setPurchaseIntent(readPurchaseIntent());
+      return;
+    }
+
+    setPurchaseIntent(readPurchaseIntent());
+  }, []);
+
+  useEffect(() => {
+    if (!account || !purchaseIntent || !isPurchaseProductId(purchaseIntent.product)) {
+      return;
+    }
+
+    if (account.viewer.authenticated && hasCompletedPurchase(account, purchaseIntent.product)) {
+      setCompletedProduct(purchaseIntent.product);
+      clearPurchaseIntent();
+      setPurchaseIntent(null);
+      return;
+    }
+
+    if (!account.viewer.authenticated) {
+      setIsAuthDialogOpen(true);
+    }
+  }, [account, purchaseIntent]);
+
   const usageLabel = useMemo(() => {
     if (!account) {
       return null;
@@ -64,6 +131,24 @@ export function AccountPanel() {
     const next = await fetchAccount(browserId);
     setAccount(next);
     setError(null);
+  }
+
+  async function handleContinueCheckout(product: PurchaseProductId) {
+    try {
+      setCheckoutProduct(product);
+      savePurchaseIntent({ product, source: "account", stage: "checkout" });
+      const session = await createBillingCheckout(product);
+      window.location.assign(session.checkoutUrl);
+    } catch (reason) {
+      if (reason instanceof Error && reason.message === "auth_required") {
+        setIsAuthDialogOpen(true);
+        savePurchaseIntent({ product, source: "account", stage: "auth" });
+        return;
+      }
+      window.alert("Nao foi possivel continuar o checkout agora.");
+    } finally {
+      setCheckoutProduct(null);
+    }
   }
 
   async function handleCreateApiKey() {
@@ -193,6 +278,11 @@ export function AccountPanel() {
     );
   }
 
+  const pendingProduct = purchaseIntent && isPurchaseProductId(purchaseIntent.product) ? purchaseIntent.product : null;
+  const pendingProductMeta = pendingProduct ? PURCHASE_PRODUCTS[pendingProduct] : null;
+  const completedProductMeta = completedProduct ? PURCHASE_PRODUCTS[completedProduct] : null;
+  const authRedirectTo = pendingProduct ? `/conta?flow=checkout&product=${encodeURIComponent(pendingProduct)}` : undefined;
+
   return (
     <section className="account-panel-shell">
       <div className="account-hero-card">
@@ -208,11 +298,69 @@ export function AccountPanel() {
         {!account.viewer.authenticated && (
           <div className="hero-actions">
             <button type="button" className="solid-button" onClick={() => setIsAuthDialogOpen(true)}>
-              Entrar ou criar conta
+              {pendingProductMeta ? `Entrar para continuar com ${pendingProductMeta.label}` : "Entrar ou criar conta"}
             </button>
           </div>
         )}
       </div>
+
+      {(pendingProductMeta || completedProductMeta) && (
+        <article className={`purchase-flow-card${completedProductMeta ? " is-success" : ""}`}>
+          <span className="purchase-flow-kicker">Fluxo de compra</span>
+          {completedProductMeta ? (
+            <>
+              <strong>{`Compra confirmada para ${completedProductMeta.label}`}</strong>
+              <p>
+                {completedProductMeta.kind === "api"
+                  ? "Seus API credits ja aparecem na conta. O proximo passo e gerar uma chave e testar a integracao."
+                  : "Seu plano web ja esta ativo. Agora voce pode voltar ao OCR e começar a usar o saldo contratado."}
+              </p>
+              <div className="hero-actions">
+                {completedProductMeta.kind === "api" ? (
+                  <>
+                    <button type="button" className="solid-button" onClick={() => void handleCreateApiKey()}>
+                      Criar API key agora
+                    </button>
+                    <Link href="/api" className="ghost-button">Abrir documentacao da API</Link>
+                  </>
+                ) : (
+                  <Link href="/imagem-para-texto" className="solid-button">Ir para OCR</Link>
+                )}
+              </div>
+            </>
+          ) : pendingProductMeta ? (
+            <>
+              <strong>{`Continue sua compra de ${pendingProductMeta.label}`}</strong>
+              <p>
+                {account.viewer.authenticated
+                  ? "Sua conta ja esta pronta. Reabra o checkout para concluir a compra e voltar com o saldo ativo."
+                  : "Entre ou crie sua conta para retomar a compra sem precisar escolher o plano de novo."}
+              </p>
+              <div className="hero-actions">
+                {account.viewer.authenticated ? (
+                  <button
+                    type="button"
+                    className="solid-button"
+                    onClick={() => {
+                      if (pendingProduct) {
+                        void handleContinueCheckout(pendingProduct);
+                      }
+                    }}
+                    disabled={checkoutProduct === pendingProduct}
+                  >
+                    {checkoutProduct === pendingProduct ? "Abrindo checkout..." : "Continuar compra"}
+                  </button>
+                ) : (
+                  <button type="button" className="solid-button" onClick={() => setIsAuthDialogOpen(true)}>
+                    Entrar ou criar conta
+                  </button>
+                )}
+                <Link href="/precos" className="ghost-button">Voltar para planos</Link>
+              </div>
+            </>
+          ) : null}
+        </article>
+      )}
 
       <div className="account-grid">
         <article className="account-card">
@@ -340,7 +488,14 @@ export function AccountPanel() {
         ))}
       </div>
 
-      <AuthDialog open={isAuthDialogOpen} onClose={() => setIsAuthDialogOpen(false)} defaultMode="register" />
+      <AuthDialog
+        open={isAuthDialogOpen}
+        onClose={() => setIsAuthDialogOpen(false)}
+        defaultMode="register"
+        googleRedirectTo={authRedirectTo}
+        reloadOnSuccess={false}
+        onSuccess={() => void refreshAccount()}
+      />
     </section>
   );
 }

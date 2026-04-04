@@ -23,6 +23,7 @@ describe("credit balance bootstrap", () => {
 
     await expect(tryConsumeCredits(env, { actor: { type: "user", key: "user-no-overspend" }, amount: 51 })).resolves.toEqual({
       ok: false,
+      grantedCredits: 50,
       remainingCredits: 50,
     });
   });

@@ -10,6 +10,7 @@ export interface WorkerEnv {
   CREEM_API_KEY?: string;
   CREEM_API_BASE?: string;
   CREEM_ENV?: string;
+  CREEM_PRODUCT_MAP?: string;
   ARK_API_BASE: string;
   ARK_MODEL: string;
   ARK_API_KEY: string;
@@ -402,7 +403,7 @@ export async function readCreditBalance(env: WorkerEnv, actor: CreditActor) {
 export async function tryConsumeCredits(
   env: WorkerEnv,
   input: { actor: CreditActor; amount: number; now?: string },
-): Promise<{ ok: boolean; remainingCredits: number }> {
+): Promise<{ ok: boolean; remainingCredits: number; grantedCredits: number }> {
   const now = input.now ?? new Date().toISOString();
   const amount = Math.max(Math.trunc(input.amount), 0);
   const current = await ensureCreditBalance(env, input.actor, now);
@@ -410,6 +411,7 @@ export async function tryConsumeCredits(
   if (amount === 0) {
     return {
       ok: true,
+      grantedCredits: current.grantedCredits,
       remainingCredits: Math.max(current.grantedCredits - current.usedCredits, 0),
     };
   }
@@ -434,6 +436,7 @@ export async function tryConsumeCredits(
       memoryCreditBalances.set(buildCreditStorageKey(input.actor), updated);
       return {
         ok: true,
+        grantedCredits: updated.grantedCredits,
         remainingCredits: Math.max(updated.grantedCredits - updated.usedCredits, 0),
       };
     }
@@ -441,6 +444,7 @@ export async function tryConsumeCredits(
     const latest = await ensureCreditBalance(env, input.actor, now);
     return {
       ok: false,
+      grantedCredits: latest.grantedCredits,
       remainingCredits: Math.max(latest.grantedCredits - latest.usedCredits, 0),
     };
   }
@@ -448,6 +452,7 @@ export async function tryConsumeCredits(
   if (current.usedCredits + amount > current.grantedCredits) {
     return {
       ok: false,
+      grantedCredits: current.grantedCredits,
       remainingCredits: Math.max(current.grantedCredits - current.usedCredits, 0),
     };
   }
@@ -460,6 +465,7 @@ export async function tryConsumeCredits(
   memoryCreditBalances.set(buildCreditStorageKey(input.actor), updated);
   return {
     ok: true,
+    grantedCredits: updated.grantedCredits,
     remainingCredits: Math.max(updated.grantedCredits - updated.usedCredits, 0),
   };
 }
