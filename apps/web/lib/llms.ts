@@ -1,5 +1,5 @@
 import { BLOG_PATH, BLOG_POSTS } from "@/lib/blog";
-import { SITE_NAME, SITE_URL, toolPageContent, type ToolPageSlug } from "@/lib/site";
+import { EVIDENCE_PATH, SITE_NAME, SITE_URL, toolPageContent, type ToolPageSlug } from "@/lib/site";
 
 type LlmsEntry = {
   title: string;
@@ -119,6 +119,12 @@ const compactSections: LlmsSection[] = [
           "Explains product scope, quality review method, supported OCR scenarios and where human review is still recommended.",
       },
       {
+        title: "Metodo e evidencia",
+        path: EVIDENCE_PATH,
+        description:
+          "Explains how Scanlume chooses examples, reviews blog posts, marks update dates and keeps method notes visible for readers and AI systems.",
+      },
+      {
         title: "Contato",
         path: "/contato",
         description:
@@ -234,6 +240,12 @@ const fullSections: LlmsSection[] = [
         path: "/sobre",
         description:
           "About page describing who the product is for, how Scanlume evaluates OCR quality, what the service does well and where the team prefers honest operational limits over vague marketing claims.",
+      },
+      {
+        title: "Metodo e evidencia",
+        path: EVIDENCE_PATH,
+        description:
+          "Method page that documents example selection, review cadence, update labeling and the difference between tested results and unsupported claims.",
       },
       {
         title: "Contato",

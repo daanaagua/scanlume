@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { BlogArticlePage } from "@/components/blog-article-page";
-import { BLOG_POSTS, getBlogPost, getBlogPostUrl } from "@/lib/blog";
+import { BLOG_EDITORIAL_NAME, BLOG_POSTS, getBlogPost, getBlogPostUrl } from "@/lib/blog";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 
 export function generateStaticParams() {
@@ -25,6 +25,7 @@ export function generateMetadata({ params }: { params: Promise<{ slug: string }>
       title: post.title,
       description: post.description,
       applicationName: SITE_NAME,
+      authors: [{ name: BLOG_EDITORIAL_NAME }],
       alternates: {
         canonical,
         languages: {
@@ -48,6 +49,7 @@ export function generateMetadata({ params }: { params: Promise<{ slug: string }>
         type: "article",
         locale: "pt_BR",
         publishedTime: post.publishedAt,
+        modifiedTime: post.lastReviewedAt,
         images: [
           {
             url: `${SITE_URL}${post.coverImage}`,

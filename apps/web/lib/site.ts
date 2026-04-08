@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 
 export const SITE_NAME = "Scanlume";
 export const SITE_URL = "https://www.scanlume.com";
+export const SUPPORT_EMAIL = "suporte@scanlume.com";
+export const SUPPORT_MAILTO = `mailto:${SUPPORT_EMAIL}`;
 export const SOCIAL_IMAGE_PATH = "/opengraph-image.png";
 export const SOCIAL_IMAGE_ALT = "Previa da pagina inicial do Scanlume com OCR simples e texto formatado em pt-BR";
+export const EVIDENCE_PATH = "/metodo-e-evidencia";
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://api.scanlume.com";
 export const OCR_WORKSPACE_ID = "ocr-workspace";
@@ -30,6 +33,7 @@ export const DEFAULT_KEYWORDS = [
 ];
 
 export const TRUST_LINKS = [
+  { href: EVIDENCE_PATH, label: "Metodo e evidencia" },
   { href: "/featured-on", label: LISTINGS_LABEL },
   { href: "/sobre", label: "Sobre" },
   { href: "/contato", label: "Contato" },

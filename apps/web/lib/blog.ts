@@ -1,4 +1,8 @@
-import { SITE_NAME, SITE_URL } from "@/lib/site";
+import { EVIDENCE_PATH, SITE_NAME, SITE_URL } from "@/lib/site";
+
+export const BLOG_EDITORIAL_NAME = "Equipe editorial Scanlume";
+export const BLOG_REVIEW_NAME = "Revisao editorial Scanlume";
+export const BLOG_METHOD_URL = `${SITE_URL}${EVIDENCE_PATH}`;
 
 type BlogMetric = {
   label: string;
@@ -123,7 +127,11 @@ export const blogPosts = {
           "Use PDF pesquisavel quando quiser manter a pagina mais proxima do original. Use PDF reorganizado quando a prioridade for leitura e reaproveitamento, mesmo que o arquivo final fique mais editorial do que o PDF base.",
       },
     ],
-    relatedPosts: ["exportar-ocr-word-markdown-boas-praticas", "comparativo-jpg-png-print-ocr"],
+    relatedPosts: [
+      "ocr-imagem-vs-pdf-diferencas-praticas",
+      "exportar-ocr-word-markdown-boas-praticas",
+      "comparativo-jpg-png-print-ocr",
+    ],
     relatedLinks: [
       {
         href: "/pdf-para-texto",
@@ -134,6 +142,192 @@ export const blogPosts = {
         href: "/imagem-para-texto",
         label: "Voltar para a ferramenta principal",
         description: "Comparar o fluxo PDF com o fluxo geral de OCR para imagens no mesmo workspace.",
+      },
+    ],
+  },
+  "ocr-simples-vs-texto-formatado": {
+    slug: "ocr-simples-vs-texto-formatado",
+    category: "Guia de decisao",
+    title: "OCR simples ou texto formatado: quando usar cada modo?",
+    description:
+      "Guia direto para decidir entre OCR simples e texto formatado no Scanlume, com foco em velocidade, estrutura, revisao e destino final do texto.",
+    excerpt:
+      "Nem todo arquivo pede o mesmo tipo de OCR. Este guia mostra quando vale priorizar rapidez e quando vale preservar blocos, titulos e ordem de leitura.",
+    heroLead:
+      "A escolha entre OCR simples e texto formatado muda o retrabalho depois da extracao. Em muitos casos, o modo certo economiza mais tempo do que qualquer limpeza feita depois.",
+    publishedAt: "2026-04-08",
+    lastReviewedAt: "2026-04-08",
+    readTime: "6 min",
+    coverImage: "/blog/ocr-export-workflow.png",
+    coverAlt: "Comparacao entre OCR simples e texto formatado no fluxo do Scanlume",
+    coverCaption:
+      "Os dois modos atendem intencoes diferentes: um prioriza velocidade e texto bruto, o outro tenta devolver estrutura suficiente para uso imediato em docs, wikis e revisao.",
+    summary: [
+      "OCR simples combina melhor com captura rapida, busca interna e casos em que o usuario aceita limpar o texto depois.",
+      "Texto formatado vale mais quando titulos, listas, paragrafos e ordem de leitura importam para o proximo passo.",
+      "A melhor escolha depende menos do arquivo e mais do destino final: busca, resumo, Word, Markdown, wiki ou proposta.",
+    ],
+    editorialMethod: [
+      "Partimos dos dois modos que o produto oferece hoje para imagem e dos usos mais comuns vistos em screenshots, cards e materiais editoriais.",
+      "A comparacao desta pagina privilegia impacto pratico no fluxo de trabalho: revisao, exportacao e reaproveitamento do texto.",
+      "Os exemplos foram escritos sem expor detalhes internos do stack e focam no que o usuario percebe no resultado final.",
+    ],
+    sections: [
+      {
+        heading: "Resposta curta: velocidade ou estrutura",
+        paragraphs: [
+          "OCR simples foi pensado para quem quer capturar texto rapido e seguir adiante. Ele faz mais sentido quando a equipe so precisa localizar frases, colar o resultado em um chat ou montar um rascunho sem se preocupar tanto com hierarquia.",
+          "Texto formatado entra quando o arquivo precisa sair com mais nocao de titulos, paragrafos, listas e blocos. Nesses casos, o ganho nao esta so na leitura inicial, mas no tempo poupado antes de mandar o texto para Word, Markdown ou documentacao interna.",
+        ],
+      },
+      {
+        heading: "Quando OCR simples costuma vencer",
+        paragraphs: [
+          "Prints de tela, cards, anuncios, avisos e recortes curtos entram bem no modo simples quando a meta e copiar o conteudo principal e seguir para busca, triagem ou resumo. O beneficio aqui e velocidade com menos expectativa de acabamento.",
+          "Ele tambem funciona bem quando o usuario ainda nao sabe se vai aproveitar o texto por completo. Primeiro extrai, depois decide se vale reorganizar em outro formato.",
+        ],
+        bullets: [
+          "Captura rapida de frases, headlines e blocos curtos.",
+          "Busca interna, resumo, triagem e comparacao manual.",
+          "Casos em que o texto final pode ser limpo depois sem problema.",
+        ],
+      },
+      {
+        heading: "Quando texto formatado poupa mais retrabalho",
+        paragraphs: [
+          "Texto formatado faz mais diferenca quando a imagem tem secao, subtitulo, lista, card ou blocos que precisam continuar separados no resultado final. Sem isso, o time perde tempo remontando a estrutura manualmente no proximo editor.",
+          "Se o destino do OCR for um documento compartilhado, uma wiki, uma base de prompts ou um material que precisa circular entre pessoas, preservar leitura e blocos costuma valer mais do que economizar alguns segundos no processamento inicial.",
+        ],
+        metrics: [
+          { label: "OCR simples", value: "Texto bruto", note: "Melhor para captura rapida e leitura direta sem muita estrutura." },
+          { label: "Texto formatado", value: "Blocos + ordem", note: "Melhor para Word, Markdown, docs e conteudo com hierarquia." },
+          { label: "Melhor pergunta", value: "Para onde vai depois?", note: "Destino final ajuda mais na decisao do que o nome do arquivo." },
+        ],
+      },
+      {
+        heading: "Regra pratica antes do upload",
+        paragraphs: [
+          "Se a pergunta for 'preciso do texto agora?', comece por OCR simples. Se a pergunta for 'preciso usar isso num documento sem desmontar tudo?', comece por texto formatado.",
+          "Uma regra segura para times pequenos e escolher o modo pelo proximo sistema. Busca e chat pedem simplicidade; documentos, conhecimento interno e materiais de apoio pedem estrutura.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: "Vale usar texto formatado em toda imagem?",
+        answer:
+          "Nem sempre. Se o usuario so quer capturar poucas frases ou verificar um trecho rapidamente, o modo simples costuma ser suficiente e mais direto.",
+      },
+      {
+        question: "OCR simples perde completamente a estrutura?",
+        answer:
+          "Ele pode manter parte da leitura principal, mas nao e o modo pensado para devolver hierarquia confiavel entre titulos, listas e blocos separados.",
+      },
+    ],
+    relatedPosts: ["exportar-ocr-word-markdown-boas-praticas", "comparativo-jpg-png-print-ocr"],
+    relatedLinks: [
+      {
+        href: "/imagem-para-texto",
+        label: "Abrir imagem para texto",
+        description: "Comparar os dois modos no fluxo principal com JPG, PNG e screenshot.",
+      },
+      {
+        href: "/imagem-para-word",
+        label: "Abrir imagem para Word",
+        description: "Testar o caso em que preservar blocos e leitura importa antes de colar em um documento.",
+      },
+    ],
+  },
+  "ocr-imagem-vs-pdf-diferencas-praticas": {
+    slug: "ocr-imagem-vs-pdf-diferencas-praticas",
+    category: "Guia de decisao",
+    title: "OCR em imagem ou PDF: o que muda na pratica?",
+    description:
+      "Entenda a diferenca pratica entre OCR em imagem e OCR em PDF no Scanlume, incluindo velocidade, estrutura, camada de texto e tipos de exportacao.",
+    excerpt:
+      "Imagem e PDF parecem a mesma tarefa so de longe. Na pratica, cada um pede um fluxo diferente e gera expectativas diferentes para revisao, layout e download.",
+    heroLead:
+      "O erro mais comum e tratar PDF e imagem como se fossem o mesmo input. PDF pode ter texto nativo, pagina escaneada ou mistura dos dois. Isso muda bastante a forma como o resultado precisa ser montado.",
+    publishedAt: "2026-04-08",
+    lastReviewedAt: "2026-04-08",
+    readTime: "7 min",
+    coverImage: "/blog/ocr-format-comparison.png",
+    coverAlt: "Diferencas praticas entre OCR em imagem e OCR em PDF",
+    coverCaption:
+      "Imagem tende a ser um caso mais direto. PDF pode combinar texto nativo, regioes escaneadas e layout multipagina, exigindo uma estrategia diferente para leitura e exportacao.",
+    summary: [
+      "Imagem costuma ser caminho mais rapido para extrair texto puro ou estruturado quando a origem e um JPG, PNG ou screenshot.",
+      "PDF exige leitura mais cuidadosa porque pode trazer texto nativo, pagina escaneada ou layout misto na mesma entrada.",
+      "No fluxo PDF, o valor maior nao esta so em extrair texto, mas em decidir como devolver busca, leitura e download em formatos reutilizaveis.",
+    ],
+    editorialMethod: [
+      "Usamos como referencia o comportamento atual do produto para imagens e PDFs, incluindo casos com texto nativo e paginas escaneadas.",
+      "A comparacao foi escrita para orientar escolha de rota e expectativa de saida, nao para discutir detalhes internos de implementacao.",
+      "Priorizamos diferencas observaveis por quem faz upload, revisa o resultado e precisa baixar ou reaproveitar o arquivo depois.",
+    ],
+    sections: [
+      {
+        heading: "Imagem: fluxo mais direto para texto",
+        paragraphs: [
+          "Quando a entrada e JPG, PNG ou screenshot, o trabalho principal e ler o que esta visivel e devolver texto com mais ou menos estrutura, dependendo do modo escolhido. Em geral, a decisao mais importante aqui e entre rapidez e organizacao.",
+          "Isso faz do OCR em imagem um caminho bom para cards, telas, avisos, anuncios, dashboards e recortes unicos. O usuario costuma pensar mais no texto final do que no arquivo em si.",
+        ],
+      },
+      {
+        heading: "PDF: fluxo mais variavel e mais editorial",
+        paragraphs: [
+          "PDF muda o jogo porque nem toda pagina precisa da mesma coisa. Algumas ja trazem texto utilizavel, outras sao apenas imagem, e muitas combinam os dois cenarios no mesmo arquivo.",
+          "Por isso o fluxo PDF tende a priorizar leitura estruturada e saidas que ajudem depois, como PDF pesquisavel, PDF reorganizado, HTML ou Markdown. O desafio nao e apenas extrair, mas devolver algo que faca sentido em multiplas paginas.",
+        ],
+        bullets: [
+          "Imagem: mais direta para OCR simples ou formatado.",
+          "PDF: mais forte quando leitura e exportacao contam tanto quanto extracao.",
+          "PDF pode alternar entre texto existente e OCR na mesma entrada.",
+        ],
+      },
+      {
+        heading: "Onde a diferenca aparece para o usuario",
+        paragraphs: [
+          "Na imagem, a pergunta frequente e 'o texto saiu limpo o bastante?'. No PDF, a pergunta muda para 'o arquivo final continua pesquisavel, legivel e reaproveitavel?'. Isso explica por que o fluxo PDF costuma parecer mais rico e menos imediato.",
+          "Tambem por isso o PDF fica no caminho estruturado. Em documentos multipagina, preservar a ideia de regiao, pagina e leitura importa mais do que correr para despejar texto bruto.",
+        ],
+        metrics: [
+          { label: "Imagem", value: "Rapidez", note: "Boa para captura unica, screenshot e arquivos visuais menores." },
+          { label: "PDF", value: "Contexto", note: "Boa para documentos com varias paginas, texto nativo e downloads reutilizaveis." },
+          { label: "Decisao", value: "Tipo de saida", note: "O melhor fluxo depende do que voce quer fazer depois do OCR." },
+        ],
+      },
+      {
+        heading: "Regra pratica para escolher rota",
+        paragraphs: [
+          "Se o arquivo nasceu como tela, foto ou imagem isolada, comeca pela rota de imagem. Se o material ja e um documento com paginas, texto interno ou necessidade de download preservado, use a rota de PDF.",
+          "A vantagem dessa separacao e evitar expectativa errada. Quem entra no fluxo certo tende a revisar menos, entender melhor os limites e escolher uma saida mais alinhada ao trabalho real.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: "Por que PDF nao fica no modo OCR simples?",
+        answer:
+          "Porque PDF costuma exigir mais do que texto cru. O fluxo precisa considerar pagina, leitura, possivel texto existente e formatos de download mais completos.",
+      },
+      {
+        question: "Se o PDF ja tem texto, ainda vale usar a rota PDF?",
+        answer:
+          "Sim. Quando o documento mistura texto nativo e partes em imagem, a rota PDF ajuda a lidar com os dois lados sem obrigar o usuario a tratar tudo manualmente.",
+      },
+    ],
+    relatedPosts: ["pdf-layout-reconstruction-update", "ocr-simples-vs-texto-formatado"],
+    relatedLinks: [
+      {
+        href: "/pdf-para-texto",
+        label: "Abrir PDF para texto",
+        description: "Testar PDF pesquisavel, PDF reorganizado e exportacoes pensadas para documentos multipagina.",
+      },
+      {
+        href: "/imagem-para-texto",
+        label: "Abrir imagem para texto",
+        description: "Comparar o fluxo de imagem com JPG, PNG e screenshot num caso mais direto.",
       },
     ],
   },
@@ -223,7 +417,11 @@ export const blogPosts = {
           "Quando o objetivo e so capturar frases centrais, o modo simples resolve rapido. Quando o usuario quer reaproveitar blocos em Word, docs ou Markdown, o modo formatado costuma poupar mais limpeza manual.",
       },
     ],
-    relatedPosts: ["comparativo-jpg-png-print-ocr", "exportar-ocr-word-markdown-boas-praticas"],
+    relatedPosts: [
+      "ocr-simples-vs-texto-formatado",
+      "comparativo-jpg-png-print-ocr",
+      "exportar-ocr-word-markdown-boas-praticas",
+    ],
     relatedLinks: [
       {
         href: "/imagem-para-texto",
@@ -321,7 +519,11 @@ export const blogPosts = {
           "Na maioria dos casos sim. Desde que o print seja nativo e nao uma foto da tela, ele preserva bem letras pequenas, alinhamento e contraste.",
       },
     ],
-    relatedPosts: ["ocr-portugues-imagem-para-texto-teste-real", "exportar-ocr-word-markdown-boas-praticas"],
+    relatedPosts: [
+      "ocr-simples-vs-texto-formatado",
+      "ocr-portugues-imagem-para-texto-teste-real",
+      "exportar-ocr-word-markdown-boas-praticas",
+    ],
     relatedLinks: [
       {
         href: "/jpg-para-texto",
@@ -419,7 +621,11 @@ export const blogPosts = {
           "Na maioria dos fluxos sim, porque titulos, listas e blocos ficam explicitos em texto puro. Para IA, isso costuma ser mais util do que um documento rico fechado.",
       },
     ],
-    relatedPosts: ["ocr-portugues-imagem-para-texto-teste-real", "comparativo-jpg-png-print-ocr"],
+    relatedPosts: [
+      "quando-usar-ocr-no-navegador-vs-api",
+      "ocr-portugues-imagem-para-texto-teste-real",
+      "comparativo-jpg-png-print-ocr",
+    ],
     relatedLinks: [
       {
         href: "/imagem-para-word",
@@ -430,6 +636,99 @@ export const blogPosts = {
         href: "/imagem-para-texto",
         label: "Voltar para a ferramenta",
         description: "Executar o OCR e comparar o comportamento em TXT, Markdown e HTML.",
+      },
+    ],
+  },
+  "quando-usar-ocr-no-navegador-vs-api": {
+    slug: "quando-usar-ocr-no-navegador-vs-api",
+    category: "Integracao",
+    title: "Quando usar OCR no navegador e quando migrar para API",
+    description:
+      "Guia pratico para decidir entre usar o OCR do Scanlume no navegador ou integrar a API, com foco em volume, revisao humana e automacoes.",
+    excerpt:
+      "Nem todo time precisa ir para API no primeiro dia. Este guia mostra quando o navegador basta e quais sinais indicam que a automacao ja vai poupar mais tempo.",
+    heroLead:
+      "Browser e API nao disputam o mesmo papel. Um ajuda na revisao manual e na validacao de uso. O outro entra quando o fluxo precisa repetir sem depender de upload humano toda vez.",
+    publishedAt: "2026-04-08",
+    lastReviewedAt: "2026-04-08",
+    readTime: "6 min",
+    coverImage: "/blog/ocr-portuguese-benchmark-board.png",
+    coverAlt: "Guia para escolher entre OCR no navegador e API",
+    coverCaption:
+      "A escolha certa depende mais do processo do time do que do tamanho da empresa: validacao manual, volume de arquivos, frequencia e necessidade de integrar o OCR a outros sistemas.",
+    summary: [
+      "Navegador faz mais sentido para upload manual, revisao visual, comparacao de modos e uso ocasional.",
+      "API vale quando OCR vira etapa repetida de produto, operacao, automacao interna ou pipeline de conteudo.",
+      "Muita equipe comeca no navegador para validar qualidade e so depois move o fluxo estavel para API.",
+    ],
+    editorialMethod: [
+      "Tomamos como base a diferenca atual entre uso web e uso por API, incluindo separacao de credits e necessidade de chave.",
+      "O objetivo desta pagina e orientar decisao operacional: quando seguir manualmente e quando automatizar com seguranca.",
+      "Os exemplos foram escritos para times pequenos e medios que alternam entre validacao visual e integracao recorrente.",
+    ],
+    sections: [
+      {
+        heading: "Quando o navegador ja resolve muito bem",
+        paragraphs: [
+          "Se a equipe ainda esta entendendo o tipo de arquivo que chega, comparando modos ou revisando o texto antes de reutilizar, o navegador costuma ser o melhor primeiro passo. Ele facilita upload manual, copia do resultado e validacao visual sem setup tecnico.",
+          "Esse caminho tambem ajuda quando o volume e baixo ou irregular. Em vez de automatizar cedo demais, o time aprende primeiro onde o OCR entrega valor e onde a revisao humana continua importante.",
+        ],
+      },
+      {
+        heading: "Quando a API comeca a fazer mais sentido",
+        paragraphs: [
+          "A API entra quando OCR deixa de ser um experimento e vira etapa repetida de um processo maior. Isso inclui filas internas, capturas de sistemas, onboarding de documentos, pipelines de conteudo ou integracoes com ferramentas da propria equipe.",
+          "Nesse ponto, faz diferenca usar chave propria, montar chamada programatica e tratar o OCR como parte da infraestrutura. A vantagem nao e apenas volume, mas previsibilidade e menos trabalho manual por arquivo.",
+        ],
+        bullets: [
+          "Use navegador para validacao, revisao e uso ocasional.",
+          "Use API para repeticao, escala e integracao com outros sistemas.",
+          "Separe credits de web e API conforme o tipo de uso do time.",
+        ],
+      },
+      {
+        heading: "Sinais de que chegou hora de migrar",
+        paragraphs: [
+          "Alguns sinais aparecem rapido: mesma tarefa repetida toda semana, arquivos chegando por outro sistema, necessidade de distribuir resultado para mais de um destino e tempo gasto demais em upload manual. Quando isso vira rotina, a API passa a economizar mais do que custa configurar.",
+          "Outra pista forte e quando o time ja sabe qual formato de entrada funciona melhor e qual saida quer consumir. Quando a duvida principal deixa de ser qualidade e passa a ser eficiencia operacional, a API vira passo natural.",
+        ],
+        metrics: [
+          { label: "Navegador", value: "Validar e revisar", note: "Melhor para uso humano direto e volume menor." },
+          { label: "API", value: "Automatizar", note: "Melhor para processos recorrentes e integracao com app ou backoffice." },
+          { label: "Ponto de virada", value: "Repeticao", note: "Se o mesmo OCR acontece sempre, automatizar tende a compensar." },
+        ],
+      },
+      {
+        heading: "Fluxo hibrido costuma ser o mais inteligente",
+        paragraphs: [
+          "Nao existe obrigacao de escolher um lado para sempre. Um padrao comum e validar arquivos e modos no navegador, documentar o que funciona melhor e depois levar o caso estavel para API.",
+          "Esse caminho reduz risco. O time aprende com exemplos reais, alinha expectativa de qualidade e so automatiza quando o processo ja esta suficientemente claro.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: "Preciso abandonar o navegador depois de integrar a API?",
+        answer:
+          "Nao. Muitas equipes mantem o navegador para testes pontuais, revisao visual e comparacao rapida mesmo depois de automatizar o fluxo principal.",
+      },
+      {
+        question: "API e web usam o mesmo saldo?",
+        answer:
+          "Nao. O uso por API fica separado do uso web, o que ajuda a controlar melhor custo e operacao de cada frente.",
+      },
+    ],
+    relatedPosts: ["exportar-ocr-word-markdown-boas-praticas", "ocr-simples-vs-texto-formatado"],
+    relatedLinks: [
+      {
+        href: "/api",
+        label: "Abrir pagina da API",
+        description: "Ver exemplos de chamada, API key e notas de entrada antes de integrar.",
+      },
+      {
+        href: "/ocr-online",
+        label: "Abrir OCR online",
+        description: "Comparar com o fluxo no navegador quando o uso ainda e manual ou exploratorio.",
       },
     ],
   },
@@ -486,11 +785,16 @@ export function getBlogPostingJsonLd(post: BlogPost) {
     datePublished: post.publishedAt,
     dateModified: post.lastReviewedAt,
     inLanguage: "pt-BR",
-    mainEntityOfPage: postUrl,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": postUrl,
+    },
     author: {
       "@type": "Organization",
-      name: SITE_NAME,
+      name: BLOG_EDITORIAL_NAME,
+      url: BLOG_METHOD_URL,
     },
+    editor: BLOG_REVIEW_NAME,
     publisher: {
       "@type": "Organization",
       name: SITE_NAME,
@@ -499,5 +803,21 @@ export function getBlogPostingJsonLd(post: BlogPost) {
         url: `${SITE_URL}/icon.png`,
       },
     },
+    isPartOf: {
+      "@type": "Blog",
+      name: "Blog Scanlume",
+      url: `${SITE_URL}${BLOG_PATH}`,
+    },
+    citation: BLOG_METHOD_URL,
+    about: [
+      {
+        "@type": "Thing",
+        name: "OCR em pt-BR",
+      },
+      {
+        "@type": "Thing",
+        name: "Metodo editorial e revisao humana",
+      },
+    ],
   };
 }

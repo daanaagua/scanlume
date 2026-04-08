@@ -6,6 +6,7 @@ import { OcrWorkspace } from "@/components/ocr-workspace";
 import { BLOG_POSTS, BLOG_PATH } from "@/lib/blog";
 import {
   FORMATTED_MODE_LABEL,
+  EVIDENCE_PATH,
   OCR_WORKSPACE_ID,
   SITE_NAME,
   SITE_URL,
@@ -252,6 +253,9 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
             <h2>Quer contexto antes do upload? Leia os guias de OCR.</h2>
             <p>
               Publicamos comparativos, benchmarks e updates de produto para explicar quando o OCR funciona melhor, quando usar PDF no modo formatado e como escolher a exportacao certa.
+            </p>
+            <p>
+              A pagina de <Link href={EVIDENCE_PATH}>metodo e evidencia</Link> resume como validamos os exemplos e quando a revisao humana ainda entra no fluxo.
             </p>
             <div className="hero-actions">
               <Link href={BLOG_PATH} className="ghost-button large-button">

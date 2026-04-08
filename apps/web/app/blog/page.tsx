@@ -2,12 +2,12 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { BLOG_PATH, BLOG_POSTS } from "@/lib/blog";
-import { buildMetadata } from "@/lib/site";
+import { buildMetadata, EVIDENCE_PATH } from "@/lib/site";
 
 export const metadata = buildMetadata({
   title: "Blog OCR em pt-BR | Testes, comparativos e boas praticas",
   description:
-    "Guias praticos do Scanlume sobre OCR em portugues, comparativos entre JPG e PNG, exportacao para Word e Markdown e testes com imagens reais.",
+    "Guias praticos do Scanlume sobre OCR em portugues, comparativos entre JPG e PNG, exportacao para Word e Markdown, testes com imagens reais e metodo editorial com revisao explicita.",
   keywords: [
     "ocr em portugues",
     "imagem para texto",
@@ -41,6 +41,9 @@ export default function BlogIndexPage() {
             <h2>Conteudo desenhado para mostrar o que funciona melhor em casos reais.</h2>
             <p>
               Cada artigo nasce de um caso concreto: screenshot com layout misto, diferenca entre formatos e exportacao do OCR para o uso final.
+            </p>
+            <p>
+              A pagina de <Link href={EVIDENCE_PATH}>metodo e evidencia</Link> explica como escolhemos os testes, quem revisa os textos e como atualizamos os guias.
             </p>
           </div>
         </div>

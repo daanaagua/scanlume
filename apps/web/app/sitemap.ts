@@ -5,7 +5,8 @@ import { INDEXABLE_SEO_LINKS, SITE_URL } from "@/lib/site";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const buildDate = new Date();
-  const trustRoutes = ["/sobre", "/contato", "/privacidade", "/termos"] as const;
+  const trustRoutes = ["/sobre", "/metodo-e-evidencia", "/contato", "/privacidade", "/termos"] as const;
+  const commercialRoutes = ["/precos", "/api"] as const;
 
   return [
     {
@@ -37,6 +38,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: buildDate,
       changeFrequency: "monthly" as const,
       priority: 0.45,
+    })),
+    ...commercialRoutes.map((route) => ({
+      url: `${SITE_URL}${route}`,
+      lastModified: buildDate,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
     })),
   ];
 }

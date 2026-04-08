@@ -4,11 +4,14 @@ import Link from "next/link";
 import { JsonLd } from "@/components/json-ld";
 import {
   BLOG_PATH,
+  BLOG_EDITORIAL_NAME,
+  BLOG_REVIEW_NAME,
   type BlogPost,
   getBlogPost,
   getBlogBreadcrumbJsonLd,
   getBlogPostingJsonLd,
 } from "@/lib/blog";
+import { EVIDENCE_PATH } from "@/lib/site";
 
 export function BlogArticlePage({ post }: { post: BlogPost }) {
   const relatedPosts = post.relatedPosts
@@ -31,10 +34,11 @@ export function BlogArticlePage({ post }: { post: BlogPost }) {
             <p className="hero-lead">{post.heroLead}</p>
 
             <div className="blog-meta-row">
+              <span>Autor editorial: {BLOG_EDITORIAL_NAME}</span>
+              <span>Revisao: {BLOG_REVIEW_NAME}</span>
               <span>Publicado em {post.publishedAt}</span>
               <span>Revisado em {post.lastReviewedAt}</span>
-              <span>Testado pela equipe Scanlume</span>
-              <span>Blog Scanlume</span>
+              <Link href={EVIDENCE_PATH}>Metodo e evidencia</Link>
             </div>
 
             <div className="hero-actions hero-inline-actions">

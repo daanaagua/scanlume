@@ -6,6 +6,7 @@ import { OcrWorkspace } from "@/components/ocr-workspace";
 import { BLOG_PATH, BLOG_POSTS } from "@/lib/blog";
 import {
   buildMetadata,
+  EVIDENCE_PATH,
   FORMATTED_MODE_LABEL,
   HOME_FLOW_LINKS,
   homeFaqs,
@@ -13,13 +14,15 @@ import {
   SITE_NAME,
   SITE_URL,
   SIMPLE_MODE_LABEL,
+  SUPPORT_EMAIL,
+  SUPPORT_MAILTO,
   toolPageContent,
 } from "@/lib/site";
 
 export const metadata = buildMetadata({
   title: "Scanlume | OCR online em pt-BR para imagens e PDF",
   description:
-    "OCR online do Scanlume para converter screenshots, JPG, PNG e PDF em texto editavel com saida simples ou formatada em TXT, Markdown, HTML e PDF.",
+    "OCR online do Scanlume para converter screenshots, JPG, PNG e PDF em texto editavel com saida simples ou formatada em TXT, Markdown, HTML e PDF, com metodo editorial e revisao explicitados.",
   keywords: [
     "scanlume",
     "ocr online pt-br",
@@ -84,6 +87,13 @@ export default function Home() {
               <span>Sem instalar aplicativo</span>
               <span>Copiar ou baixar em TXT, MD, HTML e PDF</span>
             </div>
+            <p className="support-email-note">
+              Suporte e faturamento:
+              {" "}
+              <a href={SUPPORT_MAILTO} className="support-email-link">
+                {SUPPORT_EMAIL}
+              </a>
+            </p>
             <div className="hero-actions">
               <Link href="/imagem-para-texto" className="solid-button large-button">
                 Abrir a ferramenta
@@ -186,6 +196,9 @@ export default function Home() {
             <h2>Guias praticos para escolher formato, modo e exportacao.</h2>
             <p>
               Publicamos conteudo complementar para responder duvidas reais sobre OCR em portugues, diferenca entre formatos, PDF pesquisavel e exportacao para Word e Markdown.
+            </p>
+            <p>
+              A pagina de <Link href={EVIDENCE_PATH}>metodo e evidencia</Link> mostra como validamos os exemplos, revisamos os textos e marcamos as atualizacoes.
             </p>
             <div className="hero-actions">
               <Link href={BLOG_PATH} className="ghost-button large-button">

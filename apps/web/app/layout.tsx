@@ -6,7 +6,15 @@ import { JsonLd } from "@/components/json-ld";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { SupportWidget } from "@/components/support-widget";
-import { DEFAULT_KEYWORDS, SITE_NAME, SITE_URL, SOCIAL_IMAGE_ALT, SOCIAL_IMAGE_PATH } from "@/lib/site";
+import {
+  DEFAULT_KEYWORDS,
+  EVIDENCE_PATH,
+  SITE_NAME,
+  SITE_URL,
+  SOCIAL_IMAGE_ALT,
+  SOCIAL_IMAGE_PATH,
+  SUPPORT_EMAIL,
+} from "@/lib/site";
 
 import "./globals.css";
 
@@ -81,7 +89,27 @@ export default function RootLayout({
             name: SITE_NAME,
             url: SITE_URL,
             logo: `${SITE_URL}/icon.png`,
-            sameAs: ["https://toolsaiapp.com/", "https://newtool.site/item/scanlume"],
+            description:
+              "Produto OCR em pt-BR para transformar screenshots, JPG, PNG e PDF em texto editavel com saida simples ou formatada.",
+            email: SUPPORT_EMAIL,
+            areaServed: "BR",
+            knowsAbout: [
+              "OCR em pt-BR",
+              "Imagem para texto",
+              "PDF para texto",
+              "OCR simples",
+              "Texto formatado",
+            ],
+            contactPoint: [
+              {
+                "@type": "ContactPoint",
+                contactType: "customer support",
+                email: SUPPORT_EMAIL,
+                availableLanguage: ["pt-BR", "pt"],
+              },
+            ],
+            sameAs: ["https://github.com/daanaagua/scanlume"],
+            subjectOf: `${SITE_URL}${EVIDENCE_PATH}`,
           }}
         />
         <JsonLd
