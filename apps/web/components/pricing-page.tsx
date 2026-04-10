@@ -130,7 +130,7 @@ export function PricingPage() {
                 <h2>Web Experience</h2>
                 <div className="pricing-offer-price pricing-offer-price-vertical">
                   <strong>$1</strong>
-                  <small>1600 web credits</small>
+                  <small>300 web credits</small>
                 </div>
                 <p className="pricing-offer-annual">Fastest path to a first paid OCR run</p>
               </div>
@@ -140,7 +140,7 @@ export function PricingPage() {
                 <ul className="pricing-feature-list">
                   <li>One-time purchase</li>
                   <li>Buy once</li>
-                  <li>1600 credits</li>
+                  <li>300 credits</li>
                   <li>Ideal para rodar um primeiro pagamento real e validar o fluxo OCR no web</li>
                 </ul>
               </div>

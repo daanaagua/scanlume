@@ -157,8 +157,8 @@ describe("billing webhooks", () => {
 
     await expect(readActiveWebCreditPack({} as never, "u-web-experience-grant", "2026-04-10T00:00:00.000Z")).resolves.toMatchObject({
       productId: "web_experience_onetime",
-      creditsTotal: 1600,
-      creditsRemaining: 1600,
+      creditsTotal: 300,
+      creditsRemaining: 300,
       expiresAt: "2026-05-03T00:00:00.000Z",
       status: "active",
     });

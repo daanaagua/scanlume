@@ -78,7 +78,7 @@ function formatDate(value: string | null) {
 
 function getWebExperienceSummary(account: AccountResponse): WebExperienceSummary {
   const { webExperience } = account;
-  const total = webExperience.creditsTotal ?? 1600;
+  const total = webExperience.creditsTotal ?? 300;
   const remaining = webExperience.creditsRemaining ?? 0;
   const expiresAt = formatDate(webExperience.expiresAt);
 
@@ -86,7 +86,7 @@ function getWebExperienceSummary(account: AccountResponse): WebExperienceSummary
     case "available":
       return {
         title: "Web Experience disponivel",
-        strong: "$1 - 1600 credits para um teste pago real",
+        strong: "$1 - 300 credits para um teste pago real",
         description: "Pagamentos ja estao abertos. Compre uma vez, valide o checkout e use os credits direto no OCR web.",
         meta: "Oferta unica por conta.",
         cta: "Comprar experiencia web por $1",
@@ -373,7 +373,7 @@ export function AccountPanel() {
                 {completedProductMeta.kind === "api"
                   ? "Seus API credits ja aparecem na conta. O proximo passo e gerar uma chave e testar a integracao."
                   : completedProductMeta.kind === "web_experience"
-                    ? "Seus 1600 credits ja estao disponiveis. Agora voce pode voltar ao OCR web e validar o fluxo completo."
+                    ? "Seus 300 credits ja estao disponiveis. Agora voce pode voltar ao OCR web e validar o fluxo completo."
                     : "Seu plano web ja esta ativo. Agora voce pode voltar ao OCR e comecar a usar o saldo contratado."}
               </p>
               <div className="hero-actions">

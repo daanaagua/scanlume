@@ -106,7 +106,7 @@ describe("/v1/ocr credit settlement", () => {
       id: "web-pack-ocr-route",
       userId: "u-web-pack-ocr-route",
       productId: "web_experience_onetime",
-      creditsTotal: 1600,
+      creditsTotal: 300,
       purchasedAt: "2026-04-03T00:00:00.000Z",
       expiresAt: "2026-05-03T00:00:00.000Z",
     });
@@ -118,7 +118,7 @@ describe("/v1/ocr credit settlement", () => {
 
     expect(response.status).toBe(200);
     await expect(readActiveWebCreditPack({} as never, "u-web-pack-ocr-route", "2026-04-10T00:00:00.000Z")).resolves.toMatchObject({
-      creditsRemaining: 1599,
+      creditsRemaining: 299,
     });
     await expect(readCreditBalance({} as never, { type: "user", key: "u-web-pack-ocr-route" })).resolves.toMatchObject({
       remainingCredits: 50,
@@ -142,7 +142,7 @@ describe("/v1/ocr credit settlement", () => {
       id: "web-pack-ocr-route-priority",
       userId: "u-ocr-route-priority",
       productId: "web_experience_onetime",
-      creditsTotal: 1600,
+      creditsTotal: 300,
       purchasedAt: "2026-04-03T00:00:00.000Z",
       expiresAt: "2026-05-03T00:00:00.000Z",
     });
@@ -157,7 +157,7 @@ describe("/v1/ocr credit settlement", () => {
       creditsRemaining: 7999,
     });
     await expect(readActiveWebCreditPack({} as never, "u-ocr-route-priority", "2026-04-10T00:00:00.000Z")).resolves.toMatchObject({
-      creditsRemaining: 1600,
+      creditsRemaining: 300,
     });
     await expect(readCreditBalance({} as never, { type: "user", key: "u-ocr-route-priority" })).resolves.toMatchObject({
       remainingCredits: 50,

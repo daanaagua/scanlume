@@ -153,7 +153,7 @@ export async function buildAccountSnapshot(env: WorkerEnv, viewer: AccountViewer
     ],
     notes: {
       replyWindow: "Respondemos em ate 1 dia.",
-      subscriptions: "Pagamentos ja estao abertos para web e API. Planos web: Starter $5 / mes, Pro $9 / mes, Business $24 / mes. Planos anuais aprovados: Starter $48 / ano (100.000 creditos), Pro $82 / ano (240.000 creditos), Business $228 / ano (800.000 creditos). Web Experience: $1 uma unica vez com 1600 creditos.",
+      subscriptions: "Pagamentos ja estao abertos para web e API. Planos web: Starter $5 / mes, Pro $9 / mes, Business $24 / mes. Planos anuais aprovados: Starter $48 / ano (100.000 creditos), Pro $82 / ano (240.000 creditos), Business $228 / ano (800.000 creditos). Web Experience: $1 uma unica vez com 300 creditos.",
     },
   };
 }

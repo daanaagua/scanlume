@@ -62,7 +62,7 @@ const BILLING_PRODUCT_CONFIG: Record<BillingProductId, ProductConfig> = {
   web_starter_yearly: { kind: "web_subscription", planId: "starter", billingInterval: "year", creditsTotal: 100000, durationDays: 365 },
   web_pro_yearly: { kind: "web_subscription", planId: "pro", billingInterval: "year", creditsTotal: 240000, durationDays: 365 },
   web_business_yearly: { kind: "web_subscription", planId: "business", billingInterval: "year", creditsTotal: 800000, durationDays: 365 },
-  web_experience_onetime: { kind: "web_credit_pack", creditsTotal: 1600, durationDays: 30 },
+  web_experience_onetime: { kind: "web_credit_pack", creditsTotal: 300, durationDays: 30 },
   api_starter: { kind: "api_pack", tier: "starter", creditsTotal: 10000 },
   api_growth: { kind: "api_pack", tier: "growth", creditsTotal: 40000 },
   api_scale: { kind: "api_pack", tier: "scale", creditsTotal: 140000 },

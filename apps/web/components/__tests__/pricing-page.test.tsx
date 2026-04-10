@@ -149,7 +149,7 @@ describe("PricingPage", () => {
     expect(screen.getAllByText(/Verificando plano/i).length).toBeGreaterThan(0);
   });
 
-  it("shows the $1 one-time web experience offer with 1600 credits", async () => {
+  it("shows the $1 one-time web experience offer with 300 credits", async () => {
     fetchAccountMock.mockResolvedValue(createAccountResponse());
 
     render(<PricingPage />);
@@ -158,7 +158,7 @@ describe("PricingPage", () => {
     expect(screen.getByText("$1")).toBeInTheDocument();
     expect(screen.getByText(/One-time purchase/i)).toBeInTheDocument();
     expect(screen.getByText(/Buy once/i)).toBeInTheDocument();
-    expect(screen.getByText(/1600 credits/i)).toBeInTheDocument();
+    expect(screen.getByText(/300 credits/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Comprar experiencia web/i })).toBeEnabled();
   });
 
@@ -169,8 +169,8 @@ describe("PricingPage", () => {
         status: "active",
         canPurchase: false,
         hasPurchased: true,
-        creditsTotal: 1600,
-        creditsRemaining: 1600,
+        creditsTotal: 300,
+        creditsRemaining: 300,
         expiresAt: "2026-05-10T00:00:00.000Z",
       },
     }));

@@ -11,7 +11,7 @@ describe("web credit packs", () => {
       id: "web-pack-history-1",
       userId: "u-web-pack-history",
       productId: "web_experience_onetime",
-      creditsTotal: 1600,
+      creditsTotal: 300,
       purchasedAt: "2026-04-03T00:00:00.000Z",
       expiresAt: "2026-05-03T00:00:00.000Z",
     });
@@ -34,7 +34,7 @@ describe("web credit packs", () => {
       id: "web-pack-balance-order",
       userId: "u-web-balance-order",
       productId: "web_experience_onetime",
-      creditsTotal: 1600,
+      creditsTotal: 300,
       purchasedAt: "2026-04-03T00:00:00.000Z",
       expiresAt: "2026-05-03T00:00:00.000Z",
     });
@@ -42,7 +42,7 @@ describe("web credit packs", () => {
       id: "web-pack-balance-pack-only",
       userId: "u-web-balance-pack-only",
       productId: "web_experience_onetime",
-      creditsTotal: 1600,
+      creditsTotal: 300,
       purchasedAt: "2026-04-03T00:00:00.000Z",
       expiresAt: "2026-05-03T00:00:00.000Z",
     });
@@ -54,8 +54,8 @@ describe("web credit packs", () => {
     });
     await expect(resolveLoggedInWebCredits({} as never, { userId: "u-web-balance-pack-only", now: "2026-04-10T00:00:00.000Z" })).resolves.toMatchObject({
       source: "web_experience_pack",
-      grantedCredits: 1600,
-      remainingCredits: 1600,
+      grantedCredits: 300,
+      remainingCredits: 300,
     });
     await expect(resolveLoggedInWebCredits({} as never, { userId: "u-web-balance-free-only", now: "2026-04-10T00:00:00.000Z" })).resolves.toMatchObject({
       source: "free",
@@ -69,7 +69,7 @@ describe("web credit packs", () => {
       id: "web-pack-consume-order",
       userId: "u-web-pack-consume-order",
       productId: "web_experience_onetime",
-      creditsTotal: 1600,
+      creditsTotal: 300,
       purchasedAt: "2026-04-03T00:00:00.000Z",
       expiresAt: "2026-05-03T00:00:00.000Z",
     });
@@ -81,11 +81,11 @@ describe("web credit packs", () => {
     })).resolves.toMatchObject({
       ok: true,
       source: "web_experience_pack",
-      remainingCredits: 1598,
+      remainingCredits: 298,
     });
 
     await expect(readActiveWebCreditPack({} as never, "u-web-pack-consume-order", "2026-04-10T00:00:00.000Z")).resolves.toMatchObject({
-      creditsRemaining: 1598,
+      creditsRemaining: 298,
     });
     await expect(readCreditBalance({} as never, { type: "user", key: "u-web-pack-consume-order" })).resolves.toMatchObject({
       remainingCredits: 50,
@@ -106,7 +106,7 @@ describe("web credit packs", () => {
       id: "web-pack-after-subscription",
       userId: "u-web-pack-after-subscription",
       productId: "web_experience_onetime",
-      creditsTotal: 1600,
+      creditsTotal: 300,
       purchasedAt: "2026-04-03T00:00:00.000Z",
       expiresAt: "2026-05-03T00:00:00.000Z",
     });
@@ -125,7 +125,7 @@ describe("web credit packs", () => {
       creditsRemaining: 7997,
     });
     await expect(readActiveWebCreditPack({} as never, "u-web-pack-after-subscription", "2026-04-10T00:00:00.000Z")).resolves.toMatchObject({
-      creditsRemaining: 1600,
+      creditsRemaining: 300,
     });
   });
 });

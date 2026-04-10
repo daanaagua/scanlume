@@ -100,7 +100,7 @@ describe("buildAccountSnapshot", () => {
       id: "web-pack-account-active",
       userId: "user-web-pack-active",
       productId: "web_experience_onetime",
-      creditsTotal: 1600,
+      creditsTotal: 300,
       purchasedAt: "2026-04-03T00:00:00.000Z",
       expiresAt: "2026-05-03T00:00:00.000Z",
     });
@@ -111,8 +111,8 @@ describe("buildAccountSnapshot", () => {
       status: "active",
       canPurchase: false,
       hasPurchased: true,
-      creditsTotal: 1600,
-      creditsRemaining: 1600,
+      creditsTotal: 300,
+      creditsRemaining: 300,
       expiresAt: "2026-05-03T00:00:00.000Z",
     });
   });

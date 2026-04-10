@@ -152,8 +152,8 @@ describe("AccountPanel", () => {
         status: "active",
         canPurchase: false,
         hasPurchased: true,
-        creditsTotal: 1600,
-        creditsRemaining: 1200,
+        creditsTotal: 300,
+        creditsRemaining: 225,
         expiresAt: "2026-05-10T00:00:00.000Z",
       },
     }));
@@ -161,7 +161,7 @@ describe("AccountPanel", () => {
     render(<AccountPanel />);
 
     expect(await screen.findByText(/Web Experience ativa/i)).toBeInTheDocument();
-    expect(screen.getByText(/1200 de 1600 credits restantes/i)).toBeInTheDocument();
+    expect(screen.getByText(/225 de 300 credits restantes/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Ir para OCR/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Comprar experiencia web por \$1/i })).not.toBeInTheDocument();
   });
@@ -172,7 +172,7 @@ describe("AccountPanel", () => {
         status: "consumed",
         canPurchase: false,
         hasPurchased: true,
-        creditsTotal: 1600,
+        creditsTotal: 300,
         creditsRemaining: 0,
         expiresAt: "2026-05-10T00:00:00.000Z",
       },
@@ -181,7 +181,7 @@ describe("AccountPanel", () => {
     const consumedView = render(<AccountPanel />);
 
     expect(await screen.findByText(/Web Experience consumida/i)).toBeInTheDocument();
-    expect(screen.getByText(/Todos os 1600 credits ja foram usados/i)).toBeInTheDocument();
+    expect(screen.getByText(/Todos os 300 credits ja foram usados/i)).toBeInTheDocument();
     expect(screen.getByText(/A oferta era valida uma unica vez/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Comprar experiencia web por \$1/i })).not.toBeInTheDocument();
 
@@ -192,8 +192,8 @@ describe("AccountPanel", () => {
         status: "expired",
         canPurchase: false,
         hasPurchased: true,
-        creditsTotal: 1600,
-        creditsRemaining: 400,
+        creditsTotal: 300,
+        creditsRemaining: 75,
         expiresAt: "2026-05-10T00:00:00.000Z",
       },
     }));
@@ -247,8 +247,8 @@ describe("AccountPanel", () => {
         status: "active",
         canPurchase: false,
         hasPurchased: true,
-        creditsTotal: 1600,
-        creditsRemaining: 1600,
+        creditsTotal: 300,
+        creditsRemaining: 300,
         expiresAt: "2026-05-10T00:00:00.000Z",
       },
     }));
@@ -256,7 +256,7 @@ describe("AccountPanel", () => {
     render(<AccountPanel />);
 
     expect(await screen.findByText(/Compra confirmada para Web Experience/i)).toBeInTheDocument();
-    expect(screen.getByText(/1600 credits ja estao disponiveis/i)).toBeInTheDocument();
+    expect(screen.getByText(/300 credits ja estao disponiveis/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Abrir OCR agora/i })).toBeInTheDocument();
   });
 });
