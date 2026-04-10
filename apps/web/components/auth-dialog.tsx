@@ -70,6 +70,12 @@ export function AuthDialog({
     setError(null);
     setNotice(null);
 
+    if (mode === "register" && isYahooFamilyEmail(email)) {
+      setError("No momento nao aceitamos cadastro com emails Yahoo. Use outro email ou continue com Google.");
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       if (mode === "login") {
         await loginWithPassword({ email, password });
@@ -210,5 +216,17 @@ export function AuthDialog({
         </p>
       </div>
     </div>
+  );
+}
+
+function isYahooFamilyEmail(email: string) {
+  const normalized = email.trim().toLowerCase();
+  const [, domain = ""] = normalized.split("@");
+  return (
+    domain === "yahoo.com" ||
+    domain.startsWith("yahoo.") ||
+    domain.endsWith(".yahoo.com") ||
+    domain === "ymail.com" ||
+    domain === "rocketmail.com"
   );
 }

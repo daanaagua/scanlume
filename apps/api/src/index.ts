@@ -629,6 +629,15 @@ app.post("/v1/auth/register", async (c) => {
     return c.json({ error: "Invalid registration payload.", details: parsed.error.flatten() }, 400);
   }
 
+  if (isYahooFamilyEmail(parsed.data.email)) {
+    return c.json(
+      {
+        error: "Yahoo email registration is not supported right now. Please use another email provider or Google sign-in.",
+      },
+      400,
+    );
+  }
+
   try {
     const user = await registerPasswordViewer(c.env, parsed.data);
     const verification = user.emailVerified
@@ -1872,6 +1881,18 @@ function maskEmail(email: string) {
 
   const visible = localPart.slice(0, 2);
   return `${visible}${"*".repeat(Math.max(localPart.length - visible.length, 1))}@${domain}`;
+}
+
+function isYahooFamilyEmail(email: string) {
+  const normalized = email.trim().toLowerCase();
+  const [, domain = ""] = normalized.split("@");
+  return (
+    domain === "yahoo.com" ||
+    domain.startsWith("yahoo.") ||
+    domain.endsWith(".yahoo.com") ||
+    domain === "ymail.com" ||
+    domain === "rocketmail.com"
+  );
 }
 
 function toAuthErrorStatus(error: unknown) {
