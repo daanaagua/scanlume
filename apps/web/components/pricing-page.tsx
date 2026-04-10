@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { CodeExampleTabs } from "@/components/code-example-tabs";
+import { createBillingCheckout, fetchAccount, type AccountResponse } from "@/lib/account";
+import { getOrCreateBrowserId } from "@/lib/browser-id";
 import {
   API_CODE_EXAMPLES,
   API_INPUT_NOTE,
@@ -11,10 +14,9 @@ import {
   CREDIT_EXPLAINER,
   WEB_PRICING,
 } from "@/lib/pricing";
-import { CodeExampleTabs } from "@/components/code-example-tabs";
-import { getOrCreateBrowserId } from "@/lib/browser-id";
-import { createBillingCheckout, fetchAccount, type AccountResponse } from "@/lib/account";
 import { savePurchaseIntent } from "@/lib/purchase-intent";
+
+const WEB_EXPERIENCE_PRODUCT_ID = "web_experience_onetime";
 
 function splitUsage(value: string) {
   return value.split("/").map((item) => item.trim()).filter(Boolean);
@@ -64,6 +66,7 @@ export function PricingPage() {
         window.location.assign(`/conta?flow=checkout&product=${encodeURIComponent(product)}`);
         return;
       }
+
       window.alert("Nao foi possivel abrir o checkout agora.");
     } finally {
       setPendingProduct(null);
@@ -71,6 +74,35 @@ export function PricingPage() {
   }
 
   const activePaidPlanId = account?.viewer.authenticated && account.currentPlan.isPaid ? account.currentPlan.id : null;
+  const webExperience = account?.webExperience;
+  const isExperiencePending = pendingProduct === WEB_EXPERIENCE_PRODUCT_ID;
+  const experienceUnavailableForPaidPlan = webExperience?.status === "paid_plan_active";
+  const experienceAlreadyPurchased = Boolean(webExperience?.hasPurchased);
+  const experienceButtonLabel =
+    accountStatus === "loading"
+      ? "Verificando oferta..."
+      : accountStatus === "error" || !webExperience
+        ? "Oferta indisponivel"
+        : experienceUnavailableForPaidPlan
+          ? "Nao aplicavel com plano pago ativo"
+          : experienceAlreadyPurchased
+            ? "Ja comprado"
+            : isExperiencePending
+              ? "Abrindo..."
+              : "Comprar experiencia web";
+  const experienceButtonDisabled =
+    accountStatus !== "loaded"
+    || !webExperience
+    || !webExperience.canPurchase
+    || experienceUnavailableForPaidPlan
+    || experienceAlreadyPurchased
+    || isExperiencePending;
+  const experienceKicker =
+    experienceUnavailableForPaidPlan
+      ? "Ja coberto pelo plano"
+      : experienceAlreadyPurchased
+        ? "Oferta ja usada"
+        : "Offer web";
 
   return (
     <div className="container pricing-shell" style={{ display: "grid", gap: "2rem" }}>
@@ -92,51 +124,96 @@ export function PricingPage() {
 
         {activeCatalog === "web" ? (
           <div className="pricing-stack" aria-label="Planos Web">
+            <article className="pricing-offer">
+              <div className="pricing-offer-head pricing-offer-head-vertical">
+                <span className="pricing-offer-kicker">{experienceKicker}</span>
+                <h2>Web Experience</h2>
+                <div className="pricing-offer-price pricing-offer-price-vertical">
+                  <strong>$1</strong>
+                  <small>1600 web credits</small>
+                </div>
+                <p className="pricing-offer-annual">Fastest path to a first paid OCR run</p>
+              </div>
+
+              <div className="pricing-offer-section">
+                <span className="pricing-section-label">Included features</span>
+                <ul className="pricing-feature-list">
+                  <li>One-time purchase</li>
+                  <li>Buy once</li>
+                  <li>1600 credits</li>
+                  <li>Ideal para rodar um primeiro pagamento real e validar o fluxo OCR no web</li>
+                </ul>
+              </div>
+
+              <div className="pricing-offer-actions">
+                <button
+                  type="button"
+                  className="solid-button"
+                  onClick={() => void handleCheckout(WEB_EXPERIENCE_PRODUCT_ID)}
+                  disabled={experienceButtonDisabled}
+                >
+                  {experienceButtonLabel}
+                </button>
+              </div>
+            </article>
+
             {WEB_PRICING.monthly.map((plan) => {
               const isCurrentPaidPlan = activePaidPlanId === plan.id;
 
               return (
                 <article key={plan.id} className={`pricing-offer${("recommended" in plan && plan.recommended) ? " is-recommended" : ""}`}>
-                <div className="pricing-offer-head pricing-offer-head-vertical">
-                  <span className="pricing-offer-kicker">{isCurrentPaidPlan ? "Plano atual" : ("recommended" in plan && plan.recommended) ? "Mais escolhido" : "Plano web"}</span>
-                  <h2>{plan.name}</h2>
-                  <div className="pricing-offer-price pricing-offer-price-vertical">
-                    <strong>{plan.price}</strong>
-                    <small>{plan.credits}</small>
+                  <div className="pricing-offer-head pricing-offer-head-vertical">
+                    <span className="pricing-offer-kicker">
+                      {isCurrentPaidPlan ? "Plano atual" : ("recommended" in plan && plan.recommended) ? "Mais escolhido" : "Plano web"}
+                    </span>
+                    <h2>{plan.name}</h2>
+                    <div className="pricing-offer-price pricing-offer-price-vertical">
+                      <strong>{plan.price}</strong>
+                      <small>{plan.credits}</small>
+                    </div>
+                    <p className="pricing-offer-annual">Plano anual: {plan.annualPrice} - {plan.annualCredits}</p>
                   </div>
-                  <p className="pricing-offer-annual">Plano anual: {plan.annualPrice} · {plan.annualCredits}</p>
-                </div>
 
-                <div className="pricing-offer-section">
-                  <span className="pricing-section-label">Included features</span>
-                  <ul className="pricing-feature-list">
-                    {splitUsage(plan.usage).map((item) => (
-                      <li key={`${plan.id}-${item}`}>{item}</li>
-                    ))}
-                    {splitLimits(plan.limits).map((item) => (
-                      <li key={`${plan.id}-limit-${item}`}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
+                  <div className="pricing-offer-section">
+                    <span className="pricing-section-label">Included features</span>
+                    <ul className="pricing-feature-list">
+                      {splitUsage(plan.usage).map((item) => (
+                        <li key={`${plan.id}-${item}`}>{item}</li>
+                      ))}
+                      {splitLimits(plan.limits).map((item) => (
+                        <li key={`${plan.id}-limit-${item}`}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
 
-                <div className="pricing-offer-actions">
-                  {accountStatus === "loading" ? (
-                    <span>Verificando plano...</span>
-                  ) : accountStatus === "error" ? (
-                    <span>Nao foi possivel verificar seu plano.</span>
-                  ) : isCurrentPaidPlan ? (
-                    <span>Plano atual</span>
-                  ) : (
-                    <>
-                      <button type="button" className="solid-button" onClick={() => void handleCheckout(`web_${plan.id}_monthly`)} disabled={pendingProduct === `web_${plan.id}_monthly`}>
-                        {pendingProduct === `web_${plan.id}_monthly` ? "Abrindo..." : "Assinar mensal"}
-                      </button>
-                      <button type="button" className="ghost-button" onClick={() => void handleCheckout(`web_${plan.id}_yearly`)} disabled={pendingProduct === `web_${plan.id}_yearly`}>
-                        {pendingProduct === `web_${plan.id}_yearly` ? "Abrindo..." : "Assinar anual"}
-                      </button>
-                    </>
-                  )}
-                </div>
+                  <div className="pricing-offer-actions">
+                    {accountStatus === "loading" ? (
+                      <span>Verificando plano...</span>
+                    ) : accountStatus === "error" ? (
+                      <span>Nao foi possivel verificar seu plano.</span>
+                    ) : isCurrentPaidPlan ? (
+                      <span>Plano atual</span>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          className="solid-button"
+                          onClick={() => void handleCheckout(`web_${plan.id}_monthly`)}
+                          disabled={pendingProduct === `web_${plan.id}_monthly`}
+                        >
+                          {pendingProduct === `web_${plan.id}_monthly` ? "Abrindo..." : "Assinar mensal"}
+                        </button>
+                        <button
+                          type="button"
+                          className="ghost-button"
+                          onClick={() => void handleCheckout(`web_${plan.id}_yearly`)}
+                          disabled={pendingProduct === `web_${plan.id}_yearly`}
+                        >
+                          {pendingProduct === `web_${plan.id}_yearly` ? "Abrindo..." : "Assinar anual"}
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </article>
               );
             })}

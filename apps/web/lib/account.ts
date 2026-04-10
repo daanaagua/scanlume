@@ -53,6 +53,14 @@ export type AccountResponse = {
     currentPeriodEnd: string | null;
     cancelAtPeriodEnd: boolean;
   };
+  webExperience: {
+    status: "available" | "active" | "consumed" | "expired" | "paid_plan_active";
+    canPurchase: boolean;
+    hasPurchased: boolean;
+    creditsTotal: number | null;
+    creditsRemaining: number | null;
+    expiresAt: string | null;
+  };
   waitlist: {
     joined: boolean;
     count: number;

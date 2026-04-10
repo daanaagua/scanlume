@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import app from "../../index";
+import { grantWebSubscriptionTerm, readWebSubscription } from "../web-subscriptions";
 import { readCreditBalance, sha256Hex } from "../store";
+import { grantWebCreditPack, readActiveWebCreditPack } from "../web-credit-packs";
 
 function createEnv() {
   return {
@@ -20,6 +22,25 @@ function createImageRequest(browserId: string, mode: "simple" | "formatted") {
     body: JSON.stringify({
       mode,
       browserId,
+      image: {
+        name: "receipt.png",
+        mimeType: "image/png",
+        dataUrl: "data:image/png;base64,ZmFrZQ==",
+        size: 1024,
+      },
+    }),
+  });
+}
+
+function createUserImageRequest(userId: string, mode: "simple" | "formatted") {
+  return new Request("https://api.scanlume.com/v1/ocr", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-test-user-id": userId,
+    },
+    body: JSON.stringify({
+      mode,
       image: {
         name: "receipt.png",
         mimeType: "image/png",
@@ -75,5 +96,71 @@ describe("/v1/ocr credit settlement", () => {
 
     expect(response.status).toBe(502);
     await expect(readAnonymousBalance(env, browserId)).resolves.toMatchObject({ remainingCredits: 5 });
+  });
+
+  it("charges an active one-time web experience pack before free logged-in credits", async () => {
+    const env = createEnv();
+    const fetchMock = vi.mocked(fetch);
+
+    await grantWebCreditPack({} as never, {
+      id: "web-pack-ocr-route",
+      userId: "u-web-pack-ocr-route",
+      productId: "web_experience_onetime",
+      creditsTotal: 1600,
+      purchasedAt: "2026-04-03T00:00:00.000Z",
+      expiresAt: "2026-05-03T00:00:00.000Z",
+    });
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ output_text: "simple text", usage: { input_tokens: 0, output_tokens: 0 } }), { status: 200 }),
+    );
+
+    const response = await app.fetch(createUserImageRequest("u-web-pack-ocr-route", "simple"), env as never);
+
+    expect(response.status).toBe(200);
+    await expect(readActiveWebCreditPack({} as never, "u-web-pack-ocr-route", "2026-04-10T00:00:00.000Z")).resolves.toMatchObject({
+      creditsRemaining: 1599,
+    });
+    await expect(readCreditBalance({} as never, { type: "user", key: "u-web-pack-ocr-route" })).resolves.toMatchObject({
+      remainingCredits: 50,
+    });
+  });
+
+  it("keeps the one-time pack untouched while an active paid web subscription is charged first", async () => {
+    const env = createEnv();
+    const fetchMock = vi.mocked(fetch);
+
+    await grantWebSubscriptionTerm({} as never, {
+      id: "term-ocr-route-priority",
+      userId: "u-ocr-route-priority",
+      planId: "starter",
+      billingInterval: "month",
+      creditsTotal: 8000,
+      startsAt: "2026-04-03T00:00:00.000Z",
+      endsAt: "2026-05-03T00:00:00.000Z",
+    });
+    await grantWebCreditPack({} as never, {
+      id: "web-pack-ocr-route-priority",
+      userId: "u-ocr-route-priority",
+      productId: "web_experience_onetime",
+      creditsTotal: 1600,
+      purchasedAt: "2026-04-03T00:00:00.000Z",
+      expiresAt: "2026-05-03T00:00:00.000Z",
+    });
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ output_text: "simple text", usage: { input_tokens: 0, output_tokens: 0 } }), { status: 200 }),
+    );
+
+    const response = await app.fetch(createUserImageRequest("u-ocr-route-priority", "simple"), env as never);
+
+    expect(response.status).toBe(200);
+    await expect(readWebSubscription({} as never, "u-ocr-route-priority")).resolves.toMatchObject({
+      creditsRemaining: 7999,
+    });
+    await expect(readActiveWebCreditPack({} as never, "u-ocr-route-priority", "2026-04-10T00:00:00.000Z")).resolves.toMatchObject({
+      creditsRemaining: 1600,
+    });
+    await expect(readCreditBalance({} as never, { type: "user", key: "u-ocr-route-priority" })).resolves.toMatchObject({
+      remainingCredits: 50,
+    });
   });
 });

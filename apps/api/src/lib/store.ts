@@ -81,7 +81,7 @@ type StoredCreditBalance = {
   updatedAt: string;
 };
 
-export type BillingPurchaseKind = "web_subscription" | "api_pack";
+export type BillingPurchaseKind = "web_subscription" | "web_credit_pack" | "api_pack";
 
 export interface BillingPurchaseState {
   id: string;
@@ -108,6 +108,17 @@ export interface WebSubscriptionTermState {
   status: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface WebCreditPackState {
+  id: string;
+  userId: string;
+  productId: string;
+  creditsTotal: number;
+  creditsRemaining: number;
+  purchasedAt: string;
+  expiresAt: string;
+  status: string;
 }
 
 export interface UserSubscriptionState {
@@ -162,6 +173,7 @@ const memoryUserPdfUsage = new Map<string, UserDailyPdfUsageState>();
 const memoryCreditBalances = new Map<string, StoredCreditBalance>();
 const memoryBillingPurchases = new Map<string, BillingPurchaseState>();
 const memoryWebSubscriptionTerms = new Map<string, WebSubscriptionTermState>();
+const memoryWebCreditPacks = new Map<string, WebCreditPackState>();
 const memoryUserSubscriptions = new Map<string, UserSubscriptionState>();
 const memoryApiCreditPacks = new Map<string, ApiCreditPackState>();
 const memoryApiJobs = new Map<string, ApiJobState>();
@@ -586,6 +598,81 @@ export async function readActiveWebSubscriptionTerm(env: WorkerEnv, userId: stri
   }
 
   return memoryTerms.at(-1) ?? null;
+}
+
+export async function writeWebCreditPack(env: WorkerEnv, pack: WebCreditPackState) {
+  if (env.DB) {
+    await env.DB.prepare(
+      `INSERT INTO web_credit_packs (
+        id, user_id, product_id, credits_total, credits_remaining, purchased_at, expires_at, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        product_id = excluded.product_id,
+        credits_total = excluded.credits_total,
+        credits_remaining = excluded.credits_remaining,
+        purchased_at = excluded.purchased_at,
+        expires_at = excluded.expires_at,
+        status = excluded.status;`,
+    )
+      .bind(
+        pack.id,
+        pack.userId,
+        pack.productId,
+        pack.creditsTotal,
+        pack.creditsRemaining,
+        pack.purchasedAt,
+        pack.expiresAt,
+        pack.status,
+      )
+      .run();
+  }
+
+  memoryWebCreditPacks.set(pack.id, pack);
+}
+
+export async function listWebCreditPacks(env: WorkerEnv, userId: string) {
+  const memoryPacks = [...memoryWebCreditPacks.values()]
+    .filter((pack) => pack.userId === userId)
+    .sort((left, right) => right.purchasedAt.localeCompare(left.purchasedAt));
+
+  if (env.DB) {
+    const { results } = await env.DB.prepare(
+      `SELECT id, user_id, product_id, credits_total, credits_remaining, purchased_at, expires_at, status
+       FROM web_credit_packs
+       WHERE user_id = ?
+       ORDER BY purchased_at DESC;`,
+    )
+      .bind(userId)
+      .all<{
+        id: string;
+        user_id: string;
+        product_id: string;
+        credits_total: number;
+        credits_remaining: number;
+        purchased_at: string;
+        expires_at: string;
+        status: string;
+      }>();
+
+    if (results.length > 0) {
+      const packs = results.map((row) => ({
+        id: row.id,
+        userId: row.user_id,
+        productId: row.product_id,
+        creditsTotal: row.credits_total,
+        creditsRemaining: row.credits_remaining,
+        purchasedAt: row.purchased_at,
+        expiresAt: row.expires_at,
+        status: row.status,
+      } satisfies WebCreditPackState));
+      for (const pack of packs) {
+        memoryWebCreditPacks.set(pack.id, pack);
+      }
+      return packs;
+    }
+  }
+
+  return memoryPacks;
 }
 
 export async function writeUserSubscriptionState(env: WorkerEnv, subscription: UserSubscriptionState) {

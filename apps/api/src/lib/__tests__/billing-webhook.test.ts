@@ -2,9 +2,23 @@ import { createHmac } from "node:crypto";
 
 import { describe, expect, it } from "vitest";
 
+import app from "../../index";
 import { createCheckoutSession, handleBillingWebhook, parseCreemWebhookEvent, verifyBillingWebhookSignature } from "../billing";
 import { readApiBalance } from "../api-usage";
+import { grantWebSubscriptionTerm } from "../web-subscriptions";
+import { readActiveWebCreditPack } from "../web-credit-packs";
 import { readUserSubscriptionState } from "../store";
+
+function createUserRequest(userId: string, path: string, init?: RequestInit) {
+  return new Request(`https://api.scanlume.com${path}`, {
+    ...init,
+    headers: {
+      "content-type": "application/json",
+      "x-test-user-id": userId,
+      ...(init?.headers ?? {}),
+    },
+  });
+}
 
 describe("billing webhooks", () => {
   it("creates a checkout session for an API-only pack purchase", async () => {
@@ -102,6 +116,54 @@ describe("billing webhooks", () => {
     });
   });
 
+  it("normalizes Creem checkout events for the one-time web experience pack", () => {
+    const event = parseCreemWebhookEvent({
+      CREEM_PRODUCT_MAP: JSON.stringify({ web_experience_onetime: "prod_creem_web_experience" }),
+    } as never, {
+      id: "evt_web_experience_1",
+      eventType: "checkout.completed",
+      created_at: 1775174400000,
+      object: {
+        id: "chk_web_experience_1",
+        product: { id: "prod_creem_web_experience" },
+        customer: { email: "pony17620@gmail.com" },
+        metadata: { userId: "u-web-experience-1" },
+      },
+    });
+
+    expect(event).toMatchObject({
+      id: "evt_web_experience_1",
+      provider: "creem",
+      type: "checkout.completed",
+      userId: "u-web-experience-1",
+      productId: "web_experience_onetime",
+      billingEmail: "pony17620@gmail.com",
+      shouldGrant: true,
+    });
+  });
+
+  it("grants a one-time web experience pack after a successful checkout webhook", async () => {
+    await handleBillingWebhook({} as never, {
+      id: "evt_web_experience_paid_1",
+      provider: "creem",
+      type: "checkout.completed",
+      userId: "u-web-experience-grant",
+      productId: "web_experience_onetime" as never,
+      sessionId: "checkout_web_experience_1",
+      occurredAt: "2026-04-03T00:00:00.000Z",
+      billingEmail: "pony17620@gmail.com",
+      shouldGrant: true,
+    });
+
+    await expect(readActiveWebCreditPack({} as never, "u-web-experience-grant", "2026-04-10T00:00:00.000Z")).resolves.toMatchObject({
+      productId: "web_experience_onetime",
+      creditsTotal: 1600,
+      creditsRemaining: 1600,
+      expiresAt: "2026-05-03T00:00:00.000Z",
+      status: "active",
+    });
+  });
+
   it("syncs subscription status without granting extra credits on scheduled cancel", async () => {
     await handleBillingWebhook({} as never, {
       id: "evt_web_starter_paid_1",
@@ -138,6 +200,57 @@ describe("billing webhooks", () => {
       planId: "starter",
       status: "active",
       cancelAtPeriodEnd: 1,
+    });
+  });
+
+  it("rejects checkout when the account already purchased the one-time web experience pack", async () => {
+    await handleBillingWebhook({} as never, {
+      id: "evt_web_experience_paid_2",
+      provider: "creem",
+      type: "checkout.completed",
+      userId: "u-web-experience-repeat",
+      productId: "web_experience_onetime" as never,
+      sessionId: "checkout_web_experience_repeat",
+      occurredAt: "2026-04-03T00:00:00.000Z",
+      shouldGrant: true,
+    });
+
+    const response = await app.fetch(
+      createUserRequest("u-web-experience-repeat", "/v1/billing/checkout", {
+        method: "POST",
+        body: JSON.stringify({ product: "web_experience_onetime" }),
+      }),
+      {} as never,
+    );
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toMatchObject({
+      code: "web_experience_already_purchased",
+    });
+  });
+
+  it("rejects checkout when the account already has an active paid web plan", async () => {
+    await grantWebSubscriptionTerm({} as never, {
+      id: "term_starter_paid_plan_block",
+      userId: "u-web-experience-paid-plan",
+      planId: "starter",
+      billingInterval: "month",
+      creditsTotal: 8000,
+      startsAt: "2026-04-03T00:00:00.000Z",
+      endsAt: "2026-05-03T00:00:00.000Z",
+    });
+
+    const response = await app.fetch(
+      createUserRequest("u-web-experience-paid-plan", "/v1/billing/checkout", {
+        method: "POST",
+        body: JSON.stringify({ product: "web_experience_onetime" }),
+      }),
+      {} as never,
+    );
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toMatchObject({
+      code: "web_experience_paid_plan_active",
     });
   });
 });

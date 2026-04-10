@@ -81,7 +81,7 @@ import {
   toSupportNotificationPayload,
   type SupportMessage,
 } from "./lib/support";
-import { consumeWebSubscriptionCredits, readWebSubscription } from "./lib/web-subscriptions";
+import { consumeLoggedInWebCredits, resolveLoggedInWebCredits } from "./lib/web-credits";
 import {
   getClientIp,
   listApiKeys,
@@ -257,7 +257,9 @@ app.post("/v1/billing/checkout", async (c) => {
   }).catch((error) => ({ error }));
 
   if ("error" in session) {
-    return c.json({ error: session.error instanceof Error ? session.error.message : "Checkout creation failed." }, 502);
+    const code = session.error instanceof Error ? session.error.message : "checkout_failed";
+    const status = code === "web_experience_already_purchased" || code === "web_experience_paid_plan_active" ? 409 : 502;
+    return c.json({ error: code, code }, status as 409 | 502);
   }
 
   return c.json(session, 201);
@@ -910,7 +912,7 @@ app.post("/v1/ocr", async (c) => {
 
   const actualCost = calcCost(result.usage);
   const creditSettlement = viewer.type === "user" && viewer.user
-    ? await consumeWebSubscriptionCredits(c.env, {
+    ? await consumeLoggedInWebCredits(c.env, {
         userId: viewer.user.id,
         amount: requestedCredits,
         now: new Date().toISOString(),
@@ -1210,7 +1212,7 @@ app.post("/v1/pdf/ocr", async (c) => {
     const createdAt = new Date().toISOString();
     const chargedCredits = billablePages * 2;
     const creditSettlement = viewer.type === "user" && viewer.user
-      ? await consumeWebSubscriptionCredits(c.env, {
+      ? await consumeLoggedInWebCredits(c.env, {
           userId: viewer.user.id,
           amount: chargedCredits,
           now: createdAt,
@@ -1449,14 +1451,9 @@ async function resolveViewerContext(c: Context<AppBindings>, browserId?: string)
 
   if (user) {
     const usage = await readUserDailyUsage(c.env, user.id, date);
-    const subscription = await readWebSubscription(c.env, user.id);
-    const balance = subscription
-      ? {
-          grantedCredits: subscription.creditsTotal,
-          usedCredits: Math.max(subscription.creditsTotal - subscription.creditsRemaining, 0),
-          remainingCredits: subscription.creditsRemaining,
-        }
-      : await readCreditBalance(c.env, { type: "user", key: user.id });
+    const balance = await resolveLoggedInWebCredits(c.env, {
+      userId: user.id,
+    });
     const resolvedPlan = await resolveCurrentPlan(c.env, {
       type: "user",
       user,

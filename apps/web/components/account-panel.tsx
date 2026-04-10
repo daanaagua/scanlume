@@ -5,9 +5,9 @@ import { useEffect, useMemo, useState } from "react";
 
 import { ApiKeyPanel } from "@/components/api-key-panel";
 import { AuthDialog } from "@/components/auth-dialog";
-import { getOrCreateBrowserId } from "@/lib/browser-id";
 import { requestPasswordReset, resendVerificationEmail } from "@/lib/auth";
-import { createApiKey, createBillingCheckout, fetchAccount, joinWaitlist, regenerateApiKey, revokeApiKey, type AccountResponse } from "@/lib/account";
+import { getOrCreateBrowserId } from "@/lib/browser-id";
+import { createApiKey, createBillingCheckout, fetchAccount, regenerateApiKey, revokeApiKey, type AccountResponse } from "@/lib/account";
 import { clearPurchaseIntent, readPurchaseIntent, savePurchaseIntent, type PurchaseIntent } from "@/lib/purchase-intent";
 import { subscribeUsageRefresh } from "@/lib/usage-sync";
 
@@ -15,6 +15,7 @@ const PURCHASE_PRODUCTS = {
   api_starter: { label: "API Starter", kind: "api", tier: "starter" },
   api_growth: { label: "API Growth", kind: "api", tier: "growth" },
   api_scale: { label: "API Scale", kind: "api", tier: "scale" },
+  web_experience_onetime: { label: "Web Experience", kind: "web_experience" },
   web_starter_monthly: { label: "Starter mensal", kind: "web", planId: "starter" },
   web_pro_monthly: { label: "Pro mensal", kind: "web", planId: "pro" },
   web_business_monthly: { label: "Business mensal", kind: "web", planId: "business" },
@@ -25,6 +26,15 @@ const PURCHASE_PRODUCTS = {
 
 type PurchaseProductId = keyof typeof PURCHASE_PRODUCTS;
 
+type WebExperienceSummary = {
+  title: string;
+  strong: string;
+  description: string;
+  meta: string;
+  cta: string | null;
+  href: string | null;
+};
+
 function isPurchaseProductId(value: string | null): value is PurchaseProductId {
   return !!value && value in PURCHASE_PRODUCTS;
 }
@@ -34,6 +44,10 @@ function hasCompletedPurchase(account: AccountResponse, product: PurchaseProduct
 
   if (purchase.kind === "api") {
     return account.api.effectiveTier === purchase.tier && account.api.remainingCredits > 0;
+  }
+
+  if (purchase.kind === "web_experience") {
+    return account.webExperience.hasPurchased;
   }
 
   return account.currentPlan.id === purchase.planId && account.currentPlan.isPaid;
@@ -54,11 +68,76 @@ function formatBillingStatus(status: AccountResponse["billing"]["status"]) {
   }
 }
 
+function formatDate(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  return new Date(value).toLocaleDateString("pt-BR");
+}
+
+function getWebExperienceSummary(account: AccountResponse): WebExperienceSummary {
+  const { webExperience } = account;
+  const total = webExperience.creditsTotal ?? 1600;
+  const remaining = webExperience.creditsRemaining ?? 0;
+  const expiresAt = formatDate(webExperience.expiresAt);
+
+  switch (webExperience.status) {
+    case "available":
+      return {
+        title: "Web Experience disponivel",
+        strong: "$1 - 1600 credits para um teste pago real",
+        description: "Pagamentos ja estao abertos. Compre uma vez, valide o checkout e use os credits direto no OCR web.",
+        meta: "Oferta unica por conta.",
+        cta: "Comprar experiencia web por $1",
+        href: null,
+      };
+    case "active":
+      return {
+        title: "Web Experience ativa",
+        strong: `${remaining} de ${total} credits restantes`,
+        description: expiresAt
+          ? `Seus credits da experiencia ja estao liberados e podem ser usados ate ${expiresAt}.`
+          : "Seus credits da experiencia ja estao liberados para uso imediato no OCR.",
+        meta: "Oferta usada uma vez; nao ha recompra.",
+        cta: null,
+        href: "/imagem-para-texto",
+      };
+    case "consumed":
+      return {
+        title: "Web Experience consumida",
+        strong: `Todos os ${total} credits ja foram usados`,
+        description: "Voce concluiu todo o saldo da experiencia. Se precisar de mais volume, siga para um plano web regular.",
+        meta: "A oferta era valida uma unica vez.",
+        cta: null,
+        href: "/precos",
+      };
+    case "expired":
+      return {
+        title: "Web Experience expirada",
+        strong: "Sua janela da oferta terminou",
+        description: expiresAt
+          ? `Os credits restantes expiraram em ${expiresAt}.`
+          : "Os credits restantes expiraram conforme a janela da oferta.",
+        meta: "A oferta era valida uma unica vez.",
+        cta: null,
+        href: "/precos",
+      };
+    case "paid_plan_active":
+      return {
+        title: "Web Experience nao se aplica ao seu plano atual",
+        strong: "Sua assinatura paga ja cobre o uso web",
+        description: "Enquanto seu plano pago estiver ativo, a experiencia de $1 nao se aplica a esta conta.",
+        meta: "Use o saldo do plano atual no OCR ou ajuste sua assinatura em /precos.",
+        cta: null,
+        href: "/precos",
+      };
+  }
+}
+
 export function AccountPanel() {
   const [account, setAccount] = useState<AccountResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [waitlistError, setWaitlistError] = useState<string | null>(null);
-  const [isJoiningWaitlist, setIsJoiningWaitlist] = useState(false);
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const [authActionMessage, setAuthActionMessage] = useState<string | null>(null);
   const [isSendingVerification, setIsSendingVerification] = useState(false);
@@ -69,6 +148,7 @@ export function AccountPanel() {
 
   useEffect(() => {
     const browserId = getOrCreateBrowserId();
+
     const loadAccount = () => {
       void fetchAccount(browserId)
         .then((data) => {
@@ -173,29 +253,6 @@ export function AccountPanel() {
     await refreshAccount();
   }
 
-  async function handleJoinWaitlist() {
-    setIsJoiningWaitlist(true);
-    setWaitlistError(null);
-
-    try {
-      const result = await joinWaitlist();
-      setAccount((current) => {
-        if (!current) {
-          return current;
-        }
-
-        return {
-          ...current,
-          waitlist: result.waitlist,
-        };
-      });
-    } catch (reason) {
-      setWaitlistError(reason instanceof Error ? reason.message : "Nao foi possivel entrar na lista de espera.");
-    } finally {
-      setIsJoiningWaitlist(false);
-    }
-  }
-
   async function handleResendVerification() {
     setIsSendingVerification(true);
     setAuthActionMessage(null);
@@ -209,6 +266,7 @@ export function AccountPanel() {
             ? "Enviamos um novo link de confirmacao para seu email."
             : "O envio de email ainda nao esta configurado neste ambiente.",
       );
+
       const verifiedUser = result.user;
       if (verifiedUser) {
         setAccount((current) => {
@@ -282,6 +340,7 @@ export function AccountPanel() {
   const pendingProductMeta = pendingProduct ? PURCHASE_PRODUCTS[pendingProduct] : null;
   const completedProductMeta = completedProduct ? PURCHASE_PRODUCTS[completedProduct] : null;
   const authRedirectTo = pendingProduct ? `/conta?flow=checkout&product=${encodeURIComponent(pendingProduct)}` : undefined;
+  const webExperienceSummary = getWebExperienceSummary(account);
 
   return (
     <section className="account-panel-shell">
@@ -313,7 +372,9 @@ export function AccountPanel() {
               <p>
                 {completedProductMeta.kind === "api"
                   ? "Seus API credits ja aparecem na conta. O proximo passo e gerar uma chave e testar a integracao."
-                  : "Seu plano web ja esta ativo. Agora voce pode voltar ao OCR e começar a usar o saldo contratado."}
+                  : completedProductMeta.kind === "web_experience"
+                    ? "Seus 1600 credits ja estao disponiveis. Agora voce pode voltar ao OCR web e validar o fluxo completo."
+                    : "Seu plano web ja esta ativo. Agora voce pode voltar ao OCR e comecar a usar o saldo contratado."}
               </p>
               <div className="hero-actions">
                 {completedProductMeta.kind === "api" ? (
@@ -323,6 +384,8 @@ export function AccountPanel() {
                     </button>
                     <Link href="/api" className="ghost-button">Abrir documentacao da API</Link>
                   </>
+                ) : completedProductMeta.kind === "web_experience" ? (
+                  <Link href="/imagem-para-texto" className="solid-button">Abrir OCR agora</Link>
                 ) : (
                   <Link href="/imagem-para-texto" className="solid-button">Ir para OCR</Link>
                 )}
@@ -391,6 +454,29 @@ export function AccountPanel() {
           <small>{account.notes.replyWindow}</small>
         </article>
 
+        <article className="account-card">
+          <span>{webExperienceSummary.title}</span>
+          <strong>{webExperienceSummary.strong}</strong>
+          <p>{webExperienceSummary.description}</p>
+          <small>{webExperienceSummary.meta}</small>
+          <div className="hero-actions">
+            {webExperienceSummary.cta ? (
+              <button
+                type="button"
+                className="solid-button"
+                onClick={() => void handleContinueCheckout("web_experience_onetime")}
+                disabled={checkoutProduct === "web_experience_onetime"}
+              >
+                {checkoutProduct === "web_experience_onetime" ? "Abrindo checkout..." : webExperienceSummary.cta}
+              </button>
+            ) : webExperienceSummary.href ? (
+              <Link href={webExperienceSummary.href} className="ghost-button">
+                {account.webExperience.status === "active" ? "Ir para OCR" : "Ver planos"}
+              </Link>
+            ) : null}
+          </div>
+        </article>
+
         <ApiKeyPanel
           api={account.api}
           onCreateKey={() => void handleCreateApiKey()}
@@ -435,32 +521,6 @@ export function AccountPanel() {
             {authActionMessage && <small>{authActionMessage}</small>}
           </article>
         )}
-
-        <article className="account-card waitlist-card">
-          <span>Versao paga de abril</span>
-            <strong>{account.waitlist.count} pessoa(s) na fila</strong>
-            <p>
-              {account.viewer.authenticated
-                ? account.waitlist.joined
-                  ? "Voce ja entrou na lista de espera. Quando a versao paga abrir, enviaremos aviso por email."
-                  : "Quer prioridade quando os planos pagos forem liberados? Entre na lista de espera."
-                : "Entre com email ou Google para entrar na lista de espera e receber aviso por email quando a cobranca abrir."}
-            </p>
-          {account.viewer.authenticated ? (
-            <button
-              type="button"
-              className="solid-button waitlist-button"
-              disabled={account.waitlist.joined || isJoiningWaitlist}
-              onClick={() => void handleJoinWaitlist()}
-            >
-              {account.waitlist.joined ? "Voce ja entrou na fila" : isJoiningWaitlist ? "Entrando..." : "Entrar na lista de espera"}
-            </button>
-          ) : (
-            <small>Login necessario para reservar seu lugar.</small>
-          )}
-          {account.waitlist.joinedAt && <small>Entrou em {new Date(account.waitlist.joinedAt).toLocaleDateString("pt-BR")}</small>}
-          {waitlistError && <small>{waitlistError}</small>}
-        </article>
       </div>
 
       <div className="plan-grid">

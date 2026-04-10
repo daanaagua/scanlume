@@ -53,8 +53,8 @@ export async function grantWebSubscriptionTerm(
   return readWebSubscription(env, input.userId);
 }
 
-export async function readWebSubscription(env: WorkerEnv, userId: string): Promise<ReadWebSubscriptionResult | null> {
-  const term = await readActiveWebSubscriptionTerm(env, userId);
+export async function readWebSubscription(env: WorkerEnv, userId: string, now = new Date().toISOString()): Promise<ReadWebSubscriptionResult | null> {
+  const term = await readActiveWebSubscriptionTerm(env, userId, now);
   if (!term) {
     return null;
   }

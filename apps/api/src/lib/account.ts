@@ -1,5 +1,6 @@
 import { getLoggedInDailyCreditLimit, getLoggedInDailyImageLimit, type SessionViewer } from "./auth";
 import { readNumber, readUserSubscriptionState, type WorkerEnv } from "./store";
+import { readLatestWebCreditPack } from "./web-credit-packs";
 
 export type AccountPlanId = "anonymous" | "free" | "starter" | "pro" | "business";
 export type BillingStatus = "inactive" | "active" | "trialing" | "past_due" | "canceled";
@@ -64,6 +65,14 @@ export type AccountSnapshot = {
     remainingCredits: number;
   };
   billing: BillingSummary;
+  webExperience: {
+    status: "available" | "active" | "consumed" | "expired" | "paid_plan_active";
+    canPurchase: boolean;
+    hasPurchased: boolean;
+    creditsTotal: number | null;
+    creditsRemaining: number | null;
+    expiresAt: string | null;
+  };
   waitlist: WaitlistSummary;
   availablePlans: AccountPlan[];
   notes: {
@@ -134,6 +143,7 @@ export async function buildAccountSnapshot(env: WorkerEnv, viewer: AccountViewer
       remainingCredits: Math.max(viewer.dailyCreditLimit - viewer.usage.usedCredits, 0),
     },
     billing: resolvedPlan.billing,
+    webExperience: await buildWebExperienceSummary(env, viewer.user, currentPlan),
     waitlist: await readWaitlistSummary(env, viewer.user),
     availablePlans: [
       withCurrentFlag(catalog.free, currentPlan.id === "free"),
@@ -143,7 +153,7 @@ export async function buildAccountSnapshot(env: WorkerEnv, viewer: AccountViewer
     ],
     notes: {
       replyWindow: "Respondemos em ate 1 dia.",
-      subscriptions: "Planos anuais aprovados: Starter $48 / ano (100.000 creditos), Pro $82 / ano (240.000 creditos), Business $228 / ano (800.000 creditos).",
+      subscriptions: "Pagamentos ja estao abertos para web e API. Planos web: Starter $5 / mes, Pro $9 / mes, Business $24 / mes. Planos anuais aprovados: Starter $48 / ano (100.000 creditos), Pro $82 / ano (240.000 creditos), Business $228 / ano (800.000 creditos). Web Experience: $1 uma unica vez com 1600 creditos.",
     },
   };
 }
@@ -323,6 +333,51 @@ async function readUserSubscription(env: WorkerEnv, userId: string) {
     current_period_end: state.currentPeriodEnd,
     cancel_at_period_end: state.cancelAtPeriodEnd,
   } satisfies SubscriptionRow;
+}
+
+async function buildWebExperienceSummary(env: WorkerEnv, user: SessionViewer | null, currentPlan: AccountPlan) {
+  if (!user) {
+    return {
+      status: "available",
+      canPurchase: true,
+      hasPurchased: false,
+      creditsTotal: null,
+      creditsRemaining: null,
+      expiresAt: null,
+    } as const;
+  }
+
+  const latestPack = await readLatestWebCreditPack(env, user.id);
+  if (latestPack) {
+    return {
+      status: latestPack.status === "expired" ? "expired" : latestPack.status === "consumed" ? "consumed" : "active",
+      canPurchase: false,
+      hasPurchased: true,
+      creditsTotal: latestPack.creditsTotal,
+      creditsRemaining: latestPack.creditsRemaining,
+      expiresAt: latestPack.expiresAt,
+    } as const;
+  }
+
+  if (currentPlan.isPaid) {
+    return {
+      status: "paid_plan_active",
+      canPurchase: false,
+      hasPurchased: false,
+      creditsTotal: null,
+      creditsRemaining: null,
+      expiresAt: null,
+    } as const;
+  }
+
+  return {
+    status: "available",
+    canPurchase: true,
+    hasPurchased: false,
+    creditsTotal: null,
+    creditsRemaining: null,
+    expiresAt: null,
+  } as const;
 }
 
 function resolveUserPlan(

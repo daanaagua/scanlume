@@ -13,6 +13,14 @@ function createAccountResponse(overrides: Record<string, unknown> = {}) {
     usage: { grantedCredits: 50, usedCredits: 0, remainingCredits: 50 },
     usageToday: { usedImages: 0, usedCredits: 0, remainingImages: 100, remainingCredits: 50 },
     billing: { status: "inactive", provider: null, billingEmail: null, currentPeriodStart: null, currentPeriodEnd: null, cancelAtPeriodEnd: false },
+    webExperience: {
+      status: "available",
+      canPurchase: true,
+      hasPurchased: false,
+      creditsTotal: null,
+      creditsRemaining: null,
+      expiresAt: null,
+    },
     waitlist: { joined: false, count: 2, joinedAt: null, canJoin: true },
     availablePlans: [],
     notes: { replyWindow: "", subscriptions: "" },
@@ -139,5 +147,60 @@ describe("PricingPage", () => {
     expect(screen.queryByRole("button", { name: /Assinar mensal/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Assinar anual/i })).not.toBeInTheDocument();
     expect(screen.getAllByText(/Verificando plano/i).length).toBeGreaterThan(0);
+  });
+
+  it("shows the $1 one-time web experience offer with 1600 credits", async () => {
+    fetchAccountMock.mockResolvedValue(createAccountResponse());
+
+    render(<PricingPage />);
+
+    expect(await screen.findByRole("heading", { name: /Web Experience/i })).toBeInTheDocument();
+    expect(screen.getByText("$1")).toBeInTheDocument();
+    expect(screen.getByText(/One-time purchase/i)).toBeInTheDocument();
+    expect(screen.getByText(/Buy once/i)).toBeInTheDocument();
+    expect(screen.getByText(/1600 credits/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Comprar experiencia web/i })).toBeEnabled();
+  });
+
+  it("does not allow buying the web experience twice after purchase", async () => {
+    fetchAccountMock.mockResolvedValue(createAccountResponse({
+      viewer: { authenticated: true, user: { id: "u1", email: "jam@scanlume.com", name: "Jam", avatarUrl: null, emailVerified: true, emailVerifiedAt: null, hasPassword: false, authProviders: ["google"] } },
+      webExperience: {
+        status: "active",
+        canPurchase: false,
+        hasPurchased: true,
+        creditsTotal: 1600,
+        creditsRemaining: 1600,
+        expiresAt: "2026-05-10T00:00:00.000Z",
+      },
+    }));
+
+    render(<PricingPage />);
+
+    const button = await screen.findByRole("button", { name: /Ja comprado/i });
+    expect(button).toBeDisabled();
+  });
+
+  it("disables the web experience CTA when a paid web plan is already active", async () => {
+    fetchAccountMock.mockResolvedValue(createAccountResponse({
+      viewer: { authenticated: true, user: { id: "u1", email: "jam@scanlume.com", name: "Jam", avatarUrl: null, emailVerified: true, emailVerifiedAt: null, hasPassword: false, authProviders: ["google"] } },
+      currentPlan: { id: "pro", label: "Pro", shortLabel: "Pro", description: "", priceLabel: "$9 / mes", isPaid: true, isCurrent: true, comingSoon: false, entitlements: { dailyImages: 99999, dailyCredits: 24000, maxBatchFiles: 50, maxImageMb: 20, maxBatchTotalMb: 80 }, features: [] },
+      usage: { grantedCredits: 24000, usedCredits: 250, remainingCredits: 23750 },
+      usageToday: { usedImages: 25, usedCredits: 25, remainingImages: 99974, remainingCredits: 23750 },
+      billing: { status: "active", provider: "creem", billingEmail: "jam@scanlume.com", currentPeriodStart: "2026-04-01T00:00:00.000Z", currentPeriodEnd: "2026-05-01T00:00:00.000Z", cancelAtPeriodEnd: false },
+      webExperience: {
+        status: "paid_plan_active",
+        canPurchase: false,
+        hasPurchased: false,
+        creditsTotal: null,
+        creditsRemaining: null,
+        expiresAt: null,
+      },
+    }));
+
+    render(<PricingPage />);
+
+    const button = await screen.findByRole("button", { name: /Nao aplicavel com plano pago ativo/i });
+    expect(button).toBeDisabled();
   });
 });

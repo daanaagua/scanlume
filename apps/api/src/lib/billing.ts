@@ -7,7 +7,8 @@ import {
   type BillingPurchaseKind,
   type WorkerEnv,
 } from "./store";
-import { grantWebSubscriptionTerm } from "./web-subscriptions";
+import { grantWebCreditPack, hasPurchasedWebCreditPack } from "./web-credit-packs";
+import { grantWebSubscriptionTerm, readWebSubscription } from "./web-subscriptions";
 
 const BILLING_PRODUCT_IDS = [
   "web_starter_monthly",
@@ -16,6 +17,7 @@ const BILLING_PRODUCT_IDS = [
   "web_starter_yearly",
   "web_pro_yearly",
   "web_business_yearly",
+  "web_experience_onetime",
   "api_starter",
   "api_growth",
   "api_scale",
@@ -60,6 +62,7 @@ const BILLING_PRODUCT_CONFIG: Record<BillingProductId, ProductConfig> = {
   web_starter_yearly: { kind: "web_subscription", planId: "starter", billingInterval: "year", creditsTotal: 100000, durationDays: 365 },
   web_pro_yearly: { kind: "web_subscription", planId: "pro", billingInterval: "year", creditsTotal: 240000, durationDays: 365 },
   web_business_yearly: { kind: "web_subscription", planId: "business", billingInterval: "year", creditsTotal: 800000, durationDays: 365 },
+  web_experience_onetime: { kind: "web_credit_pack", creditsTotal: 1600, durationDays: 30 },
   api_starter: { kind: "api_pack", tier: "starter", creditsTotal: 10000 },
   api_growth: { kind: "api_pack", tier: "growth", creditsTotal: 40000 },
   api_scale: { kind: "api_pack", tier: "scale", creditsTotal: 140000 },
@@ -79,6 +82,8 @@ export async function createCheckoutSession(
     }) => Promise<{ checkoutUrl: string }>;
   },
 ) {
+  await assertCheckoutEligibility(env, input);
+
   const provider = resolveBillingProvider(env);
   const successUrl = resolveBillingSuccessUrl(env);
   const requestId = `scanlume_${input.product}_${input.userId}_${Date.now()}`;
@@ -151,6 +156,18 @@ export async function handleBillingWebhook(env: WorkerEnv, event: BillingWebhook
     return;
   }
 
+  if (product.kind === "web_credit_pack" && product.creditsTotal && product.durationDays) {
+    await grantWebCreditPack(env, {
+      id: purchaseId,
+      userId: event.userId,
+      productId: event.productId,
+      creditsTotal: product.creditsTotal,
+      purchasedAt: event.occurredAt,
+      expiresAt: addDays(event.occurredAt, product.durationDays),
+    });
+    return;
+  }
+
   if (product.kind === "web_subscription" && product.planId && product.billingInterval && product.creditsTotal && product.durationDays) {
     await grantWebSubscriptionTerm(env, {
       id: purchaseId,
@@ -205,7 +222,7 @@ export function parseCreemWebhookEvent(env: WorkerEnv, payload: unknown): Billin
 
   if (event.eventType === "checkout.completed") {
     const product = BILLING_PRODUCT_CONFIG[billingProductId];
-    if (product.kind !== "api_pack") {
+    if (product.kind === "web_subscription") {
       return null;
     }
 
@@ -285,6 +302,22 @@ async function createCreemCheckout(
   }
 
   return { checkoutUrl: payload.checkout_url };
+}
+
+async function assertCheckoutEligibility(env: WorkerEnv, input: CheckoutSessionInput) {
+  if (input.product !== "web_experience_onetime") {
+    return;
+  }
+
+  const hasPurchased = await hasPurchasedWebCreditPack(env, input.userId);
+  if (hasPurchased) {
+    throw new Error("web_experience_already_purchased");
+  }
+
+  const activeSubscription = await readWebSubscription(env, input.userId);
+  if (activeSubscription) {
+    throw new Error("web_experience_paid_plan_active");
+  }
 }
 
 function resolveBillingProvider(env: WorkerEnv) {
