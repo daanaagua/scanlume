@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { buildPdfSelectionSummary, mapPdfOcrError, parseJsonResponse } from "@/lib/pdf-client";
-import { PDF_PAGE_RENDER_INTENT, buildNativeTextBlocks, buildPdfPageRenderInput, buildPreparedPdfPagePayload } from "@/lib/pdf-renderer";
+import { API_INPUT_NOTE, API_PRICING } from "@/lib/pricing";
+import { PDF_PAGE_RENDER_INTENT, buildNativeTextBlocks, buildPdfPageRenderInput, buildPreparedPdfPagePayload, buildPreparedPdfPages } from "@/lib/pdf-renderer";
 
 describe("buildPdfSelectionSummary", () => {
   it("marks a PDF as truncated when local pages exceed the remaining allowance", () => {
@@ -106,6 +107,95 @@ describe("buildPreparedPdfPagePayload", () => {
   });
 });
 
+describe("buildPreparedPdfPages", () => {
+  it("creates more than one OCR region for mixed PDF pages with separated raster islands", async () => {
+    const pixels = new Uint8ClampedArray(120 * 80 * 4);
+    const paintRect = (startX: number, startY: number, endX: number, endY: number) => {
+      for (let y = startY; y < endY; y += 1) {
+        for (let x = startX; x < endX; x += 1) {
+          const offset = (y * 120 + x) * 4;
+          pixels[offset] = 24;
+          pixels[offset + 1] = 24;
+          pixels[offset + 2] = 24;
+          pixels[offset + 3] = 255;
+        }
+      }
+    };
+
+    paintRect(10, 10, 26, 24);
+    paintRect(84, 48, 108, 66);
+
+    window.pdfjsLib = {
+      GlobalWorkerOptions: { workerSrc: "" },
+      getDocument: () => ({
+        promise: Promise.resolve({
+          numPages: 1,
+          getPage: async () => ({
+            getViewport: () => ({ width: 120, height: 80 }),
+            render: () => ({ promise: Promise.resolve() }),
+            getTextContent: async () => ({
+              items: [
+                {
+                  str: "Titulo nativo",
+                  width: 28,
+                  height: 10,
+                  transform: [10, 0, 0, 10, 38, 28],
+                },
+              ],
+            }),
+          }),
+        }),
+      }),
+    };
+
+    const originalCreateElement = document.createElement.bind(document);
+    let canvasCount = 0;
+    const createElementSpy = vi.spyOn(document, "createElement").mockImplementation(((tagName: string, options?: ElementCreationOptions) => {
+      const element = originalCreateElement(tagName, options);
+      if (tagName !== "canvas") {
+        return element;
+      }
+
+      canvasCount += 1;
+      const canvas = element as HTMLCanvasElement;
+      const context = {
+        canvas,
+        drawImage: () => undefined,
+        getImageData: () => ({ data: pixels }),
+      } as unknown as CanvasRenderingContext2D;
+
+      Object.defineProperty(canvas, "getContext", {
+        configurable: true,
+        value: () => context,
+      });
+      Object.defineProperty(canvas, "toBlob", {
+        configurable: true,
+        value: (callback: BlobCallback) => {
+          callback(new Blob([`canvas-${canvasCount}`], { type: "image/png" }));
+        },
+      });
+
+      return canvas;
+    }) as typeof document.createElement);
+
+    const file = {
+      type: "application/pdf",
+      arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer,
+    } as File;
+    const pages = await buildPreparedPdfPages(file, 1);
+
+    createElementSpy.mockRestore();
+
+    expect(pages).toHaveLength(1);
+    expect(pages[0]).toMatchObject({
+      source: "mixed",
+      pageNumber: 1,
+    });
+    expect(pages[0]?.ocrRegions).toHaveLength(2);
+    expect(pages[0]?.ocrRegions.map((region) => region.id)).toEqual(["page-1-region-1", "page-1-region-2"]);
+  });
+});
+
 describe("buildNativeTextBlocks", () => {
   it("scales pdf.js text coordinates into rendered canvas space", () => {
     const canvas = document.createElement("canvas");
@@ -134,6 +224,15 @@ describe("buildNativeTextBlocks", () => {
         height: 33,
       },
     });
+  });
+});
+
+describe("API pricing copy", () => {
+  it("states the v1 contract as JSON plus base64 data URL only", () => {
+    expect(API_INPUT_NOTE).toMatch(/json/i);
+    expect(API_INPUT_NOTE).toMatch(/base64 data url/i);
+    expect(API_INPUT_NOTE).toMatch(/apenas|only/i);
+    expect(API_PRICING.every((plan) => /json/i.test(plan.inputs) && /base64 data url/i.test(plan.inputs))).toBe(true);
   });
 });
 

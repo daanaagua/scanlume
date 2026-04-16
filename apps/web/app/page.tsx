@@ -22,7 +22,7 @@ import {
 export const metadata = buildMetadata({
   title: "Scanlume | OCR online em pt-BR para imagens e PDF",
   description:
-    "OCR online do Scanlume para converter screenshots, JPG, PNG e PDF em texto editavel com saida simples ou formatada em TXT, Markdown, HTML e PDF, com metodo editorial e revisao explicitados.",
+    "OCR online do Scanlume para converter screenshots, JPG, PNG e PDF em texto editavel com saida simples ou formatada em TXT, Markdown, HTML e PDF, com melhor leitura de tabelas, blocos complexos e layouts mistos.",
   keywords: [
     "scanlume",
     "ocr online pt-br",
@@ -80,12 +80,13 @@ export default function Home() {
             </p>
             <p className="hero-lead">
               A rota principal de <Link href="/imagem-para-texto">imagem para texto</Link> tambem atende buscas por <Link href="/imagem-para-texto">converter imagem em texto</Link> e <Link href="/imagem-para-texto">imagem em texto</Link>, mantendo o caso geral concentrado em uma pagina central.
-              Quando a origem ja esta em documento, a rota dedicada de <Link href="/pdf-para-texto">PDF para texto</Link> explica o fluxo de OCR por regiao, PDF pesquisavel e PDF reorganizado.
+              Quando a origem ja esta em documento, a rota dedicada de <Link href="/pdf-para-texto">PDF para texto</Link> explica o fluxo de OCR por regiao, PDF pesquisavel e PDF reorganizado. Quando a imagem principal e uma grade de dados, a rota <Link href="/tabela-de-imagem-para-texto">Tabela de imagem para texto</Link> destaca a leitura de linhas, colunas e grupos.
             </p>
             <div className="hero-bullets">
               <span>Gratis para testar</span>
               <span>Sem instalar aplicativo</span>
               <span>Copiar ou baixar em TXT, MD, HTML e PDF</span>
+              <span>Melhor para tabelas, blocos complexos e PDF misto</span>
             </div>
             <p className="support-email-note">
               Suporte e faturamento:
@@ -116,7 +117,7 @@ export default function Home() {
             <div>
               <p className="card-label">Modo 02</p>
               <h2>{FORMATTED_MODE_LABEL}</h2>
-              <p>Preserva a estrutura principal com titulos, paragrafos e uma ordem de leitura melhor para Word e Markdown.</p>
+              <p>Preserva a estrutura principal com titulos, paragrafos, tabelas e uma ordem de leitura melhor para Word e Markdown.</p>
             </div>
             <a href={`#${OCR_WORKSPACE_ID}`} className="solid-button large-button">
               Teste gratis agora
@@ -137,7 +138,7 @@ export default function Home() {
             <p className="eyebrow">Como funciona</p>
             <h2>Upload, OCR e download em um fluxo direto.</h2>
             <p>
-              O fluxo foi desenhado para reduzir atrito: envio imediato, previa no navegador e exportacao simples para continuar o trabalho em outro lugar.
+              O fluxo foi desenhado para reduzir atrito: envio imediato, previa no navegador e exportacao simples para continuar o trabalho em outro lugar, com mais contexto quando a imagem traz tabela, blocos complexos ou PDF misto.
             </p>
           </div>
 
@@ -151,7 +152,7 @@ export default function Home() {
               <span>02</span>
               <strong>Escolha o modo</strong>
               <p>
-                {SIMPLE_MODE_LABEL} para texto puro em imagens. {FORMATTED_MODE_LABEL} para preservar a leitura principal em imagens e PDF.
+                {SIMPLE_MODE_LABEL} para texto puro em imagens. {FORMATTED_MODE_LABEL} para preservar a leitura principal, tabelas e layouts mistos em imagens e PDF.
               </p>
             </article>
             <article className="timeline-step">

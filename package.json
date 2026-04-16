@@ -12,6 +12,7 @@
     "test": "pnpm test:web && pnpm test:api",
     "test:web": "pnpm --dir apps/web test",
     "test:api": "pnpm --dir apps/api test",
+    "verify:pdf-live": "node scripts/run-live-pdf-regression.mjs",
     "submit:indexnow": "node scripts/submit-indexnow.mjs"
   },
   "devDependencies": {

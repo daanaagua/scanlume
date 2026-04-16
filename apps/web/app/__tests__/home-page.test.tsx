@@ -20,6 +20,12 @@ describe("Home and product surfacing", () => {
     expect(screen.getAllByText(/PDF para texto/i).length).toBeGreaterThan(0);
   });
 
+  it("surfaces the dedicated table-image route on the homepage", () => {
+    render(<Home />);
+
+    expect(screen.getAllByText(/Tabela de imagem para texto/i).length).toBeGreaterThan(0);
+  });
+
   it("shows PDF-specific explanatory copy on workspace-first PDF pages", () => {
     render(<ToolLanding slug="pdf-para-texto" />);
 
@@ -30,5 +36,11 @@ describe("Home and product surfacing", () => {
     render(<ImageToTextPage />);
 
     expect(screen.getAllByText(/PDF para texto/i).length).toBeGreaterThan(0);
+  });
+
+  it("shows a dedicated landing page for image tables", () => {
+    render(<ToolLanding slug={"tabela-de-imagem-para-texto" as never} />);
+
+    expect(screen.getAllByText(/tabela de imagem para texto/i).length).toBeGreaterThan(0);
   });
 });

@@ -39,6 +39,31 @@ function countSources(pages: PdfPage[]) {
   };
 }
 
+function countTableBlocks(pages: PdfPage[]) {
+  return pages.reduce(
+    (summary, page) => {
+      for (const block of page.blocks) {
+        if (block.kind !== "table") {
+          continue;
+        }
+
+        const rowGroups = Array.isArray(block.rowGroups) ? block.rowGroups.length : 0;
+        const records = Array.isArray(block.records) ? block.records.length : 0;
+        summary.tableBlocks += 1;
+        summary.rowGroups += rowGroups;
+        summary.extractedRecords += records;
+      }
+
+      return summary;
+    },
+    {
+      tableBlocks: 0,
+      rowGroups: 0,
+      extractedRecords: 0,
+    },
+  );
+}
+
 function buildDocumentHtml(input: { title: string; pages: PdfPage[]; lockedPages: number }) {
   const chunks = [`<h1>${input.title}</h1>`];
   for (const page of input.pages.filter((page) => page.status !== "failed")) {
@@ -123,6 +148,7 @@ export function assemblePdfDocumentResult(input: AssemblePdfDocumentInput) {
         : undefined,
     },
     pageStats: countSources(input.pages),
+    tableStats: countTableBlocks(successfulPages),
     failedPages,
     exportSupport: { searchablePdf: true, reflowedPdf: true },
     billingUpsell: input.lockedPages > 0

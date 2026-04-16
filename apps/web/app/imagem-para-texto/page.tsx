@@ -34,6 +34,7 @@ export default function ImageToTextPage() {
             </div>
             <p>
               Se o arquivo ja estiver em documento, use a rota <Link href="/pdf-para-texto">PDF para texto</Link> para combinar texto nativo, OCR por regiao e downloads em PDF pesquisavel ou PDF reorganizado.
+              Se a imagem principal for uma grade de dados, a pagina <Link href="/tabela-de-imagem-para-texto">Tabela de imagem para texto</Link> destaca melhor a leitura de colunas, grupos de linhas e registros.
             </p>
           </div>
 
@@ -91,7 +92,7 @@ export default function ImageToTextPage() {
             </article>
             <article className="check-card">
               <strong>Limites declarados</strong>
-              <p>Labels muito pequenas, fotos inclinadas, sombras fortes e tabelas densas continuam sendo cenarios em que recomendamos revisao humana.</p>
+              <p>Labels muito pequenas, fotos inclinadas e sombras fortes ainda pedem revisao. Em compensacao, tabelas leves e blocos mais complexos agora entram melhor no modo formatado.</p>
             </article>
           </div>
         </div>

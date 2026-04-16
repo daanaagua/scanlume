@@ -7,9 +7,9 @@ export const WEB_PRICING = {
 } as const;
 
 export const API_PRICING = [
-  { id: "starter", name: "API Starter", price: "$9", credits: "10.000 API credits", rpm: "60 RPM", inputs: "base64 data URL" },
-  { id: "growth", name: "API Growth", price: "$29", credits: "40.000 API credits", rpm: "180 RPM", inputs: "base64 data URL", recommended: true },
-  { id: "scale", name: "API Scale", price: "$79", credits: "140.000 API credits", rpm: "600 RPM", inputs: "base64 data URL" },
+  { id: "starter", name: "API Starter", price: "$9", credits: "10.000 API credits", rpm: "60 RPM", inputs: "JSON + base64 data URL only" },
+  { id: "growth", name: "API Growth", price: "$29", credits: "40.000 API credits", rpm: "180 RPM", inputs: "JSON + base64 data URL only", recommended: true },
+  { id: "scale", name: "API Scale", price: "$79", credits: "140.000 API credits", rpm: "600 RPM", inputs: "JSON + base64 data URL only" },
 ] as const;
 
 export const CREDIT_EXPLAINER = [
@@ -26,7 +26,7 @@ export const BILLING_DISCLOSURES = [
 ] as const;
 
 export const API_INPUT_NOTE =
-  "A API de imagem no v1 aceita JSON com `mode` e `base64` em formato data URL. Se voce comecar com um arquivo local, primeiro converta a imagem para data URL e depois envie o payload.";
+  "A API de imagem no v1 aceita apenas JSON com `mode` e `base64` em formato base64 data URL. Upload multipart, arquivo bruto e URL remota nao fazem parte do contrato atual. Se voce comecar com um arquivo local, primeiro converta a imagem para data URL e depois envie o payload.";
 
 export const API_CODE_EXAMPLES = {
   cURL: `DATA_URL=$(python -c "import base64; print('data:image/png;base64,' + base64.b64encode(open('example.png', 'rb').read()).decode())")

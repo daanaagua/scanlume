@@ -71,7 +71,7 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
           featureList: [
             "OCR com IA em pt-BR",
             `${SIMPLE_MODE_LABEL} para texto puro`,
-            `${FORMATTED_MODE_LABEL} com estrutura principal preservada`,
+            `${FORMATTED_MODE_LABEL} com estrutura principal, tabelas e blocos complexos preservados`,
             "Download em TXT, Markdown e HTML",
           ],
         }}
@@ -139,8 +139,8 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
               <p>
                 {workspaceFirst
                   ? isPdfWorkspace
-                    ? "Continua melhor para imagens soltas. PDFs ficam restritos ao modo Texto formatado porque exigem reconstruir estrutura e layout."
-                    : "Melhor para extrair texto puro com menos espera em screenshots, posters e fotos simples."
+                  ? "Continua melhor para imagens soltas. PDFs ficam restritos ao modo Texto formatado porque exigem reconstruir estrutura e layout."
+                  : "Melhor para extrair texto puro com menos espera em screenshots, posters e fotos simples."
                   : "Texto puro, sem raciocinio extra, mais veloz para screenshot, poster e foto do celular."}
               </p>
             </div>
@@ -150,9 +150,9 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
               <p>
                 {workspaceFirst
                   ? isPdfWorkspace
-                    ? "E o modo que libera PDF no Scanlume: reaproveita texto nativo, aplica OCR nas regioes em imagem e agora reconstrui melhor o texto dentro do espaco original do PDF."
-                    : "Vale usar quando voce quer manter titulos, paragrafos e uma hierarquia mais limpa para revisar depois."
-                  : "Preserva a estrutura principal com titulos, paragrafos e uma leitura mais clara."}
+                  ? "E o modo que libera PDF no Scanlume: reaproveita texto nativo, aplica OCR nas regioes em imagem e agora reconstrui melhor o texto dentro do espaco original do PDF."
+                    : "Vale usar quando voce quer manter titulos, paragrafos, tabelas e uma hierarquia mais limpa para revisar depois."
+                  : "Preserva a estrutura principal com titulos, paragrafos, tabelas e uma leitura mais clara."}
               </p>
             </div>
             <a href={`#${OCR_WORKSPACE_ID}`} className="solid-button large-button">

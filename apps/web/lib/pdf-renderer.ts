@@ -117,6 +117,13 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
+type RasterBbox = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
 function blobToBase64(blob: Blob) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -158,17 +165,19 @@ export function buildNativeTextBlocks(items: PdfTextItem[], canvas: HTMLCanvasEl
     .filter((block: NativeTextBlock | null): block is NativeTextBlock => block !== null);
 }
 
-function detectRasterRegion(input: {
+function detectRasterRegions(input: {
   pixels: Uint8ClampedArray;
   width: number;
   height: number;
   nativeTextBlocks: NativeTextBlock[];
 }) {
   const blockPadding = 12;
-  let minX = input.width;
-  let minY = input.height;
-  let maxX = -1;
-  let maxY = -1;
+  const sampleStep = 4;
+  const dilationRadius = 2;
+  const regionPadding = 12;
+  const sampledWidth = Math.ceil(input.width / sampleStep);
+  const sampledHeight = Math.ceil(input.height / sampleStep);
+  const activeCells = new Uint8Array(sampledWidth * sampledHeight);
 
   const isCoveredByNativeText = (x: number, y: number) =>
     input.nativeTextBlocks.some((block) =>
@@ -178,8 +187,10 @@ function detectRasterRegion(input: {
       y <= block.bbox.y + block.bbox.height + blockPadding,
     );
 
-  for (let y = 0; y < input.height; y += 2) {
-    for (let x = 0; x < input.width; x += 2) {
+  for (let sampledY = 0; sampledY < sampledHeight; sampledY += 1) {
+    for (let sampledX = 0; sampledX < sampledWidth; sampledX += 1) {
+      const x = Math.min(sampledX * sampleStep, Math.max(input.width - 1, 0));
+      const y = Math.min(sampledY * sampleStep, Math.max(input.height - 1, 0));
       if (isCoveredByNativeText(x, y)) {
         continue;
       }
@@ -198,29 +209,159 @@ function detectRasterRegion(input: {
         continue;
       }
 
-      minX = Math.min(minX, x);
-      minY = Math.min(minY, y);
-      maxX = Math.max(maxX, x);
-      maxY = Math.max(maxY, y);
+      activeCells[sampledY * sampledWidth + sampledX] = 1;
     }
   }
 
-  if (maxX < minX || maxY < minY) {
-    return null;
+  if (!activeCells.some((cell) => cell === 1)) {
+    return [];
   }
 
-  const bbox = {
-    x: clamp(minX - 24, 0, input.width),
-    y: clamp(minY - 24, 0, input.height),
-    width: clamp(maxX - minX + 48, 1, input.width),
-    height: clamp(maxY - minY + 48, 1, input.height),
-  };
+  const dilatedCells = new Uint8Array(activeCells.length);
+  for (let sampledY = 0; sampledY < sampledHeight; sampledY += 1) {
+    for (let sampledX = 0; sampledX < sampledWidth; sampledX += 1) {
+      if (activeCells[sampledY * sampledWidth + sampledX] !== 1) {
+        continue;
+      }
 
-  if (bbox.width < 24 || bbox.height < 16) {
-    return null;
+      for (let deltaY = -dilationRadius; deltaY <= dilationRadius; deltaY += 1) {
+        const nextY = sampledY + deltaY;
+        if (nextY < 0 || nextY >= sampledHeight) {
+          continue;
+        }
+
+        for (let deltaX = -dilationRadius; deltaX <= dilationRadius; deltaX += 1) {
+          const nextX = sampledX + deltaX;
+          if (nextX < 0 || nextX >= sampledWidth) {
+            continue;
+          }
+
+          dilatedCells[nextY * sampledWidth + nextX] = 1;
+        }
+      }
+    }
   }
 
-  return bbox;
+  const visited = new Uint8Array(dilatedCells.length);
+  const rawRegions: RasterBbox[] = [];
+  const queueX: number[] = [];
+  const queueY: number[] = [];
+
+  for (let sampledY = 0; sampledY < sampledHeight; sampledY += 1) {
+    for (let sampledX = 0; sampledX < sampledWidth; sampledX += 1) {
+      const startIndex = sampledY * sampledWidth + sampledX;
+      if (dilatedCells[startIndex] !== 1 || visited[startIndex] === 1) {
+        continue;
+      }
+
+      visited[startIndex] = 1;
+      queueX.length = 0;
+      queueY.length = 0;
+      queueX.push(sampledX);
+      queueY.push(sampledY);
+
+      let minSampleX = sampledX;
+      let minSampleY = sampledY;
+      let maxSampleX = sampledX;
+      let maxSampleY = sampledY;
+      let sampledCellCount = 0;
+
+      while (queueX.length > 0) {
+        const currentX = queueX.shift() ?? 0;
+        const currentY = queueY.shift() ?? 0;
+        sampledCellCount += 1;
+        minSampleX = Math.min(minSampleX, currentX);
+        minSampleY = Math.min(minSampleY, currentY);
+        maxSampleX = Math.max(maxSampleX, currentX);
+        maxSampleY = Math.max(maxSampleY, currentY);
+
+        for (let deltaY = -1; deltaY <= 1; deltaY += 1) {
+          for (let deltaX = -1; deltaX <= 1; deltaX += 1) {
+            if (deltaX === 0 && deltaY === 0) {
+              continue;
+            }
+
+            const nextX = currentX + deltaX;
+            const nextY = currentY + deltaY;
+            if (nextX < 0 || nextX >= sampledWidth || nextY < 0 || nextY >= sampledHeight) {
+              continue;
+            }
+
+            const nextIndex = nextY * sampledWidth + nextX;
+            if (dilatedCells[nextIndex] !== 1 || visited[nextIndex] === 1) {
+              continue;
+            }
+
+            visited[nextIndex] = 1;
+            queueX.push(nextX);
+            queueY.push(nextY);
+          }
+        }
+      }
+
+      const rawWidth = (maxSampleX - minSampleX + 1) * sampleStep;
+      const rawHeight = (maxSampleY - minSampleY + 1) * sampleStep;
+      if (sampledCellCount < 6 || rawWidth < 24 || rawHeight < 16) {
+        continue;
+      }
+
+      rawRegions.push({
+        x: clamp((minSampleX * sampleStep) - regionPadding, 0, Math.max(input.width - 1, 0)),
+        y: clamp((minSampleY * sampleStep) - regionPadding, 0, Math.max(input.height - 1, 0)),
+        width: clamp(rawWidth + (regionPadding * 2), 1, input.width),
+        height: clamp(rawHeight + (regionPadding * 2), 1, input.height),
+      });
+    }
+  }
+
+  const mergedRegions = rawRegions
+    .sort((left, right) => {
+      if (left.y === right.y) {
+        return left.x - right.x;
+      }
+
+      return left.y - right.y;
+    })
+    .reduce<RasterBbox[]>((regions, nextRegion) => {
+      const existingIndex = regions.findIndex((region) => {
+        const horizontalGap = Math.max(region.x - (nextRegion.x + nextRegion.width), nextRegion.x - (region.x + region.width), 0);
+        const verticalGap = Math.max(region.y - (nextRegion.y + nextRegion.height), nextRegion.y - (region.y + region.height), 0);
+        const horizontalOverlap = Math.min(region.x + region.width, nextRegion.x + nextRegion.width) - Math.max(region.x, nextRegion.x);
+        const verticalOverlap = Math.min(region.y + region.height, nextRegion.y + nextRegion.height) - Math.max(region.y, nextRegion.y);
+        const minWidth = Math.min(region.width, nextRegion.width);
+        const minHeight = Math.min(region.height, nextRegion.height);
+
+        return (horizontalGap <= sampleStep && verticalOverlap >= minHeight * 0.6) ||
+          (verticalGap <= sampleStep && horizontalOverlap >= minWidth * 0.6);
+      });
+
+      if (existingIndex === -1) {
+        regions.push(nextRegion);
+        return regions;
+      }
+
+      const current = regions[existingIndex]!;
+      const mergedMinX = Math.min(current.x, nextRegion.x);
+      const mergedMinY = Math.min(current.y, nextRegion.y);
+      const mergedMaxX = Math.max(current.x + current.width, nextRegion.x + nextRegion.width);
+      const mergedMaxY = Math.max(current.y + current.height, nextRegion.y + nextRegion.height);
+
+      regions[existingIndex] = {
+        x: mergedMinX,
+        y: mergedMinY,
+        width: clamp(mergedMaxX - mergedMinX, 1, input.width),
+        height: clamp(mergedMaxY - mergedMinY, 1, input.height),
+      };
+
+      return regions;
+    }, []);
+
+  return mergedRegions.filter((bbox) => bbox.width >= 24 && bbox.height >= 16).map((bbox) => ({
+    x: bbox.x,
+    y: bbox.y,
+    width: Math.min(bbox.width, Math.max(input.width - bbox.x, 1)),
+    height: Math.min(bbox.height, Math.max(input.height - bbox.y, 1)),
+  }));
 }
 
 async function cropCanvasRegionToBase64(canvas: HTMLCanvasElement, bbox: { x: number; y: number; width: number; height: number }) {
@@ -328,21 +469,19 @@ export async function buildPreparedPdfPages(file: File, processablePages: number
     const textContent = await page.getTextContent();
     const nativeTextBlocks = buildNativeTextBlocks(textContent.items, canvas, renderScale);
     const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-    const rasterRegion = detectRasterRegion({
+    const rasterRegions = detectRasterRegions({
       pixels: imageData.data,
       width: canvas.width,
       height: canvas.height,
       nativeTextBlocks,
     });
-    const ocrRegions = rasterRegion
-      ? [
-          {
-            id: `page-${pageNumber}-region-1`,
-            imageBase64: await cropCanvasRegionToBase64(canvas, rasterRegion),
-            bbox: rasterRegion,
-          },
-        ]
-      : [];
+    const ocrRegions = await Promise.all(
+      rasterRegions.map(async (rasterRegion, regionIndex) => ({
+        id: `page-${pageNumber}-region-${regionIndex + 1}`,
+        imageBase64: await cropCanvasRegionToBase64(canvas, rasterRegion),
+        bbox: rasterRegion,
+      })),
+    );
 
     pages.push(
       buildPreparedPdfPagePayload({

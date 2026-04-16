@@ -141,7 +141,7 @@ export const toolPageContent = {
     workspaceFirst: true,
     defaultMode: "simple",
     primaryNav: true,
-    relatedSlugs: ["imagem-para-word", "png-para-texto", "jpg-para-texto", "ocr-em-portugues"],
+    relatedSlugs: ["imagem-para-word", "tabela-de-imagem-para-texto", "png-para-texto", "ocr-em-portugues"],
     contextualLinks: [
       {
         href: "/png-para-texto",
@@ -356,7 +356,7 @@ export const toolPageContent = {
     workspaceFirst: true,
     primaryNav: true,
     defaultMode: "formatted",
-    relatedSlugs: ["imagem-para-texto", "png-para-texto", "ocr-em-portugues", "transcrever-imagem-em-texto"],
+    relatedSlugs: ["imagem-para-texto", "tabela-de-imagem-para-texto", "ocr-em-portugues", "transcrever-imagem-em-texto"],
     contextualLinks: [
       {
         href: "/imagem-para-texto",
@@ -438,6 +438,111 @@ export const toolPageContent = {
         question: "Posso usar o resultado em Google Docs tambem?",
         answer:
           "Sim. O texto exportado pode ser colado em Word, Google Docs, Notion e outras ferramentas de edicao.",
+      },
+    ],
+  },
+  "tabela-de-imagem-para-texto": {
+    label: "Tabela de imagem para texto",
+    title: "Tabela de imagem para texto com OCR e IA | Scanlume",
+    description:
+      "Converta tabela de imagem em texto com OCR e IA. Extraia colunas, grupos de linhas e registros de screenshots, JPG, PNG e fotos com tabela.",
+    keywords: [
+      "tabela de imagem para texto",
+      "imagem de tabela para texto",
+      "extrair tabela de imagem",
+      "ocr tabela imagem",
+      "tabela imagem para texto",
+    ],
+    h1: "Tabela de imagem para texto com OCR e IA no navegador",
+    eyebrow: "Entrada dedicada para tabelas em screenshot, JPG, PNG e fotos",
+    lead:
+      "Use esta rota quando a imagem principal contiver uma tabela. O modo formatado do Scanlume agora tenta preservar cabecalhos, grupos de linhas e registros para reduzir o retrabalho depois do OCR.",
+    heroBullets: ["Tabelas em screenshot ou foto", "Melhor leitura de linhas e colunas", "HTML, Markdown e TXT"],
+    workspaceFirst: true,
+    defaultMode: "formatted",
+    primaryNav: false,
+    relatedSlugs: ["imagem-para-texto", "imagem-para-word", "pdf-para-texto", "ocr-online"],
+    contextualLinks: [
+      {
+        href: "/imagem-para-texto",
+        label: "Imagem para texto",
+        body: "Volte para a rota principal quando a imagem nao for tabela ou quando voce quiser comparar o fluxo geral antes de escolher o caso mais especifico.",
+      },
+      {
+        href: "/imagem-para-word",
+        label: "Imagem para Word",
+        body: "Use esta pagina quando a tabela extraida ainda vai para Word, Google Docs ou revisao editorial com mais limpeza.",
+      },
+      {
+        href: "/pdf-para-texto",
+        label: "PDF para texto",
+        body: "Abra esta rota quando a tabela estiver dentro de um PDF e voce quiser combinar OCR com texto nativo e exportacao em PDF.",
+      },
+      {
+        href: "/ocr-online",
+        label: "OCR online",
+        body: "Siga por aqui se voce quiser ver a visao geral do produto antes de focar somente em tabelas.",
+      },
+    ],
+    useCasesHeading: "Feito para quando a imagem principal e uma tabela, nao so um paragrafo solto.",
+    useCasesLead:
+      "Essa rota cobre tabelas comerciais, listas de precos, cronogramas, relatorios leves e imagens em que a relacao entre linhas e colunas importa tanto quanto o texto.",
+    useCases: [
+      {
+        title: "Tabela em screenshot",
+        body: "Boa para dashboards, comparativos, listas de precos e paineis capturados direto da tela.",
+      },
+      {
+        title: "Tabela em foto",
+        body: "Ajuda quando a tabela foi fotografada no celular e voce quer reaproveitar o conteudo sem redigitar cada linha.",
+      },
+      {
+        title: "Tabela com grupo de linhas",
+        body: "Tambem cobre tabelas em que a primeira coluna agrupa varias linhas de detalhe, como categorias, produtos ou centros de custo.",
+      },
+      {
+        title: "Saida pronta para revisar",
+        body: "A ideia nao e recriar Excel no navegador, e sim entregar um HTML, Markdown ou TXT mais utilizavel para copiar e limpar depois.",
+      },
+    ],
+    stepsHeading: "Como extrair uma tabela de imagem com menos retrabalho.",
+    stepsLead:
+      "A experiencia continua simples: subir a imagem, usar o modo formatado e revisar a tabela detectada antes de copiar ou baixar.",
+    steps: [
+      {
+        title: "Envie a imagem da tabela",
+        body: "Funciona melhor com screenshot, PNG, JPG ou foto em que as linhas e colunas ainda estao legiveis.",
+      },
+      {
+        title: "Use Texto formatado",
+        body: "Esse modo tenta reconhecer cabecalhos, colunas, grupos de linhas e registros em vez de despejar tudo como paragrafo corrido.",
+      },
+      {
+        title: "Revise e exporte",
+        body: "Veja a previa HTML da tabela, copie o resultado ou baixe em HTML, Markdown e TXT para seguir o trabalho.",
+      },
+    ],
+    faqHeading: "FAQ sobre tabela de imagem para texto.",
+    faq: [
+      {
+        question: "Essa pagina serve so para PDF?",
+        answer:
+          "Nao. O foco aqui e imagem com tabela, como screenshot, JPG, PNG e foto. Se a tabela estiver em PDF, a rota mais certa costuma ser PDF para texto.",
+      },
+      {
+        question: "O Scanlume recria a tabela original exatamente igual?",
+        answer:
+          "Nao prometemos uma copia visual perfeita. O objetivo desta versao e recuperar melhor a estrutura util da tabela para leitura e reaproveitamento.",
+      },
+      {
+        question: "Funciona com tabelas que agrupam varias linhas em uma mesma categoria?",
+        answer:
+          "Sim. Esse e um dos cenarios que motivaram a nova rota, especialmente quando a primeira coluna funciona como agrupador de varias linhas.",
+      },
+      {
+        question: "Quando vale mais usar essa pagina do que imagem para texto?",
+        answer:
+          "Quando a imagem principal e uma tabela e voce quer destacar linhas, colunas e registros na saida, em vez de tratar tudo como texto corrido.",
       },
     ],
   },
@@ -1416,6 +1521,7 @@ const HOME_FLOW_SLUGS = [
   "imagem-para-texto",
   "pdf-para-texto",
   "imagem-para-word",
+  "tabela-de-imagem-para-texto",
   "ocr-online",
   "jpg-para-texto",
   "png-para-texto",

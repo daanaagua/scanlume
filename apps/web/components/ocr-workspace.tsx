@@ -14,6 +14,18 @@ type Mode = "simple" | "formatted";
 type FormatTab = "txt" | "md" | "html";
 type DocumentKind = "image" | "pdf";
 
+type ImageTableSummary = {
+  tableCount: number;
+  rowGroupCount: number;
+  recordCount: number;
+};
+
+type PdfTableStats = {
+  tableBlocks: number;
+  rowGroups: number;
+  extractedRecords: number;
+};
+
 type SelectedFile = {
   id: string;
   file: File;
@@ -28,6 +40,7 @@ type ImageResultPayload = {
   md?: string;
   html?: string;
   preview: string;
+  tableSummary?: ImageTableSummary;
 };
 
 type PdfResultPayload = {
@@ -47,6 +60,7 @@ type PdfResultPayload = {
     ocrPages: number;
     mixedPages: number;
   };
+  tableStats?: PdfTableStats;
   failedPages: Array<{
     pageNumber: number;
     errorCode: string;
@@ -178,6 +192,68 @@ function fileToDataUrl(file: File) {
 
 function baseName(filename: string) {
   return filename.replace(/\.[^.]+$/, "") || "resultado";
+}
+
+function formatPageCount(count: number, singular: string, plural: string) {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function buildPdfPageMixSummary(pageStats: PdfResultPayload["pageStats"]) {
+  const summary: string[] = [];
+
+  if (pageStats.mixedPages > 0) {
+    summary.push(`${formatPageCount(pageStats.mixedPages, "pagina mista", "paginas mistas")}: texto nativo + OCR em regioes`);
+  }
+
+  if (pageStats.textLayerPages > 0) {
+    summary.push(formatPageCount(pageStats.textLayerPages, "pagina so com texto nativo", "paginas so com texto nativo"));
+  }
+
+  if (pageStats.ocrPages > 0) {
+    summary.push(formatPageCount(pageStats.ocrPages, "pagina so com OCR integral", "paginas so com OCR integral"));
+  }
+
+  return summary;
+}
+
+function buildImageTableSummary(tableSummary?: ImageTableSummary) {
+  if (!tableSummary || tableSummary.tableCount === 0) {
+    return [];
+  }
+
+  const summary = [
+    `${tableSummary.tableCount} ${tableSummary.tableCount === 1 ? "tabela detectada" : "tabelas detectadas"}`,
+  ];
+
+  if (tableSummary.rowGroupCount > 0) {
+    summary.push(`${tableSummary.rowGroupCount} ${tableSummary.rowGroupCount === 1 ? "grupo de linhas" : "grupos de linhas"}`);
+  }
+
+  if (tableSummary.recordCount > 0) {
+    summary.push(`${tableSummary.recordCount} ${tableSummary.recordCount === 1 ? "registro extraido" : "registros extraidos"}`);
+  }
+
+  return summary;
+}
+
+function buildPdfTableSummary(tableStats?: PdfTableStats) {
+  if (!tableStats || tableStats.tableBlocks === 0) {
+    return [];
+  }
+
+  const summary = [
+    `${tableStats.tableBlocks} ${tableStats.tableBlocks === 1 ? "bloco de tabela" : "blocos de tabela"}`,
+  ];
+
+  if (tableStats.rowGroups > 0) {
+    summary.push(`${tableStats.rowGroups} ${tableStats.rowGroups === 1 ? "grupo de linhas" : "grupos de linhas"}`);
+  }
+
+  if (tableStats.extractedRecords > 0) {
+    summary.push(`${tableStats.extractedRecords} ${tableStats.extractedRecords === 1 ? "registro extraido" : "registros extraidos"}`);
+  }
+
+  return summary;
 }
 
 function revokePreviewUrls(files: SelectedFile[]) {
@@ -453,6 +529,7 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
                   md: imageResult.md,
                   html: imageResult.html,
                   preview: imageResult.preview,
+                  tableSummary: imageResult.tableSummary,
                 },
               },
             }));
@@ -681,6 +758,10 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
     ? `OCR simples = 1 credito • Texto formatado = 2 credits • PDF = 2 credits por pagina • O saldo total diminui apos cada OCR.`
     : `Voce comeca com 5 credits anonimos. Entre para liberar 50 credits totais e continuar processando imagens e PDFs.`;
 
+  const pdfPageMixSummary = primaryPreview?.kind === "pdf" ? buildPdfPageMixSummary(primaryPreview.pageStats) : [];
+  const imageTableSummary = primaryPreview?.kind === "image" ? buildImageTableSummary(primaryPreview.tableSummary) : [];
+  const pdfTableSummary = primaryPreview?.kind === "pdf" ? buildPdfTableSummary(primaryPreview.tableStats) : [];
+
   return (
     <section className={`workspace-shell${priorityLayout ? " workspace-shell-priority" : ""}`}>
       {!priorityLayout && (
@@ -689,7 +770,7 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
             <p className="eyebrow">Ferramenta principal</p>
             <h2>Upload instantaneo com previa e download.</h2>
             <p className="workspace-intro">
-              {SIMPLE_MODE_LABEL} entrega texto puro. {FORMATTED_MODE_LABEL} reorganiza titulos, paragrafos e a estrutura principal para Word, Markdown e HTML.
+              {SIMPLE_MODE_LABEL} entrega texto puro. {FORMATTED_MODE_LABEL} reorganiza titulos, paragrafos, tabelas e blocos complexos para Word, Markdown e HTML.
             </p>
           </div>
         </div>
@@ -728,7 +809,7 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
                 </div>
               </div>
               <p>
-                Abra JPG, PNG, screenshots ou um PDF e escolha a saida que faz sentido para copiar, revisar ou baixar usando o mesmo saldo de credits.
+                Abra JPG, PNG, screenshots ou um PDF e escolha a saida que faz sentido para copiar, revisar ou baixar. O modo formatado agora lida melhor com tabelas e blocos complexos.
               </p>
             </div>
           </div>
@@ -778,7 +859,7 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
             </small>
             <small>
               {mode === "formatted"
-                ? "PDFs mostram paginas processadas, paginas bloqueadas e downloads em HTML, Markdown e PDF."
+                ? "PDFs mostram paginas processadas, paginas bloqueadas, tabelas detectadas e downloads em HTML, Markdown e PDF."
                 : "OCR simples aceita apenas imagens porque PDFs exigem reconstrucao de estrutura e layout."}
             </small>
           </label>
@@ -969,14 +1050,28 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
               {isPdfPreview && primaryFile && (
                 <div className="pdf-result-summary">
                   <strong>{primaryFile.file.name}</strong>
-                  <span>{primaryPreview.totalPages} paginas no total</span>
-                  <span>{primaryPreview.processedPages} paginas processadas</span>
-                  <span>Texto nativo: {primaryPreview.pageStats.textLayerPages}</span>
-                  <span>OCR: {primaryPreview.pageStats.ocrPages}</span>
-                  <span>Misto: {primaryPreview.pageStats.mixedPages}</span>
+                  <span>{formatPageCount(primaryPreview.totalPages, "pagina no total", "paginas no total")}</span>
+                  <span>{formatPageCount(primaryPreview.processedPages, "pagina processada", "paginas processadas")}</span>
+                  {primaryPreview.lockedPages > 0 ? (
+                    <span>{formatPageCount(primaryPreview.lockedPages, "pagina bloqueada pelo saldo atual", "paginas bloqueadas pelo saldo atual")}</span>
+                  ) : null}
+                  {pdfPageMixSummary.map((summary) => (
+                    <span key={summary}>{summary}</span>
+                  ))}
+                  {pdfTableSummary.map((summary) => (
+                    <span key={summary}>{summary}</span>
+                  ))}
                   {primaryPreview.billingUpsell?.required ? <a href={primaryPreview.billingUpsell.ctaHref}>{primaryPreview.billingUpsell.ctaLabel}</a> : null}
                 </div>
               )}
+              {primaryPreview.kind === "image" && imageTableSummary.length > 0 ? (
+                <div className="pdf-result-summary">
+                  <strong>Estrutura detectada</strong>
+                  {imageTableSummary.map((summary) => (
+                    <span key={summary}>{summary}</span>
+                  ))}
+                </div>
+              ) : null}
               <div className="preview-actions">
                 <button
                   className="ghost-button"
@@ -1034,6 +1129,11 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
                   </button>
                 )}
               </div>
+              {isPdfPreview ? (
+                <p className="workspace-note">
+                  PDF pesquisavel preserva a pagina original e adiciona texto selecionavel nas regioes OCR. PDF reorganizado recompae o conteudo para leitura continua.
+                </p>
+              ) : null}
 
               <div className="result-preview">
                 {activeFormat === "html" && (primaryPreview.kind === "pdf" ? primaryPreview.html : primaryPreview.html) ? (

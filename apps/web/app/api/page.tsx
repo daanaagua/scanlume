@@ -95,6 +95,7 @@ export default function ApiPage() {
             <h1>Integre o OCR do Scanlume em apps, automacoes e processos internos.</h1>
             <p>Compre API credits, gere chaves na sua conta e use os exemplos abaixo para iniciar a integracao.</p>
             <p>{API_INPUT_NOTE}</p>
+            <p>Hoje, o v1 cobre OCR de imagem via `POST /v1/api/ocr` com `application/json`. O contrato publico atual nao inclui upload multipart nem URL de arquivo.</p>
           </div>
           <CodeExampleTabs examples={API_CODE_EXAMPLES} />
           <div className="hero-card" style={{ display: "grid", gap: "0.75rem" }}>

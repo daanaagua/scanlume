@@ -59,6 +59,10 @@ const compactSections: LlmsSection[] = [
         "Structured OCR route for users who want cleaner output before pasting into Word or Google Docs.",
       ),
       buildToolEntry(
+        "tabela-de-imagem-para-texto",
+        "Dedicated route for OCR on image-based tables, with emphasis on columns, grouped rows, and reusable structured output.",
+      ),
+      buildToolEntry(
         "ocr-online",
         "General OCR hub explaining the browser workflow, supported files and the difference between simple and formatted extraction.",
       ),
@@ -74,6 +78,10 @@ const compactSections: LlmsSection[] = [
       buildToolEntry(
         "jpg-para-texto",
         "OCR landing page for JPG photos, posters and camera captures that need quick text extraction.",
+      ),
+      buildToolEntry(
+        "tabela-de-imagem-para-texto",
+        "Dedicated page for extracting structured text from screenshots, JPG, PNG, and photos whose main content is a table.",
       ),
       buildToolEntry(
         "png-para-texto",
@@ -170,6 +178,10 @@ const fullSections: LlmsSection[] = [
         "Product page for users who care more about preserving reading order and structure before moving OCR output into Word, Google Docs or editorial review workflows.",
       ),
       buildToolEntry(
+        "tabela-de-imagem-para-texto",
+        "Product page for users whose main OCR problem is an image table rather than plain paragraphs, with support for headers, grouped rows, and export-ready output.",
+      ),
+      buildToolEntry(
         "ocr-online",
         "General OCR route for users looking for an online OCR tool in Portuguese. Covers supported formats, output modes and the core browser workflow without app installation.",
       ),
@@ -189,6 +201,10 @@ const fullSections: LlmsSection[] = [
       buildToolEntry(
         "pdf-para-texto",
         "Scenario page for OCR on PDFs with text, scanned pages or mixed layouts where the user wants text exports plus downloadable PDF outputs.",
+      ),
+      buildToolEntry(
+        "tabela-de-imagem-para-texto",
+        "Scenario page for screenshots, JPG, PNG, and photos where the main OCR target is a table with columns, grouped rows, or repeated detail records.",
       ),
       buildToolEntry(
         "png-para-texto",

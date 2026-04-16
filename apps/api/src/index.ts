@@ -28,23 +28,24 @@ import {
   verifyEmailToken,
   upsertGoogleViewer,
 } from "./lib/auth";
-import {
-  blocksToHtml,
-  blocksToMarkdown,
-  blocksToText,
-  extractResponseText,
-} from "./lib/formatters";
+  import {
+    blocksToHtml,
+    blocksToMarkdown,
+    blocksToText,
+    collectTableStats,
+    extractResponseText,
+  } from "./lib/formatters";
 import {
   FORMATTED_PROMPT,
   FORMATTED_SYSTEM_PROMPT,
   SIMPLE_PROMPT,
   SUPPORT_SYSTEM_PROMPT,
 } from "./lib/prompts";
-import { inspectPdfFile, parsePreparedPagesJson } from "./lib/pdf-ingest";
+import { inspectPdfFile, parsePreparedPagesJson, validatePreparedPdfPayload } from "./lib/pdf-ingest";
 import { defaultPdfUpsell, buildPdfAllowance, countBillablePdfPages, acquirePdfProcessingLock, releasePdfProcessingLock } from "./lib/pdf-limits";
 import { assemblePdfDocumentResult, buildPdfRouteOutcome } from "./lib/pdf-ocr";
 import { buildPdfRegionPrompt } from "./lib/pdf-prompts";
-import { buildPdfPageResult, mapStructuredOcrBlocks } from "./lib/pdf-segmentation";
+import { buildPdfPageResult, mapStructuredOcrBlocks, orderPageBlocksForReading } from "./lib/pdf-segmentation";
 import type { PdfPageBlock } from "./lib/pdf-segmentation";
 import {
   buildReflowedPdfBytes,
@@ -58,11 +59,12 @@ import {
   authForgotPasswordSchema,
   authLoginSchema,
   authRegisterSchema,
-  authResetPasswordSchema,
-  authVerifyEmailSchema,
-  formattedBlocksEnvelopeSchema,
-  formattedJsonSchema,
-  ocrRequestSchema,
+    authResetPasswordSchema,
+    authVerifyEmailSchema,
+    type FormattedBlock,
+    formattedBlocksEnvelopeSchema,
+    formattedJsonSchema,
+    ocrRequestSchema,
   supportAssistantJsonSchema,
   supportAssistantSchema,
   supportChatRequestSchema,
@@ -157,19 +159,28 @@ async function getRequestViewer(c: Context<AppBindings>) {
   return getSessionViewer(c, c.env);
 }
 
-function normalizeFormattedBlockType(value?: string): "h1" | "h2" | "p" | "br" {
-  return value === "h1" || value === "h2" || value === "br" ? value : "p";
-}
+ function normalizeFormattedBlockType(value?: string): "h1" | "h2" | "p" | "br" {
+    return value === "h1" || value === "h2" || value === "br" ? value : "p";
+  }
+  
+ function toFormattedBlocks(blocks: PdfPageBlock[]): FormattedBlock[] {
+    return blocks
+      .flatMap((block) => {
+        if (block.formattedBlock && typeof block.order === "number") {
+          return [{ ...block.formattedBlock, order: block.order }];
+        }
 
-function toFormattedBlocks(blocks: PdfPageBlock[]) {
-  return blocks
-    .filter((block): block is PdfPageBlock & { text: string; order: number } => typeof block.text === "string" && typeof block.order === "number")
-    .map((block) => ({
-      type: normalizeFormattedBlockType(block.kind),
-      text: block.text,
-      order: block.order,
-    }));
-}
+        if (typeof block.text === "string" && typeof block.order === "number") {
+          return [{
+            type: normalizeFormattedBlockType(block.kind),
+            text: block.text,
+            order: block.order,
+          } satisfies FormattedBlock];
+        }
+
+        return [];
+      });
+  }
 
 app.use("*", async (c, next) => {
   const middleware = cors({
@@ -1046,7 +1057,12 @@ app.post("/v1/pdf/ocr", async (c) => {
     }
 
     const inspection = await inspectPdfFile({ file, env: c.env });
-    const resolvedTotalPages = parsed.data.totalPages;
+    validatePreparedPdfPayload({
+      claimedTotalPages: parsed.data.totalPages,
+      actualTotalPages: inspection.totalPages,
+      preparedPages: parsed.data.preparedPages,
+    });
+    const resolvedTotalPages = inspection.totalPages;
     const allowance = buildPdfAllowance({
       viewerType: viewer.type,
       totalPages: resolvedTotalPages,
@@ -1146,8 +1162,6 @@ app.post("/v1/pdf/ocr", async (c) => {
                 );
               }
             }
-            const nativeText = page.nativeTextBlocks.map((block: { text: string }) => block.text).join("\n");
-            const combinedText = [nativeText, ...ocrTexts].filter(Boolean).join("\n\n");
             if (page.ocrRegions.length > 0 && successfulRegions === 0) {
               return buildPdfPageResult({
                 pageNumber: page.pageNumber,
@@ -1173,17 +1187,21 @@ app.post("/v1/pdf/ocr", async (c) => {
               })),
               ...ocrBlocks,
             ];
-            const formattedBlocks = toFormattedBlocks(combinedStructuredBlocks);
+            const orderedBlocks = orderPageBlocksForReading({
+              pageWidth: page.width,
+              blocks: combinedStructuredBlocks,
+            });
+            const formattedBlocks = toFormattedBlocks(orderedBlocks);
             return buildPdfPageResult({
               pageNumber: page.pageNumber,
               status,
               source: page.source,
               width: page.width,
               height: page.height,
-              text: combinedText,
+              text: blocksToText(formattedBlocks),
               markdown: blocksToMarkdown(formattedBlocks),
               html: blocksToHtml(formattedBlocks),
-              blocks: combinedStructuredBlocks,
+              blocks: orderedBlocks,
             });
           }
 
@@ -1439,6 +1457,7 @@ async function runFormattedOcr(env: WorkerEnv, imageUrl: string, promptText = FO
   const txt = blocksToText(validated.data.blocks);
   const md = blocksToMarkdown(validated.data.blocks);
   const html = blocksToHtml(validated.data.blocks);
+  const tableSummary = collectTableStats(validated.data.blocks);
 
   return {
     ok: true as const,
@@ -1448,6 +1467,7 @@ async function runFormattedOcr(env: WorkerEnv, imageUrl: string, promptText = FO
       html,
       preview: html,
       blocks: validated.data.blocks,
+      tableSummary,
     },
     usage: normalizeUsage(data),
   };
