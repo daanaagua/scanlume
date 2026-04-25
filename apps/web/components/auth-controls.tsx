@@ -101,7 +101,7 @@ export function AuthControls() {
       <>
         <button type="button" className="ghost-button auth-login-button" onClick={() => setIsAuthDialogOpen(true)}>
           <span className="label-full">Entrar</span>
-          <span className="label-short">Login</span>
+          <span className="label-short">Entrar</span>
         </button>
         <AuthDialog open={isAuthDialogOpen} onClose={() => setIsAuthDialogOpen(false)} />
       </>
@@ -116,26 +116,6 @@ export function AuthControls() {
 
   return (
     <div ref={menuRef} className="auth-controls account-menu-shell">
-      <div className="waitlist-cta-shell">
-        <button
-          type="button"
-          className={`solid-button waitlist-header-button${account.waitlist.joined ? " is-joined" : ""}`}
-          onClick={() => void handleJoinWaitlist()}
-          disabled={account.waitlist.joined || isJoiningWaitlist}
-          aria-describedby="waitlist-tooltip"
-        >
-          <span className="label-full">
-            {account.waitlist.joined ? "Na lista" : isJoiningWaitlist ? "Entrando..." : "Entrar na lista"}
-          </span>
-          <span className="label-short">
-            {account.waitlist.joined ? "Fila" : isJoiningWaitlist ? "..." : "Lista"}
-          </span>
-        </button>
-        <span id="waitlist-tooltip" className="waitlist-tooltip" role="tooltip">
-          {waitlistTooltip}
-        </span>
-      </div>
-
       <button type="button" className="account-trigger" onClick={() => setIsMenuOpen((current) => !current)}>
         {account.viewer.user.avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -164,6 +144,18 @@ export function AuthControls() {
               <span>Creditos</span>
               <strong>{account.usage.remainingCredits}/{account.usage.grantedCredits}</strong>
             </div>
+          </div>
+
+          <div className="waitlist-account-panel">
+            <span>{waitlistTooltip}</span>
+            <button
+              type="button"
+              className={`solid-button waitlist-account-button${account.waitlist.joined ? " is-joined" : ""}`}
+              onClick={() => void handleJoinWaitlist()}
+              disabled={account.waitlist.joined || isJoiningWaitlist}
+            >
+              {account.waitlist.joined ? "Na lista" : isJoiningWaitlist ? "Entrando..." : "Entrar na lista"}
+            </button>
           </div>
 
           <div className="account-dropdown-links">

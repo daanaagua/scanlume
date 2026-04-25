@@ -25,7 +25,9 @@ export default function ExamplePage() {
       <section className={styles.hero}>
         <div className={styles.heroHeader}>
           <p className={styles.kicker}>Prototipo visual</p>
-          <h1>OCR Command Desk</h1>
+          <h1>
+            <span>OCR</span> <span>Command</span> <span>Desk</span>
+          </h1>
           <p>
             Uma direcao mais firme para o Scanlume: menos cara de landing page generica, mais sensacao de ferramenta
             pronta para upload, leitura, revisao e exportacao.
@@ -81,10 +83,10 @@ export default function ExamplePage() {
             <div className={styles.scanBay} aria-label="Area central de leitura OCR">
               <div className={styles.documentFrame}>
                 <Image
-                  src="/blog/ocr-export-workflow.png"
-                  alt="Fluxo de exportacao OCR do Scanlume"
-                  width={1200}
-                  height={630}
+                  src="/brand/scanlume-ocr-desk.png"
+                  alt="Mockup visual abstrato de uma mesa de OCR com linha de escaneamento"
+                  width={1672}
+                  height={941}
                   priority
                 />
                 <span className={styles.scanLine} aria-hidden="true" />

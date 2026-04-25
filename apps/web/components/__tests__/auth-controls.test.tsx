@@ -46,6 +46,7 @@ describe("AuthControls", () => {
     render(<AuthControls />);
 
     await screen.findByText("50/50 creditos");
+    expect(screen.queryByRole("button", { name: /Na lista|Entrar na lista/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/\/50 hoje/i)).not.toBeInTheDocument();
 
     await act(async () => {

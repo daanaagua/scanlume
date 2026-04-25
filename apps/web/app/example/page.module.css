@@ -10,6 +10,7 @@
   --example-amber: #d98f22;
   --example-clay: #a94f32;
   width: 100%;
+  overflow-x: clip;
   color: var(--example-ink);
   background:
     linear-gradient(90deg, rgba(17, 28, 24, 0.055) 1px, transparent 1px),
@@ -167,7 +168,12 @@
   display: inline-flex;
   gap: 0.5rem;
   align-items: center;
+  min-width: 0;
   color: var(--example-ink);
+}
+
+.consoleBar strong {
+  overflow-wrap: anywhere;
 }
 
 .statusDot {
@@ -490,6 +496,11 @@
 }
 
 @media (max-width: 720px) {
+  .examplePage * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
   .hero,
   .notes {
     width: min(100vw - 1rem, 1180px);
@@ -506,7 +517,41 @@
   }
 
   .heroHeader h1 {
-    font-size: 2.55rem;
+    max-width: 100%;
+    font-size: 2.2rem;
+    line-height: 0.92;
+  }
+
+  .heroHeader h1 span {
+    display: block;
+  }
+
+  .heroHeader > p:not(.kicker) {
+    max-width: 28ch;
+  }
+
+  .actions {
+    display: grid;
+    width: 100%;
+    grid-template-columns: 1fr;
+  }
+
+  .actions a {
+    min-width: 0;
+    padding: 0 0.8rem;
+    white-space: normal;
+  }
+
+  .consoleBar {
+    align-items: flex-start;
+  }
+
+  .consoleBar div {
+    max-width: 100%;
+  }
+
+  .consoleBar strong {
+    font-size: 0.82rem;
   }
 
   .consoleBrief h2,

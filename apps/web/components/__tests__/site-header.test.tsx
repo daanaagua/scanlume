@@ -8,12 +8,13 @@ vi.mock("@/components/auth-controls", () => ({
 }));
 
 describe("SiteHeader", () => {
-  it("shows a prominent pricing badge that links directly to /precos", () => {
+  it("keeps the header focused without primary tool link pileups", () => {
     render(<SiteHeader />);
 
-    const priceText = screen.getByText(/desde \$5/i);
-    expect(priceText).toBeInTheDocument();
-    expect(priceText.closest("a")).toHaveAttribute("href", "/precos");
-    expect(screen.getByText(/ver precos/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Scanlume pagina inicial/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Precos/i })).toHaveAttribute("href", "/precos");
+    expect(screen.getByRole("link", { name: /Blog/i })).toHaveAttribute("href", "/blog");
+    expect(screen.queryByRole("link", { name: /Imagem para texto/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /PDF para texto/i })).not.toBeInTheDocument();
   });
 });
