@@ -56,9 +56,9 @@ export const blogPosts = {
   "pdf-layout-reconstruction-update": {
     slug: "pdf-layout-reconstruction-update",
     category: "Atualizacao",
-    title: "Atualizamos o PDF OCR: texto reconstruido dentro do layout e contadores corrigidos",
+    title: "PDF OCR atualizado: layout reconstruido e limites corrigidos",
     description:
-      "Uma explicacao direta da nova fase do PDF OCR do Scanlume: reconstruimos texto dentro das regioes do PDF, diferenciamos melhor PDF pesquisavel e PDF reorganizado, e corrigimos a atualizacao de limites para usuarios logados.",
+      "Nova fase do PDF OCR do Scanlume: texto reconstruido em regioes do PDF, diferenca entre PDF pesquisavel e reorganizado, e limites corrigidos.",
     excerpt:
       "O PDF OCR do Scanlume agora trata regioes em imagem como areas de layout, em vez de apenas anexar uma camada de texto solta em cima do documento.",
     heroLead:
@@ -334,7 +334,7 @@ export const blogPosts = {
   "ocr-portugues-imagem-para-texto-teste-real": {
     slug: "ocr-portugues-imagem-para-texto-teste-real",
     category: "Teste real",
-    title: "OCR em portugues para imagem em texto: teste real com layout misto",
+    title: "OCR em portugues: teste real de imagem para texto",
     description:
       "Um benchmark simples com portugues + ingles, CTAs, badges e UI real para mostrar o que um OCR precisa preservar antes de virar texto utilizavel.",
     excerpt:
@@ -819,5 +819,20 @@ export function getBlogPostingJsonLd(post: BlogPost) {
         name: "Metodo editorial e revisao humana",
       },
     ],
+  };
+}
+
+export function getBlogFaqJsonLd(post: BlogPost) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: post.faq.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
+      },
+    })),
   };
 }

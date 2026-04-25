@@ -108,7 +108,7 @@ export function PricingPage() {
                 </div>
 
                 <div className="pricing-offer-section">
-                  <span className="pricing-section-label">Included features</span>
+                  <span className="pricing-section-label">Recursos incluidos</span>
                   <ul className="pricing-feature-list">
                     {splitUsage(plan.usage).map((item) => (
                       <li key={`${plan.id}-${item}`}>{item}</li>
@@ -155,7 +155,7 @@ export function PricingPage() {
                 </div>
 
                 <div className="pricing-offer-section">
-                  <span className="pricing-section-label">Included features</span>
+                  <span className="pricing-section-label">Recursos incluidos</span>
                   <ul className="pricing-feature-list">
                     <li>{plan.rpm} agregados por conta</li>
                     <li>Entrada suportada: {plan.inputs}</li>
@@ -178,15 +178,15 @@ export function PricingPage() {
                 <h2>Custom</h2>
               </div>
               <div className="pricing-offer-section">
-                <span className="pricing-section-label">Included features</span>
+                <span className="pricing-section-label">Recursos incluidos</span>
                 <ul className="pricing-feature-list">
-                  <li>Higher concurrency and custom account limits</li>
-                  <li>Dedicated support and commercial alignment</li>
-                  <li>Custom rollout for bulk OCR or partner workflows</li>
+                  <li>Mais concorrencia e limites de conta sob medida</li>
+                  <li>Suporte dedicado e alinhamento comercial</li>
+                  <li>Rollout customizado para OCR em lote ou fluxos de parceiros</li>
                 </ul>
               </div>
               <div className="pricing-offer-copy">
-                <p>Need more concurrency, custom limits, or dedicated support? Talk to us.</p>
+                <p>Precisa de mais concorrencia, limites customizados ou suporte dedicado? Fale com o time.</p>
               </div>
             </article>
           </div>
@@ -194,7 +194,7 @@ export function PricingPage() {
       </section>
 
       <section>
-        <h2>How credits work</h2>
+        <h2>Como os credits funcionam</h2>
         <div className="hero-bullets">
           {CREDIT_EXPLAINER.map((item) => (
             <span key={item}>{item}</span>
@@ -203,7 +203,7 @@ export function PricingPage() {
       </section>
 
       <section>
-        <h2>Billing rules</h2>
+        <h2>Regras de cobranca</h2>
         <div className="hero-bullets">
           {BILLING_DISCLOSURES.map((item) => (
             <span key={item}>{item}</span>
@@ -212,13 +212,13 @@ export function PricingPage() {
       </section>
 
       <section>
-        <h2>Image OCR API examples</h2>
+        <h2>Exemplos da API de OCR para imagem</h2>
         <p>{API_INPUT_NOTE}</p>
         <CodeExampleTabs examples={API_CODE_EXAMPLES} />
       </section>
 
       <section>
-        <h2>PDF OCR API Beta</h2>
+        <h2>Beta da API de OCR para PDF</h2>
         <p>PDF OCR API ainda nao esta aberto ao publico. Vamos liberar o beta em uma fase seguinte, depois que a execucao assincrona estiver pronta para uso real.</p>
         <div className="hero-actions">
           <Link href="/contato" className="ghost-button">Entrar na lista do beta</Link>
@@ -226,7 +226,7 @@ export function PricingPage() {
       </section>
 
       <section>
-        <Link href="/api">Open developer page</Link>
+        <Link href="/api">Abrir pagina da API</Link>
       </section>
     </div>
   );
