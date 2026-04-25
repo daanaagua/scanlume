@@ -233,7 +233,8 @@
 }
 
 .workspace-grid.workspace-desk-grid {
-  grid-template-columns: minmax(230px, 0.62fr) minmax(360px, 1.18fr) minmax(250px, 0.72fr);
+  grid-template-columns: minmax(260px, 0.74fr) minmax(390px, 1.18fr) minmax(280px, 0.82fr);
+  align-items: start;
 }
 
 .card-surface,
@@ -300,7 +301,7 @@
 }
 
 .upload-dropzone {
-  min-height: 250px;
+  min-height: 160px;
   border-radius: 8px;
   border-color: rgba(15, 143, 111, 0.46);
   background:
@@ -510,6 +511,10 @@
     grid-template-columns: 1fr;
   }
 
+  .workspace-status-wide .status-board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .command-mode-row {
     grid-template-columns: 1fr;
   }
@@ -526,6 +531,11 @@
 
   .workspace-grid {
     padding: 0.65rem;
+  }
+
+  .workspace-status-wide .status-board,
+  .workspace-status-wide .login-promo {
+    grid-template-columns: 1fr;
   }
 
   .command-hero {
@@ -1397,20 +1407,37 @@ main {
 .upload-panel-title-row {
   display: inline-flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.55rem;
   flex-wrap: wrap;
 }
 
 .upload-panel-head h3 {
-  font-size: clamp(1.5rem, 2.5vw, 2rem);
-  line-height: 1.02;
-  letter-spacing: -0.04em;
+  font-size: clamp(1.32rem, 1.7vw, 1.62rem);
+  line-height: 1.06;
+  letter-spacing: 0;
 }
 
 .upload-panel-head p {
   color: var(--muted);
-  line-height: 1.65;
-  max-width: 44rem;
+  line-height: 1.45;
+  max-width: 24rem;
+}
+
+.upload-panel-summary {
+  font-size: 0.92rem;
+}
+
+.upload-credit-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.9rem;
+  padding: 0 0.65rem;
+  border-radius: 999px;
+  background: rgba(15, 143, 111, 0.12);
+  color: var(--accent-strong);
+  font-size: 0.82rem;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .workspace-note {
@@ -1443,7 +1470,7 @@ main {
   right: 0;
   top: calc(100% + 0.6rem);
   width: min(290px, calc(100vw - 2rem));
-  display: grid;
+  display: none;
   gap: 0.35rem;
   padding: 0.85rem 0.95rem;
   border-radius: 18px;
@@ -1467,8 +1494,17 @@ main {
 }
 
 .workspace-help-popover.is-open {
+  display: grid;
   opacity: 1;
   transform: translateY(0);
+}
+
+.workspace-help-text-button {
+  width: auto;
+  min-height: 2.25rem;
+  padding: 0 0.75rem;
+  border-radius: 999px;
+  font-size: 0.84rem;
 }
 
 .workspace-meta-stack {
@@ -1492,6 +1528,26 @@ main {
   color: white;
 }
 
+.upload-panel .mode-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.upload-panel .mode-toggle button {
+  padding: 0.7rem 0.55rem;
+  font-size: 0.9rem;
+}
+
+.upload-panel .upload-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.upload-panel .upload-actions .solid-button {
+  grid-column: 1 / -1;
+}
+
 .card-surface {
   padding: 1.25rem;
 }
@@ -1500,6 +1556,7 @@ main {
 .result-panel {
   display: grid;
   gap: 1rem;
+  align-content: start;
 }
 
 .support-desk {
@@ -1914,7 +1971,7 @@ main {
 }
 
 .upload-dropzone {
-  min-height: 240px;
+  min-height: 156px;
   border-radius: 22px;
   border: 1.5px dashed rgba(14, 124, 102, 0.35);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 247, 234, 0.92));
@@ -1946,6 +2003,20 @@ main {
   align-items: start;
 }
 
+.workspace-status-wide {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.workspace-status-wide .login-promo {
+  width: 100%;
+}
+
+.workspace-status-wide .status-board {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .status-compact-card {
   gap: 0.3rem;
 }
@@ -1956,6 +2027,10 @@ main {
   color: var(--muted);
   font-size: 0.84rem;
   line-height: 1.5;
+}
+
+.status-help-card {
+  position: relative;
 }
 
 .queue-summary span {

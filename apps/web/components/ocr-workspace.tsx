@@ -678,9 +678,13 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
   const maxBatchTotalMb = limits?.limits.maxBatchTotalMb ?? 20;
   const maxBatchFiles = limits?.limits.maxBatchFiles ?? 10;
   const remainingCreditsLabel = `${limits?.usage.remainingCredits ?? 5} / ${limits?.limits.dailyCredits ?? 5}`;
+  const uploadLimitLabel =
+    mode === "formatted"
+      ? `Imagem ate ${maxImageMb} MB; PDF ate ${limits?.limits.pdf.maxFileMb ?? 15} MB.`
+      : `Imagem ate ${maxImageMb} MB; lote ate ${maxBatchTotalMb} MB.`;
   const statusFootnote = limits?.viewer.authenticated
-    ? `OCR simples = 1 credito • Texto formatado = 2 credits • PDF = 2 credits por pagina • O saldo total diminui apos cada OCR.`
-    : `Voce comeca com 5 credits anonimos. Entre para liberar 50 credits totais e continuar processando imagens e PDFs.`;
+    ? `OCR simples = 1 credito. Texto formatado = 2 credits. PDF = 2 credits por pagina.`
+    : `Teste anonimo: 5 credits. Conta gratis libera 50 credits totais.`;
 
   return (
     <section className={`workspace-shell${priorityLayout ? " workspace-shell-priority" : ""}`}>
@@ -700,37 +704,12 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
         <div className="upload-panel card-surface" role="region" aria-label="Entrada de arquivos">
           <div className="upload-panel-head">
             <div>
-              <p className="eyebrow">Comece pelo upload</p>
+              <p className="eyebrow">Entrada</p>
               <div className="upload-panel-title-row">
-                <h3>{priorityLayout ? "Envie uma imagem e teste agora." : "Envie a imagem certa para comecar."}</h3>
-                <div
-                  className="workspace-help-shell"
-                  onMouseEnter={() => setIsPricingHintOpen(true)}
-                  onMouseLeave={() => setIsPricingHintOpen(false)}
-                >
-                  <button
-                    type="button"
-                    className="workspace-help-button"
-                    aria-label="Entender limites do teste gratis"
-                    aria-expanded={isPricingHintOpen}
-                    onClick={() => setIsPricingHintOpen((current) => !current)}
-                    onFocus={() => setIsPricingHintOpen(true)}
-                    onBlur={() => setIsPricingHintOpen(false)}
-                  >
-                    ?
-                  </button>
-                  <div className={`workspace-help-popover${isPricingHintOpen ? " is-open" : ""}`} role="tooltip">
-                    <strong>Como calculamos o teste gratis</strong>
-                    <span>Saldo atual: {remainingCreditsLabel} credits.</span>
-                    <span>{SIMPLE_MODE_LABEL} consome 1 credito por imagem.</span>
-                    <span>{FORMATTED_MODE_LABEL} consome 2 credits por imagem.</span>
-                    <span>PDF consome 2 credits por pagina processada.</span>
-                  </div>
-                </div>
+                <h3>{priorityLayout ? "Upload rapido" : "Escolha os arquivos"}</h3>
+                <span className="upload-credit-pill">{remainingCreditsLabel} credits</span>
               </div>
-              <p>
-                Abra JPG, PNG, screenshots ou um PDF e escolha a saida que faz sentido para copiar, revisar ou baixar usando o mesmo saldo de credits.
-              </p>
+              <p className="upload-panel-summary">JPG, PNG, screenshot ou PDF no modo formatado.</p>
             </div>
           </div>
 
@@ -760,9 +739,9 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
             <input
               id="scanlume-upload"
               ref={fileInputRef}
-                type="file"
-                accept={mode === "formatted" ? "image/*,application/pdf" : "image/*"}
-                multiple
+              type="file"
+              accept={mode === "formatted" ? "image/*,application/pdf" : "image/*"}
+              multiple
               onChange={(event) => {
                 const files = Array.from(event.target.files ?? []);
                 if (files.length > 0) {
@@ -770,17 +749,10 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
                 }
               }}
             />
-            <strong>{mode === "formatted" ? "Arraste imagens ou um PDF aqui" : "Arraste imagens aqui"}</strong>
-            <span>O upload aparece na fila na hora e voce escolhe quando iniciar o OCR.</span>
+            <strong>{mode === "formatted" ? "Solte imagem ou PDF" : "Solte imagens"}</strong>
+            <span>Fila aparece na hora; voce inicia o OCR quando quiser.</span>
             <small>
-              {mode === "formatted"
-                ? `Ate ${maxImageMb} MB por imagem, ${maxBatchTotalMb} MB por lote, ${maxBatchFiles} imagem(ns) por envio ou 1 PDF de ate ${limits?.limits.pdf.maxFileMb ?? 15} MB.`
-                : `Ate ${maxImageMb} MB por imagem, ${maxBatchTotalMb} MB por lote e ${maxBatchFiles} imagem(ns) por envio.`}
-            </small>
-            <small>
-              {mode === "formatted"
-                ? "PDFs mostram paginas processadas, paginas bloqueadas e downloads em HTML, Markdown e PDF."
-                : "OCR simples aceita apenas imagens porque PDFs exigem reconstrucao de estrutura e layout."}
+              {uploadLimitLabel} {maxBatchFiles} arquivo(s) por envio.
             </small>
           </label>
 
@@ -818,43 +790,6 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
 
           {globalError && <p className="error-banner">{globalError}</p>}
 
-          {limits && !limits.viewer.authenticated && (
-            <div className="login-promo">
-              <div className="login-promo-copy">
-                <strong>Entre com email ou Google para transformar seu teste em uma conta gratuita</strong>
-                <small>Usuarios conectados recebem 50 credits totais e acompanham o saldo direto na conta.</small>
-              </div>
-              <button type="button" className="solid-button" onClick={() => setIsAuthDialogOpen(true)}>
-                Entrar agora
-              </button>
-            </div>
-          )}
-
-          {limits && (
-            <div className="status-board">
-              <div className="budget-status-card status-compact-card">
-                <span>Hoje / limite</span>
-                <strong>{budgetUsageLabel}</strong>
-                <div className="mini-progress-track" aria-hidden="true">
-                  <div className="mini-progress-fill" style={{ width: `${budgetUsagePercent}%` }} />
-                </div>
-              </div>
-              <div className="status-compact-card">
-                <span>Plano</span>
-                <strong>{limits.plan.shortLabel}</strong>
-                <small>{limits.plan.label}</small>
-              </div>
-              <div className="status-compact-card">
-                <span>{limits.viewer.authenticated ? "Creditos" : "Creditos anonimos"}</span>
-                <strong>{remainingCreditsLabel}</strong>
-              </div>
-              <p className="status-board-note">{statusFootnote}</p>
-            </div>
-          )}
-
-          <p className="workspace-note">
-            Teste gratis no navegador. Os detalhes de custo ficam no bloco de status e no botao de ajuda ao lado do titulo.
-          </p>
         </div>
 
         <div className="scan-panel card-surface" role="region" aria-label="Leitura OCR ao vivo">
@@ -1077,6 +1012,69 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
             </>
           )}
         </div>
+
+        {limits && (
+          <div className="workspace-status-wide">
+            {!limits.viewer.authenticated && (
+              <div className="login-promo">
+                <div className="login-promo-copy">
+                  <strong>Entre para transformar o teste em conta gratuita</strong>
+                  <small>Usuarios conectados recebem 50 credits totais e acompanham o saldo direto na conta.</small>
+                </div>
+                <button type="button" className="solid-button" onClick={() => setIsAuthDialogOpen(true)}>
+                  Entrar agora
+                </button>
+              </div>
+            )}
+
+            <div className="status-board">
+              <div className="budget-status-card status-compact-card">
+                <span>Hoje / limite</span>
+                <strong>{budgetUsageLabel}</strong>
+                <div className="mini-progress-track" aria-hidden="true">
+                  <div className="mini-progress-fill" style={{ width: `${budgetUsagePercent}%` }} />
+                </div>
+              </div>
+              <div className="status-compact-card">
+                <span>Plano</span>
+                <strong>{limits.plan.shortLabel}</strong>
+                <small>{limits.plan.label}</small>
+              </div>
+              <div className="status-compact-card">
+                <span>{limits.viewer.authenticated ? "Creditos" : "Creditos anonimos"}</span>
+                <strong>{remainingCreditsLabel}</strong>
+              </div>
+              <div className="status-compact-card status-help-card">
+                <span>Custos</span>
+                <div
+                  className="workspace-help-shell"
+                  onMouseEnter={() => setIsPricingHintOpen(true)}
+                  onMouseLeave={() => setIsPricingHintOpen(false)}
+                >
+                  <button
+                    type="button"
+                    className="workspace-help-button workspace-help-text-button"
+                    aria-label="Entender limites do teste gratis"
+                    aria-expanded={isPricingHintOpen}
+                    onClick={() => setIsPricingHintOpen((current) => !current)}
+                  >
+                    Ver regras
+                  </button>
+                  {isPricingHintOpen && (
+                    <div className="workspace-help-popover is-open" role="tooltip">
+                      <strong>Como calculamos o teste gratis</strong>
+                      <span>Saldo atual: {remainingCreditsLabel} credits.</span>
+                      <span>{SIMPLE_MODE_LABEL} consome 1 credito por imagem.</span>
+                      <span>{FORMATTED_MODE_LABEL} consome 2 credits por imagem.</span>
+                      <span>PDF consome 2 credits por pagina processada.</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <p className="status-board-note">{statusFootnote}</p>
+            </div>
+          </div>
+        )}
       </div>
       <AuthDialog open={isAuthDialogOpen} onClose={() => setIsAuthDialogOpen(false)} defaultMode="register" />
     </section>

@@ -1,5 +1,5 @@
 import userEvent from "@testing-library/user-event";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { OcrWorkspace } from "@/components/ocr-workspace";
@@ -65,10 +65,13 @@ afterEach(() => {
 });
 
 describe("OcrWorkspace", () => {
-  it("shows images-only guidance in OCR simples mode", () => {
+  it("keeps images-only upload compact in OCR simples mode", () => {
     render(<OcrWorkspace defaultMode="simple" priorityLayout />);
 
-    expect(screen.getByText(/ocr simples aceita apenas imagens/i)).not.toBeNull();
+    const input = document.querySelector("#scanlume-upload") as HTMLInputElement;
+    expect(input).toHaveAttribute("accept", "image/*");
+    expect(screen.getByText(/solte imagens/i)).not.toBeNull();
+    expect(screen.queryByText(/ocr simples aceita apenas imagens/i)).toBeNull();
   });
 
   it("accepts PDFs only in Texto formatado mode", async () => {
@@ -93,9 +96,19 @@ describe("OcrWorkspace", () => {
   it("uses the command desk layout with upload, scan, and output in one field of view", async () => {
     const { container } = render(<OcrWorkspace defaultMode="simple" priorityLayout />);
 
-    expect(await screen.findByText(/Comece pelo upload/i)).not.toBeNull();
+    expect(await screen.findByText(/Upload rapido/i)).not.toBeNull();
     expect(screen.getByLabelText(/Leitura OCR ao vivo/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Preview do resultado/i)).toBeInTheDocument();
     expect(container.querySelector(".workspace-grid")).toHaveClass("workspace-desk-grid");
+  });
+
+  it("keeps the upload entry compact by moving long guidance out of the upload column", async () => {
+    render(<OcrWorkspace defaultMode="simple" priorityLayout />);
+
+    const uploadRegion = screen.getByRole("region", { name: /entrada de arquivos/i });
+    expect(within(uploadRegion).queryByText(/Como calculamos o teste gratis/i)).toBeNull();
+    expect(within(uploadRegion).queryByText(/Abra JPG, PNG, screenshots/i)).toBeNull();
+    expect(within(uploadRegion).queryByText(/Hoje \/ limite/i)).toBeNull();
+    expect(await screen.findByText(/Hoje \/ limite/i)).not.toBeNull();
   });
 });
