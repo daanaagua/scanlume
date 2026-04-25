@@ -123,9 +123,9 @@ type ToolPageEntry = {
 export const toolPageContent = {
   "imagem-para-texto": {
     label: "Imagem para texto",
-    title: "Imagem para texto: converter imagem em texto com IA | Scanlume",
+    title: "Imagem para texto com IA em pt-BR | Scanlume",
     description:
-      "Converta imagem em texto com IA em portugues do Brasil. Use OCR no navegador para transformar JPG, PNG e capturas de tela em texto simples ou formatado e exportar em TXT, Markdown ou HTML.",
+      "Converta imagem em texto com IA em portugues. Use OCR online para JPG, PNG e prints, com saida simples ou formatada em TXT, Markdown ou HTML.",
     keywords: [
       "imagem para texto",
       "converter imagem em texto",

@@ -44,7 +44,7 @@ const compactSections: LlmsSection[] = [
         title: "Homepage",
         path: "/",
         description:
-          "Product overview for Scanlume, an OCR tool in pt-BR for screenshots, JPG and PNG with simple and formatted output modes.",
+          "Product overview for Scanlume, an OCR tool in pt-BR for screenshots, JPG, PNG and PDF with simple and formatted output modes.",
       },
       buildToolEntry(
         "imagem-para-texto",
@@ -52,7 +52,7 @@ const compactSections: LlmsSection[] = [
       ),
       buildToolEntry(
         "pdf-para-texto",
-        "Dedicated PDF OCR page covering text-layer PDFs, scanned PDFs and mixed layouts with searchable PDF, reflowed PDF, HTML and Markdown output.",
+        "Dedicated PDF OCR page covering text-layer PDFs, scanned PDFs and mixed layouts with PDF pesquisavel, PDF reorganizado, HTML and Markdown output.",
       ),
       buildToolEntry(
         "imagem-para-word",
@@ -91,6 +91,23 @@ const compactSections: LlmsSection[] = [
         "imagem-para-texto-no-celular",
         "Mobile-first OCR page for users who upload photos or screenshots directly from a phone browser.",
       ),
+    ],
+  },
+  {
+    heading: "Commercial",
+    entries: [
+      {
+        title: "Precos",
+        path: "/precos",
+        description:
+          "Pricing page for Scanlume web plans and API credit packs, with billing rules and plan comparison.",
+      },
+      {
+        title: "API do Scanlume",
+        path: "/api",
+        description:
+          "Developer page for the Scanlume OCR API with API key flow, base64 data URL input and integration examples.",
+      },
     ],
   },
   {
@@ -159,7 +176,7 @@ const fullSections: LlmsSection[] = [
         title: "Homepage",
         path: "/",
         description:
-          "Homepage for Scanlume. Summarizes the browser-based OCR workflow, the simple versus formatted modes, export formats and the main supporting routes for JPG, PNG, screenshots and pt-BR OCR.",
+          "Homepage for Scanlume. Summarizes the browser-based OCR workflow, the simple versus formatted modes, export formats and the main supporting routes for JPG, PNG, screenshots, PDF and pt-BR OCR.",
       },
       buildToolEntry(
         "imagem-para-texto",
@@ -188,7 +205,7 @@ const fullSections: LlmsSection[] = [
       ),
       buildToolEntry(
         "pdf-para-texto",
-        "Scenario page for OCR on PDFs with text, scanned pages or mixed layouts where the user wants text exports plus downloadable PDF outputs.",
+        "Scenario page for OCR on PDFs with text, scanned pages or mixed layouts where the user wants text exports plus PDF pesquisavel and PDF reorganizado outputs.",
       ),
       buildToolEntry(
         "png-para-texto",
@@ -214,6 +231,23 @@ const fullSections: LlmsSection[] = [
         "extrair-texto-de-imagem",
         "Support page for the broader extract-text-from-image wording, useful for internal linking and alternative query phrasing around OCR tasks.",
       ),
+    ],
+  },
+  {
+    heading: "Commercial",
+    entries: [
+      {
+        title: "Precos",
+        path: "/precos",
+        description:
+          "Pricing page for choosing Scanlume web plans or API credit packs. Explains credits, billing rules, web usage, API usage and when each path fits.",
+      },
+      {
+        title: "API do Scanlume",
+        path: "/api",
+        description:
+          "Developer page for integrating the Scanlume OCR API with bearer API keys, JSON payloads, base64 data URL images and code examples.",
+      },
     ],
   },
   {
@@ -278,7 +312,7 @@ function renderLlmsFile(sections: LlmsSection[]) {
   const lines = [
     `# ${SITE_NAME}`,
     "",
-    "> Scanlume is a pt-BR OCR web app for turning screenshots, JPG and PNG into editable text with simple or formatted output.",
+    "> Scanlume is a pt-BR OCR web app for turning screenshots, JPG, PNG and PDF into editable text with simple or formatted output.",
     "",
   ];
 
@@ -288,9 +322,9 @@ function renderLlmsFile(sections: LlmsSection[]) {
 
   lines.push("## Key Facts", "");
   lines.push("- Primary market: pt-BR users who need OCR in a browser without installing an app.");
-  lines.push("- Core inputs: screenshots, JPG, PNG and phone photos with readable text.");
-  lines.push("- Core outputs: TXT, Markdown and HTML.");
-  lines.push("- Main workflow: choose simple OCR for raw text or formatted OCR for cleaner reading order.");
+  lines.push("- Core inputs: screenshots, JPG, PNG, PDF and phone photos with readable text.");
+  lines.push("- Core outputs: TXT, Markdown, HTML, PDF pesquisavel and PDF reorganizado.");
+  lines.push("- Main workflow: choose simple OCR for raw image text or formatted OCR for cleaner reading order and PDF handling.");
   lines.push("- Industry: OCR software / document digitization / browser productivity.");
   lines.push("");
   lines.push("## Contact", "");

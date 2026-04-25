@@ -1,4 +1,4 @@
-import { cleanup, render } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import ApiPage, { metadata as apiMetadata } from "@/app/api/page";
@@ -79,5 +79,13 @@ describe("Commercial page discovery and schema", () => {
 
     expect(document.querySelector('a[href="/blog/quando-usar-ocr-no-navegador-vs-api"]')).not.toBeNull();
     expect(document.querySelector('a[href="/blog/ocr-simples-vs-texto-formatado"]')).not.toBeNull();
+  });
+
+  it("keeps pricing support headings in pt-BR", () => {
+    render(<PrecosPage />);
+
+    expect(screen.getByRole("heading", { name: /Como os credits funcionam/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Regras de cobranca/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Exemplos da API de OCR para imagem/i })).toBeInTheDocument();
   });
 });

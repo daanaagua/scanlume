@@ -60,7 +60,7 @@ describe("PricingPage", () => {
     const user = userEvent.setup();
 
     expect(screen.getByText("Starter")).toBeInTheDocument();
-    expect(screen.getAllByText(/Included features/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Recursos incluidos/i).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("list").length).toBeGreaterThan(0);
     expect(screen.queryByText("API Starter")).not.toBeInTheDocument();
     await waitFor(() => {
@@ -73,7 +73,7 @@ describe("PricingPage", () => {
     expect(screen.getByText("API Starter")).toBeInTheDocument();
     expect(screen.getByText("API Growth")).toBeInTheDocument();
     expect(screen.getByText("API Scale")).toBeInTheDocument();
-    expect(screen.getAllByText(/Included features/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Recursos incluidos/i).length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: /Assinar mensal/i })).not.toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /Comprar API pack/i }).length).toBeGreaterThan(0);
   });

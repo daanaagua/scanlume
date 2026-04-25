@@ -9,6 +9,7 @@ import {
   type BlogPost,
   getBlogPost,
   getBlogBreadcrumbJsonLd,
+  getBlogFaqJsonLd,
   getBlogPostingJsonLd,
 } from "@/lib/blog";
 import { EVIDENCE_PATH } from "@/lib/site";
@@ -22,6 +23,7 @@ export function BlogArticlePage({ post }: { post: BlogPost }) {
     <>
       <JsonLd data={getBlogPostingJsonLd(post)} />
       <JsonLd data={getBlogBreadcrumbJsonLd(post)} />
+      <JsonLd data={getBlogFaqJsonLd(post)} />
 
       <section className="hero-section blog-hero-section">
         <div className="container blog-hero-grid">

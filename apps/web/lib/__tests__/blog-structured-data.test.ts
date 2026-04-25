@@ -1,6 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { cleanup, render } from "@testing-library/react";
+import { createElement } from "react";
+import { afterEach, describe, expect, it } from "vitest";
 
+import { BlogArticlePage } from "@/components/blog-article-page";
 import { getBlogPostingJsonLd, getBlogPost } from "@/lib/blog";
+
+afterEach(() => {
+  cleanup();
+});
 
 describe("blog structured data", () => {
   it("adds editorial context for GEO-friendly article citations", () => {
@@ -32,5 +39,20 @@ describe("blog structured data", () => {
         }),
       ]),
     );
+  });
+
+  it("renders FAQPage structured data matching article FAQ content", () => {
+    const post = getBlogPost("ocr-simples-vs-texto-formatado");
+
+    expect(post).toBeDefined();
+
+    render(createElement(BlogArticlePage, { post: post! }));
+
+    const scripts = Array.from(document.querySelectorAll('script[type="application/ld+json"]')).map(
+      (script) => script.textContent ?? "",
+    );
+
+    expect(scripts.some((json) => json.includes('"@type":"FAQPage"'))).toBe(true);
+    expect(scripts.some((json) => json.includes(post!.faq[0].question))).toBe(true);
   });
 });
