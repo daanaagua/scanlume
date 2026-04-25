@@ -12,5 +12,6 @@ describe("Example design page", () => {
     expect(screen.getAllByText(/Arraste JPG, PNG ou PDF/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Preview estruturado/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/Fila de arquivos/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Layout OCR proposto/i)).not.toBeInTheDocument();
   });
 });

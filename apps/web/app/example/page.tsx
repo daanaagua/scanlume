@@ -19,8 +19,6 @@ const queueItems = [
   { name: "print-whatsapp.jpg", kind: "Imagem", status: "Na fila" },
 ];
 
-const formats = ["TXT", "Markdown", "HTML", "PDF pesquisavel"];
-
 export default function ExamplePage() {
   return (
     <div className={styles.examplePage}>
@@ -34,11 +32,11 @@ export default function ExamplePage() {
           </p>
           <div className={styles.actions}>
             <Link href="/imagem-para-texto">Abrir ferramenta real</Link>
-            <a href="#workspace-preview">Ver layout do workspace</a>
+            <a href="#live-desk">Ver console OCR</a>
           </div>
         </div>
 
-        <div className={styles.commandConsole} aria-label="Console OCR ao vivo">
+        <div id="live-desk" className={styles.commandConsole} aria-label="Console OCR ao vivo">
           <div className={styles.consoleBar}>
             <div>
               <span className={styles.statusDot} aria-hidden="true" />
@@ -46,6 +44,17 @@ export default function ExamplePage() {
             </div>
             <span>pt-BR</span>
             <span>TXT / MD / HTML / PDF</span>
+          </div>
+
+          <div className={styles.consoleBrief}>
+            <div>
+              <p className={styles.kicker}>Workspace proposto</p>
+              <h2>Upload, OCR e resultado no mesmo campo de visao.</h2>
+            </div>
+            <p>
+              A logica real pode continuar igual; o visual concentra entrada, leitura, fila e saida no mesmo painel,
+              sem repetir uma segunda demonstracao abaixo.
+            </p>
           </div>
 
           <div className={styles.consoleGrid}>
@@ -58,6 +67,7 @@ export default function ExamplePage() {
                 <span className={styles.dropMark}>+</span>
                 <p>Solte arquivos e escolha entre OCR simples ou Texto formatado.</p>
               </div>
+              <p className={styles.panelLabel}>Fila de arquivos</p>
               <div className={styles.heroQueue}>
                 {queueItems.slice(0, 2).map((item) => (
                   <div key={item.name}>
@@ -118,81 +128,6 @@ export default function ExamplePage() {
               <strong>4 formatos</strong>
             </div>
           </div>
-        </div>
-      </section>
-
-      <section id="workspace-preview" className={styles.workspacePreview} aria-label="Layout OCR proposto">
-        <div className={styles.workspaceHeader}>
-          <div>
-            <p className={styles.kicker}>Workspace proposto</p>
-            <h2>Upload, OCR e resultado no mesmo campo de visao.</h2>
-          </div>
-          <p>
-            A pagina real pode manter a logica atual, mas mudar a hierarquia: upload e preview viram os dois polos
-            principais, com status e fila como suporte.
-          </p>
-        </div>
-
-        <div className={styles.deskGrid}>
-          <section className={styles.uploadDeck} aria-labelledby="upload-title">
-            <div className={styles.panelHeader}>
-              <p className={styles.panelLabel}>Entrada</p>
-              <strong id="upload-title">Arraste JPG, PNG ou PDF</strong>
-            </div>
-            <div className={styles.dropTarget}>
-              <span className={styles.dropMark}>+</span>
-              <strong>Solte arquivos aqui</strong>
-              <p>Limites e creditos ficam visiveis sem roubar o foco da acao principal.</p>
-            </div>
-            <div className={styles.modeRow} aria-label="Modos OCR">
-              <span>OCR simples</span>
-              <span>Texto formatado</span>
-            </div>
-          </section>
-
-          <section className={styles.resultDeck} aria-labelledby="result-title">
-            <div className={styles.panelHeader}>
-              <p className={styles.panelLabel}>Saida</p>
-              <strong id="result-title">Preview estruturado</strong>
-            </div>
-            <div className={styles.resultSheet}>
-              <span className={styles.lineWide} />
-              <span className={styles.lineMedium} />
-              <span className={styles.lineShort} />
-              <div className={styles.resultColumns}>
-                <span />
-                <span />
-              </div>
-              <p>
-                O texto reconhecido aparece em uma area de leitura limpa, com abas de formato e acoes proximas ao
-                resultado.
-              </p>
-            </div>
-            <div className={styles.formatRow}>
-              {formats.map((format) => (
-                <span key={format}>{format}</span>
-              ))}
-            </div>
-          </section>
-
-          <aside className={styles.sideRail} aria-label="Status da fila">
-            <section className={styles.metricBlock}>
-              <p className={styles.panelLabel}>Hoje</p>
-              <strong>17 / 50</strong>
-              <span>creditos restantes</span>
-            </section>
-            <section className={styles.queueBlock}>
-              <p className={styles.panelLabel}>Fila de arquivos</p>
-              {queueItems.map((item) => (
-                <div className={styles.queueItem} key={item.name}>
-                  <strong>{item.name}</strong>
-                  <span>
-                    {item.kind} / {item.status}
-                  </span>
-                </div>
-              ))}
-            </section>
-          </aside>
         </div>
       </section>
 

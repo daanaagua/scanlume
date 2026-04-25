@@ -19,7 +19,6 @@
 }
 
 .hero,
-.workspacePreview,
 .notes {
   width: min(1180px, calc(100vw - 2rem));
   margin: 0 auto;
@@ -34,7 +33,6 @@
 
 .heroHeader,
 .commandConsole,
-.workspacePreview,
 .notes {
   border: 1px solid var(--example-line);
   background: var(--example-panel);
@@ -66,7 +64,7 @@
 }
 
 .heroHeader h1,
-.workspaceHeader h2,
+.consoleBrief h2,
 .notes h2 {
   margin: 0;
   font-family: var(--font-display), sans-serif;
@@ -80,13 +78,9 @@
 }
 
 .heroHeader p,
-.workspaceHeader p,
+.consoleBrief p,
 .notes p,
-.dropTarget p,
-.resultSheet p,
 .miniDropzone p,
-.metricBlock span,
-.queueItem span,
 .heroQueue span,
 .consoleMetrics span {
   margin: 0;
@@ -152,8 +146,6 @@
 }
 
 .consoleBar,
-.modeRow,
-.formatRow,
 .heroFormats,
 .consoleMetrics {
   display: flex;
@@ -184,6 +176,24 @@
   border-radius: 999px;
   background: var(--example-green);
   box-shadow: 0 0 0 6px rgba(15, 143, 111, 0.12), 0 0 22px rgba(15, 143, 111, 0.55);
+}
+
+.consoleBrief {
+  display: grid;
+  grid-template-columns: minmax(0, 0.84fr) minmax(280px, 1fr);
+  gap: 1rem;
+  align-items: end;
+  padding: 1rem;
+  border: 1px solid rgba(17, 28, 24, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.consoleBrief h2 {
+  margin-top: 0.4rem;
+  max-width: 18ch;
+  font-size: clamp(1.85rem, 3.2vw, 2.85rem);
+  line-height: 0.96;
 }
 
 .consoleGrid {
@@ -329,8 +339,6 @@
 }
 
 .consoleBar > span,
-.modeRow span,
-.formatRow span,
 .heroFormats span {
   display: inline-flex;
   align-items: center;
@@ -375,7 +383,6 @@
   animation: scan-pass 3.6s ease-in-out infinite;
 }
 
-.workspacePreview,
 .notes {
   display: grid;
   gap: 1rem;
@@ -384,53 +391,16 @@
   margin-bottom: 1.5rem;
 }
 
-.workspaceHeader,
 .notes {
   grid-template-columns: minmax(0, 0.86fr) minmax(360px, 1.14fr);
   align-items: start;
 }
 
-.workspaceHeader {
-  display: grid;
-  gap: 1rem;
-  padding: 1.15rem;
-  border-bottom: 1px solid var(--example-line);
-}
-
-.workspaceHeader h2,
 .notes h2 {
   margin-top: 0.45rem;
   max-width: 16ch;
   font-size: 2.5rem;
   line-height: 1;
-}
-
-.deskGrid {
-  display: grid;
-  grid-template-columns: minmax(260px, 0.82fr) minmax(340px, 1.08fr) minmax(230px, 0.58fr);
-  gap: 0.85rem;
-  align-items: stretch;
-}
-
-.uploadDeck,
-.resultDeck,
-.sideRail > section,
-.noteGrid article {
-  border: 1px solid var(--example-line);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.78);
-}
-
-.uploadDeck,
-.resultDeck,
-.sideRail {
-  display: grid;
-  gap: 0.8rem;
-}
-
-.uploadDeck,
-.resultDeck {
-  padding: 0.9rem;
 }
 
 .panelHeader {
@@ -440,22 +410,6 @@
 
 .panelHeader strong {
   font-size: 1.2rem;
-}
-
-.dropTarget {
-  display: grid;
-  min-height: 285px;
-  place-items: center;
-  gap: 0.6rem;
-  padding: 1rem;
-  text-align: center;
-  border: 1.5px dashed rgba(15, 143, 111, 0.5);
-  border-radius: 8px;
-  background:
-    linear-gradient(90deg, rgba(15, 143, 111, 0.08) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(15, 143, 111, 0.08) 1px, transparent 1px),
-    rgba(247, 252, 246, 0.92);
-  background-size: 26px 26px;
 }
 
 .dropMark {
@@ -471,99 +425,15 @@
   line-height: 1;
 }
 
-.modeRow {
-  justify-content: flex-start;
-}
-
-.modeRow span:first-child {
-  color: white;
-  background: var(--example-green-dark);
-}
-
-.resultSheet {
-  display: grid;
-  gap: 0.75rem;
-  min-height: 324px;
-  align-content: start;
-  padding: 1.1rem;
-  border: 1px solid rgba(17, 28, 24, 0.12);
-  border-radius: 8px;
-  background: #fffefa;
-}
-
-.lineWide,
-.lineMedium,
-.lineShort {
-  display: block;
-  height: 12px;
-  border-radius: 4px;
-  background: rgba(17, 28, 24, 0.18);
-}
-
-.lineWide {
-  width: 92%;
-}
-
-.lineMedium {
-  width: 72%;
-}
-
-.lineShort {
-  width: 42%;
-  background: rgba(15, 143, 111, 0.45);
-}
-
-.resultColumns {
-  display: grid;
-  grid-template-columns: 0.65fr 0.35fr;
-  gap: 0.75rem;
-  min-height: 118px;
-  margin-top: 0.35rem;
-}
-
-.resultColumns span {
-  border-radius: 8px;
-  background:
-    linear-gradient(180deg, rgba(22, 138, 152, 0.16), transparent),
-    rgba(17, 28, 24, 0.07);
-}
-
-.formatRow {
-  justify-content: flex-start;
-}
-
-.formatRow span:first-child,
 .heroFormats span:first-child {
   color: white;
   background: var(--example-green-dark);
 }
 
-.sideRail {
-  align-content: start;
-}
-
-.metricBlock,
-.queueBlock {
-  display: grid;
-  gap: 0.65rem;
-  padding: 0.9rem;
-}
-
-.metricBlock strong {
-  font-size: 2.4rem;
-  line-height: 1;
-  color: var(--example-green-dark);
-}
-
-.queueItem {
-  display: grid;
-  gap: 0.2rem;
-  padding-top: 0.65rem;
-  border-top: 1px solid rgba(17, 28, 24, 0.12);
-}
-
-.queueItem strong {
-  overflow-wrap: anywhere;
+.noteGrid article {
+  border: 1px solid var(--example-line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
 }
 
 .notes {
@@ -608,9 +478,8 @@
 @media (max-width: 1040px) {
   .hero,
   .consoleGrid,
-  .workspaceHeader,
-  .notes,
-  .deskGrid {
+  .consoleBrief,
+  .notes {
     grid-template-columns: 1fr;
   }
 
@@ -618,14 +487,10 @@
     min-height: auto;
   }
 
-  .sideRail {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 720px) {
   .hero,
-  .workspacePreview,
   .notes {
     width: min(100vw - 1rem, 1180px);
   }
@@ -636,7 +501,6 @@
 
   .heroHeader,
   .commandConsole,
-  .workspacePreview,
   .notes {
     padding: 0.85rem;
   }
@@ -645,7 +509,7 @@
     font-size: 2.55rem;
   }
 
-  .workspaceHeader h2,
+  .consoleBrief h2,
   .notes h2 {
     font-size: 1.9rem;
   }
@@ -655,14 +519,11 @@
     min-height: 290px;
   }
 
-  .sideRail,
   .consoleMetrics,
-  .noteGrid,
-  .resultColumns {
+  .noteGrid {
     grid-template-columns: 1fr;
   }
 
-  .dropTarget,
   .miniDropzone {
     min-height: 220px;
   }
