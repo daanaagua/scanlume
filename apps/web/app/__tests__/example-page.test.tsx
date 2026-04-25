@@ -8,7 +8,8 @@ describe("Example design page", () => {
     render(<ExamplePage />);
 
     expect(screen.getByRole("heading", { name: /OCR Command Desk/i })).toBeInTheDocument();
-    expect(screen.getByText(/Arraste JPG, PNG ou PDF/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Console OCR ao vivo/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Arraste JPG, PNG ou PDF/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Preview estruturado/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/Fila de arquivos/i)).toBeInTheDocument();
   });
