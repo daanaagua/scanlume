@@ -111,11 +111,9 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
         }}
       />
 
-      {workspaceFirst ? workspaceSection : null}
-
-      <section className={`hero-section${workspaceFirst ? " hero-section-compact" : ""}`}>
-        <div className={`container hero-grid${workspaceFirst ? " hero-grid-compact" : ""}`}>
-          <div className={`hero-copy${workspaceFirst ? " hero-copy-compact" : ""}`}>
+      <section className="command-hero command-hero-compact">
+        <div className="container">
+          <div className="command-hero-card">
             <p className="eyebrow">{heroEyebrow}</p>
             <h1>{page.h1}</h1>
             <p className="hero-lead">{heroLead}</p>
@@ -130,43 +128,39 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
                 <span key={item}>{item}</span>
               ))}
             </div>
-          </div>
-
-          <div className={`hero-card editorial-card${workspaceFirst ? " hero-card-compact" : ""}`}>
-            <div>
-              <p className="card-label">{workspaceFirst ? "Se quer velocidade" : "Modo rapido"}</p>
-              <h2>{SIMPLE_MODE_LABEL}</h2>
-              <p>
-                {workspaceFirst
-                  ? isPdfWorkspace
-                    ? "Continua melhor para imagens soltas. PDFs ficam restritos ao modo Texto formatado porque exigem reconstruir estrutura e layout."
-                    : "Melhor para extrair texto puro com menos espera em screenshots, posters e fotos simples."
-                  : "Texto puro, sem raciocinio extra, mais veloz para screenshot, poster e foto do celular."}
-              </p>
+            <div className="command-mode-row">
+              <article>
+                <span>{workspaceFirst ? "Se quer velocidade" : "Modo rapido"}</span>
+                <strong>{SIMPLE_MODE_LABEL}</strong>
+                <p>
+                  {workspaceFirst
+                    ? isPdfWorkspace
+                      ? "Melhor para imagens soltas; PDFs entram no modo estruturado."
+                      : "Texto puro com menos espera em screenshots, posters e fotos simples."
+                    : "Texto puro, sem raciocinio extra, mais veloz para screenshot, poster e foto do celular."}
+                </p>
+              </article>
+              <article>
+                <span>{workspaceFirst ? "Se quer leitura melhor" : "Modo estruturado"}</span>
+                <strong>{FORMATTED_MODE_LABEL}</strong>
+                <p>
+                  {workspaceFirst
+                    ? isPdfWorkspace
+                      ? "Reaproveita texto nativo, aplica OCR por regiao e gera PDF pesquisavel ou reorganizado."
+                      : "Mantem titulos, paragrafos e hierarquia mais limpa para revisar depois."
+                    : "Preserva a estrutura principal com titulos, paragrafos e uma leitura mais clara."}
+                </p>
+              </article>
             </div>
-            <div>
-              <p className="card-label">{workspaceFirst ? "Se quer leitura melhor" : "Modo estruturado"}</p>
-              <h2>{FORMATTED_MODE_LABEL}</h2>
-              <p>
-                {workspaceFirst
-                  ? isPdfWorkspace
-                    ? "E o modo que libera PDF no Scanlume: reaproveita texto nativo, aplica OCR nas regioes em imagem e agora reconstrui melhor o texto dentro do espaco original do PDF."
-                    : "Vale usar quando voce quer manter titulos, paragrafos e uma hierarquia mais limpa para revisar depois."
-                  : "Preserva a estrutura principal com titulos, paragrafos e uma leitura mais clara."}
-              </p>
-            </div>
-            <a href={`#${OCR_WORKSPACE_ID}`} className="solid-button large-button">
-              {workspaceFirst ? (isPdfWorkspace ? "Subir PDF" : "Subir imagem") : "Teste gratis agora"}
-            </a>
           </div>
         </div>
       </section>
 
-      {workspaceFirst ? null : workspaceSection}
+      {workspaceSection}
 
       <section className="section-band muted-band">
-        <div className="container split-content">
-          <div>
+        <div className="container">
+          <div className="section-heading">
             <p className="eyebrow">Quando usar</p>
             <h2>{page.useCasesHeading}</h2>
             <p>{page.useCasesLead}</p>
@@ -184,7 +178,7 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
       </section>
 
       <section className="section-band">
-        <div className="container split-content blog-faq-band">
+        <div className="container blog-faq-band">
           <div className="section-heading">
             <p className="eyebrow">Rotas complementares</p>
             <h2>Use links mais proximos da intencao para reforcar a pagina certa.</h2>
@@ -247,7 +241,7 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
       </section>
 
       <section className="section-band">
-        <div className="container split-content blog-related-band">
+        <div className="container blog-related-band">
           <div className="section-heading">
             <p className="eyebrow">Do blog</p>
             <h2>Quer contexto antes do upload? Leia os guias de OCR.</h2>

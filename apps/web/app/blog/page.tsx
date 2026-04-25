@@ -22,7 +22,7 @@ export default function BlogIndexPage() {
   return (
     <>
       <section className="hero-section blog-hub-hero">
-        <div className="container split-content blog-hub-shell">
+        <div className="container blog-hub-shell">
           <div className="hero-copy blog-hub-copy">
             <p className="eyebrow">Blog Scanlume</p>
             <h1>Testes reais, comparativos e playbooks para OCR em pt-BR.</h1>

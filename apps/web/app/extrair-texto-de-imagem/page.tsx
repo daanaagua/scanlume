@@ -17,7 +17,7 @@ export default function ExtractTextFromImagePage() {
       <ToolLanding slug="extrair-texto-de-imagem" />
 
       <section className="section-band muted-band">
-        <div className="container split-content">
+        <div className="container">
           <div className="section-heading">
             <p className="eyebrow">Rota principal recomendada</p>
             <h2>Para o fluxo completo de imagem para texto, concentre a navegacao na pagina principal.</h2>

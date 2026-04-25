@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { AuthDialog } from "@/components/auth-dialog";
@@ -695,8 +696,8 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
         </div>
       )}
 
-      <div className="workspace-grid">
-        <div className="upload-panel card-surface">
+      <div className="workspace-grid workspace-desk-grid">
+        <div className="upload-panel card-surface" role="region" aria-label="Entrada de arquivos">
           <div className="upload-panel-head">
             <div>
               <p className="eyebrow">Comece pelo upload</p>
@@ -815,26 +816,6 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
             </div>
           )}
 
-          {progressSummary && (
-            <div className="progress-card" aria-live="polite">
-              <div className="progress-meta">
-                <strong>{progressSummary.label}</strong>
-                <span>{Math.round(animatedPercent)}%</span>
-              </div>
-              <div className="progress-track" aria-hidden="true">
-                <div
-                  className={`progress-fill${isSubmitting ? " is-processing" : ""}`}
-                  style={{ width: `${animatedPercent}%` }}
-                />
-              </div>
-              <small>
-                {isSubmitting
-                  ? "O indicador sobe de forma gradual durante o OCR e fecha imediatamente quando o arquivo termina."
-                  : "O progresso total aparece aqui durante o OCR e ajuda a acompanhar lotes maiores."}
-              </small>
-            </div>
-          )}
-
           {globalError && <p className="error-banner">{globalError}</p>}
 
           {limits && !limits.viewer.authenticated && (
@@ -874,11 +855,54 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
           <p className="workspace-note">
             Teste gratis no navegador. Os detalhes de custo ficam no bloco de status e no botao de ajuda ao lado do titulo.
           </p>
+        </div>
+
+        <div className="scan-panel card-surface" role="region" aria-label="Leitura OCR ao vivo">
+          <div className="scan-panel-head">
+            <div>
+              <p className="eyebrow">Leitura OCR ao vivo</p>
+              <h3>{isSubmitting ? "Escaneando arquivo" : hasQueuedFiles ? "Fila pronta para OCR" : "Workspace de leitura"}</h3>
+            </div>
+            <span className={`scan-live-pill${isSubmitting ? " is-active" : ""}`}>
+              {isSubmitting ? "Ativo" : hasCompletedResults ? "Pronto" : "Standby"}
+            </span>
+          </div>
+
+          <div className="scan-visual-frame">
+            <Image
+              src="/brand/scanlume-ocr-desk.png"
+              alt="Mesa visual de OCR com documento sendo escaneado"
+              width={1672}
+              height={941}
+              sizes="(max-width: 960px) 100vw, 42vw"
+            />
+            <span className="scan-pass-line" aria-hidden="true" />
+          </div>
+
+          {progressSummary && (
+            <div className="progress-card" aria-live="polite">
+              <div className="progress-meta">
+                <strong>{progressSummary.label}</strong>
+                <span>{Math.round(animatedPercent)}%</span>
+              </div>
+              <div className="progress-track" aria-hidden="true">
+                <div
+                  className={`progress-fill${isSubmitting ? " is-processing" : ""}`}
+                  style={{ width: `${animatedPercent}%` }}
+                />
+              </div>
+              <small>
+                {isSubmitting
+                  ? "O indicador acompanha o OCR sem tirar upload e resultado do mesmo campo de visao."
+                  : "O progresso total aparece aqui durante o OCR e ajuda a acompanhar lotes maiores."}
+              </small>
+            </div>
+          )}
 
           <div className="preview-stack">
             {selectedFiles.length === 0 && (
               <div className="empty-state">
-                <p>Suba uma screenshot, poster ou foto para ver o OCR rodando em pt-BR.</p>
+                <p>Suba uma screenshot, poster, foto ou PDF para ver a fila e a leitura no centro do workspace.</p>
               </div>
             )}
 
@@ -925,7 +949,7 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
           </div>
         </div>
 
-        <div className="result-panel card-surface">
+        <div className="result-panel card-surface" role="region" aria-label="Preview do resultado">
           <div className="result-head">
             <div>
               <p className="eyebrow">Preview do resultado</p>

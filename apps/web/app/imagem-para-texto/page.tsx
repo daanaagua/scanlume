@@ -17,7 +17,7 @@ export default function ImageToTextPage() {
       <ToolLanding slug="imagem-para-texto" />
 
       <section className="section-band">
-        <div className="container split-content">
+        <div className="container">
           <div className="section-heading">
             <p className="eyebrow">Intencao principal</p>
             <h2>Imagem para texto, converter imagem em texto e imagem em texto levam ao mesmo fluxo.</h2>
@@ -59,7 +59,7 @@ export default function ImageToTextPage() {
       </section>
 
       <section className="section-band muted-band">
-        <div className="container split-content">
+        <div className="container">
           <div className="section-heading">
             <p className="eyebrow">Experiencia real</p>
             <h2>Esta pagina foi alinhada com testes publicados e com o fluxo real do produto.</h2>

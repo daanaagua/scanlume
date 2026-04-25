@@ -54,7 +54,7 @@ export default function PricingRoute() {
       />
       <PricingPage />
       <section className="section-band muted-band">
-        <div className="container split-content">
+        <div className="container">
           <div className="section-heading">
             <p className="eyebrow">Antes da compra</p>
             <h2>Escolha plano com menos achismo e menos retrabalho.</h2>

@@ -15,15 +15,21 @@ afterEach(() => {
 
 describe("Home and product surfacing", () => {
   it("surfaces PDF para texto among homepage route cards", () => {
-    render(<Home />);
+    const { container } = render(<Home />);
 
     expect(screen.getAllByText(/PDF para texto/i).length).toBeGreaterThan(0);
+    expect(container.querySelector(".command-hero")).not.toBeNull();
+    expect(container.querySelector(".hero-grid")).toBeNull();
+    expect(container.querySelector(".split-content")).toBeNull();
   });
 
   it("shows PDF-specific explanatory copy on workspace-first PDF pages", () => {
-    render(<ToolLanding slug="pdf-para-texto" />);
+    const { container } = render(<ToolLanding slug="pdf-para-texto" />);
 
     expect(screen.getAllByText(/pdfs com texto nativo, paginas escaneadas e layouts mistos/i).length).toBeGreaterThan(0);
+    expect(container.querySelector(".command-hero")).not.toBeNull();
+    expect(container.querySelector(".hero-grid")).toBeNull();
+    expect(container.querySelector(".split-content")).toBeNull();
   });
 
   it("mentions PDF support from the imagem-para-texto long-form page", () => {

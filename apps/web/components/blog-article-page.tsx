@@ -125,7 +125,7 @@ export function BlogArticlePage({ post }: { post: BlogPost }) {
       </section>
 
       <section className="section-band muted-band">
-        <div className="container split-content blog-faq-band">
+        <div className="container blog-faq-band">
           <div className="section-heading">
             <p className="eyebrow">FAQ</p>
             <h2>Perguntas rapidas que aparecem depois do OCR.</h2>
@@ -146,7 +146,7 @@ export function BlogArticlePage({ post }: { post: BlogPost }) {
       </section>
 
       <section className="section-band muted-band">
-        <div className="container split-content blog-related-band">
+        <div className="container blog-related-band">
           <div className="section-heading">
             <p className="eyebrow">Leia em seguida</p>
             <h2>Continue no cluster antes de voltar para a ferramenta.</h2>
@@ -173,7 +173,7 @@ export function BlogArticlePage({ post }: { post: BlogPost }) {
       </section>
 
       <section className="section-band">
-        <div className="container split-content blog-related-band">
+        <div className="container blog-related-band">
           <div className="section-heading">
             <p className="eyebrow">Proximo passo</p>
             <h2>Leve a teoria para um arquivo real.</h2>

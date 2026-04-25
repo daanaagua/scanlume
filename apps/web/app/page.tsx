@@ -70,9 +70,9 @@ export default function Home() {
         }}
       />
 
-      <section className="hero-section">
-        <div className="container hero-grid">
-          <div className="hero-copy">
+      <section className="command-hero">
+        <div className="container">
+          <div className="command-hero-card">
             <p className="eyebrow">Scanlume em pt-BR</p>
             <h1>OCR online para transformar imagens e PDF em texto editavel.</h1>
             <p className="hero-lead">
@@ -105,35 +105,31 @@ export default function Home() {
                 Ver planos
               </Link>
             </div>
-          </div>
-
-          <div className="hero-card stacked-hero-card">
-            <div>
-              <p className="card-label">Modo 01</p>
-              <h2>{SIMPLE_MODE_LABEL}</h2>
-              <p>Mais rapido, mais barato e focado em texto puro para prints, posters e fotos do celular.</p>
+            <div className="command-mode-row">
+              <article>
+                <span>Modo 01</span>
+                <strong>{SIMPLE_MODE_LABEL}</strong>
+                <p>Texto puro para prints, posters e fotos do celular.</p>
+              </article>
+              <article>
+                <span>Modo 02</span>
+                <strong>{FORMATTED_MODE_LABEL}</strong>
+                <p>Estrutura principal organizada para Word, Markdown, HTML e PDF.</p>
+              </article>
             </div>
-            <div>
-              <p className="card-label">Modo 02</p>
-              <h2>{FORMATTED_MODE_LABEL}</h2>
-              <p>Preserva a estrutura principal com titulos, paragrafos e uma ordem de leitura melhor para Word e Markdown.</p>
-            </div>
-            <a href={`#${OCR_WORKSPACE_ID}`} className="solid-button large-button">
-              Teste gratis agora
-            </a>
           </div>
         </div>
       </section>
 
-      <section id={OCR_WORKSPACE_ID} className="section-band">
+      <section id={OCR_WORKSPACE_ID} className="section-band tool-workspace-band is-priority">
         <div className="container">
-          <OcrWorkspace defaultMode="simple" />
+          <OcrWorkspace defaultMode="simple" priorityLayout />
         </div>
       </section>
 
       <section className="section-band muted-band">
-        <div className="container split-content">
-          <div>
+        <div className="container">
+          <div className="section-heading">
             <p className="eyebrow">Como funciona</p>
             <h2>Upload, OCR e download em um fluxo direto.</h2>
             <p>

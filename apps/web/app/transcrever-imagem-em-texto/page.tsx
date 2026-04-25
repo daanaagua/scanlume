@@ -17,7 +17,7 @@ export default function TranscribeImageToTextPage() {
       <ToolLanding slug="transcrever-imagem-em-texto" />
 
       <section className="section-band muted-band">
-        <div className="container split-content">
+        <div className="container">
           <div className="section-heading">
             <p className="eyebrow">Centralizar sinal</p>
             <h2>Quando a busca for ampla, use a rota principal de imagem para texto.</h2>

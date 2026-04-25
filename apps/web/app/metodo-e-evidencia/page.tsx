@@ -127,7 +127,7 @@ export default function EvidencePage() {
       </section>
 
       <section className="section-band">
-        <div className="container split-content">
+        <div className="container">
           <div className="section-heading">
             <p className="eyebrow">Como validamos</p>
             <h2>O metodo cabe em poucos passos e nao tenta parecer mais amplo do que e.</h2>

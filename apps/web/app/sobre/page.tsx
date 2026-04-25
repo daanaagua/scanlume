@@ -26,7 +26,7 @@ export default function AboutPage() {
       </section>
 
       <section className="section-band muted-band">
-        <div className="container split-content">
+        <div className="container">
           <div className="section-heading">
             <p className="eyebrow">Quem responde pelo produto</p>
             <h2>Um produto pequeno, com escopo claro e paginas de confianca abertas.</h2>
@@ -100,7 +100,7 @@ export default function AboutPage() {
       </section>
 
       <section className="section-band muted-band">
-        <div className="container split-content">
+        <div className="container">
           <div className="section-heading">
             <p className="eyebrow">O que o produto faz e o que nao promete</p>
             <h2>Preferimos clareza operacional a exagero de marketing.</h2>

@@ -89,4 +89,13 @@ describe("OcrWorkspace", () => {
     expect(screen.getByText(/pdf = 2 credits por pagina/i)).not.toBeNull();
     expect(screen.queryByText("Paginas PDF")).toBeNull();
   });
+
+  it("uses the command desk layout with upload, scan, and output in one field of view", async () => {
+    const { container } = render(<OcrWorkspace defaultMode="simple" priorityLayout />);
+
+    expect(await screen.findByText(/Comece pelo upload/i)).not.toBeNull();
+    expect(screen.getByLabelText(/Leitura OCR ao vivo/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Preview do resultado/i)).toBeInTheDocument();
+    expect(container.querySelector(".workspace-grid")).toHaveClass("workspace-desk-grid");
+  });
 });
