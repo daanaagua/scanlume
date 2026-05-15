@@ -60,6 +60,59 @@ const profileLinks = [
   },
 ];
 
+const publicLinks = [
+  {
+    href: "https://anotepad.com/notes/bgji6xw5",
+    label: "anotepad",
+    note: "Public note",
+  },
+  {
+    href: "https://bom.so/JhWYyM",
+    label: "bom.so",
+    note: "Short link",
+  },
+  {
+    href: "https://u.to/8PuSIg",
+    label: "u.to",
+    note: "Short link",
+  },
+  {
+    href: "https://v.gd/9VHT5d",
+    label: "v.gd",
+    note: "Short link",
+  },
+  {
+    href: "https://za.gl/EEY4Np",
+    label: "za.gl",
+    note: "Short link",
+  },
+  {
+    href: "https://allie26415dmk.dropmark.com/2140480",
+    label: "Dropmark",
+    note: "Public collection",
+  },
+  {
+    href: "https://www.classifiedads.com/tech_services/4z5d2cs4n3dxz",
+    label: "ClassifiedAds",
+    note: "Public listing",
+  },
+  {
+    href: "https://vymaps.com/US/databaseoptimization-vn153657/?id_new=03afbe646eb851a2f6089b2273bb2816",
+    label: "VYMaps",
+    note: "Public business listing",
+  },
+  {
+    href: "https://www.freelistingusa.com/listings/databaseoptimization",
+    label: "FreeListingUSA",
+    note: "Public directory listing",
+  },
+  {
+    href: "https://www.wishlistr.com/dp/12037467/",
+    label: "Wishlistr item",
+    note: "Public item page",
+  },
+];
+
 export const metadata = buildMetadata({
   title: LISTINGS_LABEL,
   description:
@@ -108,6 +161,29 @@ export default function FeaturedOnPage() {
 
           <ul className="featured-link-list">
             {profileLinks.map((link) => (
+              <li key={link.href} className="featured-link-item">
+                <span className="featured-link-label">{link.label}</span>
+                <span className="featured-link-note">{link.note}</span>
+                <a href={link.href} target="_blank" rel="noopener noreferrer">
+                  {link.href}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="featured-link-section">
+          <div className="legal-copy featured-page-copy">
+            <h2>Outras paginas publicas.</h2>
+            <p>
+              Aqui entram notas publicas, colecoes, listings e short links que ja ficaram acessiveis fora do dominio
+              principal. Mantemos tudo em anchors simples para facilitar crawl, refresh e consolidacao dessas
+              referencias externas.
+            </p>
+          </div>
+
+          <ul className="featured-link-list">
+            {publicLinks.map((link) => (
               <li key={link.href} className="featured-link-item">
                 <span className="featured-link-label">{link.label}</span>
                 <span className="featured-link-note">{link.note}</span>
