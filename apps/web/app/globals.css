@@ -2296,6 +2296,46 @@ main {
   color: var(--muted);
 }
 
+.featured-link-section {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(22, 42, 44, 0.08);
+  box-shadow: var(--shadow);
+}
+
+.featured-link-list {
+  list-style: none;
+  display: grid;
+  gap: 0.85rem;
+  padding: 0;
+  margin: 0;
+}
+
+.featured-link-item {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem 1.1rem;
+  border-radius: 18px;
+  background: rgba(255, 250, 240, 0.92);
+  border: 1px solid rgba(22, 42, 44, 0.08);
+}
+
+.featured-link-label {
+  font-weight: 700;
+}
+
+.featured-link-note {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.featured-link-item a {
+  overflow-wrap: anywhere;
+}
+
 .footer-bottom {
   display: flex;
   flex-wrap: wrap;

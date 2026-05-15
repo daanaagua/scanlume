@@ -17,6 +17,49 @@ const featuredBadges = [
   },
 ];
 
+const profileLinks = [
+  {
+    href: "https://beforeitsnews.com/v3/contributor/bio/?uid=1056818",
+    label: "Before It's News",
+    note: "Contributor bio",
+  },
+  {
+    href: "https://fazier.com/p/allie26415",
+    label: "Fazier",
+    note: "Public profile",
+  },
+  {
+    href: "https://alliedatabaseoptimization.crevado.com/about",
+    label: "Crevado",
+    note: "About page",
+  },
+  {
+    href: "https://doodleordie.com/profile/allie26415dod",
+    label: "Doodle or Die",
+    note: "Public profile",
+  },
+  {
+    href: "https://www.wishlistr.com/xiaonagua/",
+    label: "Wishlistr",
+    note: "Public user page",
+  },
+  {
+    href: "https://noti.st/allie26415nst/bio",
+    label: "Notist",
+    note: "Bio page",
+  },
+  {
+    href: "https://www.insanelymac.com/forum/profile/2749732-allie26415im/",
+    label: "InsanelyMac",
+    note: "Forum profile",
+  },
+  {
+    href: "https://www.affilorama.com/member/allie26415-affilorama20260515",
+    label: "Affilorama",
+    note: "Member profile",
+  },
+];
+
 export const metadata = buildMetadata({
   title: LISTINGS_LABEL,
   description:
@@ -52,6 +95,28 @@ export default function FeaturedOnPage() {
               <span>{badge.alt}</span>
             </a>
           ))}
+        </div>
+
+        <div className="featured-link-section">
+          <div className="legal-copy featured-page-copy">
+            <h2>Profile links publicados.</h2>
+            <p>
+              Alem dos badges, esta secao deixa visiveis paginas de perfil, bio e member pages publicas usadas em
+              publicacoes externas. Os links ficam em HTML simples para facilitar descoberta e recrawl.
+            </p>
+          </div>
+
+          <ul className="featured-link-list">
+            {profileLinks.map((link) => (
+              <li key={link.href} className="featured-link-item">
+                <span className="featured-link-label">{link.label}</span>
+                <span className="featured-link-note">{link.note}</span>
+                <a href={link.href} target="_blank" rel="noopener noreferrer">
+                  {link.href}
+                </a>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </section>
