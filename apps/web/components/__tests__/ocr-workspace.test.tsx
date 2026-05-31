@@ -117,6 +117,7 @@ describe("OcrWorkspace", () => {
 
     expect(await screen.findByText(/Upload rapido/i)).not.toBeNull();
     expect(container.querySelector(".ocr-desk-shell")).not.toBeNull();
+    expect(container.querySelector(".ocr-tool-first-shell")).not.toBeNull();
     expect(container.querySelector(".ocr-desk-command-bar")).not.toBeNull();
     expect(container.querySelector(".ocr-desk-scan-lane")).not.toBeNull();
     expect(screen.getByRole("region", { name: /entrada de arquivos/i })).toBeInTheDocument();

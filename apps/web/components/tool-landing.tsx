@@ -20,22 +20,16 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
   const workspaceFirst = "workspaceFirst" in page && Boolean(page.workspaceFirst);
   const isPdfWorkspace = slug === "pdf-para-texto";
   const heroEyebrow = workspaceFirst ? (isPdfWorkspace ? page.eyebrow : "Apoio rapido") : page.eyebrow;
-  const heroLead = workspaceFirst
-    ? isPdfWorkspace
-      ? "O workspace principal ja fica no topo. Aqui embaixo voce encontra o contexto do fluxo PDF: texto nativo quando existe, OCR por regiao quando a pagina e imagem, e saida em PDF pesquisavel ou reorganizado."
-      : "A ferramenta principal ja fica no topo. Aqui embaixo voce so precisa decidir entre velocidade e estrutura antes de processar a imagem."
-    : page.lead;
+  const toolFirstLead = isPdfWorkspace
+    ? "Envie PDF nativo, escaneado ou misto e baixe texto ou PDF pesquisavel."
+    : page.defaultMode === "formatted"
+      ? "Envie imagem ou PDF e gere texto organizado para Word, Markdown, HTML ou PDF."
+      : "Envie JPG, PNG ou screenshot e extraia texto editavel no navegador.";
   const heroBullets = workspaceFirst
     ? isPdfWorkspace
       ? ["PDF nativo, escaneado ou misto", "PDF pesquisavel e reorganizado", "HTML, Markdown e TXT"]
       : ["JPG, PNG e screenshot", "Texto puro ou organizado", "Copiar e baixar no navegador"]
     : page.heroBullets;
-  const heroPrimaryLabel = workspaceFirst ? "Voltar ao upload" : "Usar agora";
-  const heroActionNote = workspaceFirst
-    ? isPdfWorkspace
-      ? "Use este bloco para entender quando o PDF fica melhor em Texto formatado, como os downloads funcionam e o que muda entre PDF pesquisavel e PDF reorganizado."
-      : "Use este bloco para comparar os dois modos sem perder o foco no upload."
-    : "Teste gratis direto no navegador";
   const relatedPages = page.relatedSlugs.flatMap((key) => {
     const relatedSlug = key as ToolPageSlug;
     const entry = toolPageContent[relatedSlug];
@@ -49,9 +43,22 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
   const canonical = `${SITE_URL}/${slug}`;
   const featuredPosts = BLOG_POSTS.slice(0, 3);
   const workspaceSection = (
-    <section id={OCR_WORKSPACE_ID} className={`section-band tool-workspace-band${workspaceFirst ? " is-priority" : ""}`}>
-      <div className="container">
-        <OcrWorkspace defaultMode={page.defaultMode ?? "simple"} priorityLayout={workspaceFirst} />
+    <section id={OCR_WORKSPACE_ID} className="tool-first-landing">
+      <div className="container tool-first-landing-inner">
+        <div className="tool-first-intro tool-first-intro-compact">
+          <p className="eyebrow">{heroEyebrow}</p>
+          <h1>{page.h1}</h1>
+          <p>{toolFirstLead}</p>
+          <div className="tool-first-pills" aria-label="Recursos desta ferramenta">
+            {heroBullets.slice(0, 3).map((item) => (
+              <span key={item}>{item}</span>
+            ))}
+          </div>
+        </div>
+
+        <div className="tool-first-workspace">
+          <OcrWorkspace defaultMode={page.defaultMode ?? "simple"} priorityLayout />
+        </div>
       </div>
     </section>
   );
@@ -110,51 +117,6 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
           ],
         }}
       />
-
-      <section className="command-hero command-hero-compact">
-        <div className="container">
-          <div className="command-hero-card">
-            <p className="eyebrow">{heroEyebrow}</p>
-            <h1>{page.h1}</h1>
-            <p className="hero-lead">{heroLead}</p>
-            <div className="hero-actions hero-inline-actions">
-              <a href={`#${OCR_WORKSPACE_ID}`} className="solid-button large-button hero-primary-cta">
-                {heroPrimaryLabel}
-              </a>
-              <span className="hero-action-note">{heroActionNote}</span>
-            </div>
-            <div className="hero-bullets">
-              {heroBullets.map((item) => (
-                <span key={item}>{item}</span>
-              ))}
-            </div>
-            <div className="command-mode-row">
-              <article>
-                <span>{workspaceFirst ? "Se quer velocidade" : "Modo rapido"}</span>
-                <strong>{SIMPLE_MODE_LABEL}</strong>
-                <p>
-                  {workspaceFirst
-                    ? isPdfWorkspace
-                      ? "Melhor para imagens soltas; PDFs entram no modo estruturado."
-                      : "Texto puro com menos espera em screenshots, posters e fotos simples."
-                    : "Texto puro, sem raciocinio extra, mais veloz para screenshot, poster e foto do celular."}
-                </p>
-              </article>
-              <article>
-                <span>{workspaceFirst ? "Se quer leitura melhor" : "Modo estruturado"}</span>
-                <strong>{FORMATTED_MODE_LABEL}</strong>
-                <p>
-                  {workspaceFirst
-                    ? isPdfWorkspace
-                      ? "Reaproveita texto nativo, aplica OCR por regiao e gera PDF pesquisavel ou reorganizado."
-                      : "Mantem titulos, paragrafos e hierarquia mais limpa para revisar depois."
-                    : "Preserva a estrutura principal com titulos, paragrafos e uma leitura mais clara."}
-                </p>
-              </article>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {workspaceSection}
 

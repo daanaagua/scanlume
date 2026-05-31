@@ -687,7 +687,7 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
     : `Teste anonimo: 5 credits. Conta gratis libera 50 credits totais.`;
 
   return (
-    <section className={`workspace-shell ocr-desk-shell${priorityLayout ? " workspace-shell-priority" : ""}`}>
+    <section className={`workspace-shell ocr-desk-shell ocr-tool-first-shell${priorityLayout ? " workspace-shell-priority" : ""}`}>
       {!priorityLayout && (
         <div className="workspace-head">
           <div>
@@ -709,7 +709,9 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
                 <h3>{priorityLayout ? "Upload rapido" : "Escolha os arquivos"}</h3>
                 <span className="upload-credit-pill">{remainingCreditsLabel} credits</span>
               </div>
-              <p className="upload-panel-summary">JPG, PNG, screenshot ou PDF no modo formatado.</p>
+              <p className="upload-panel-summary">
+                {priorityLayout ? "Solte arquivos aqui para iniciar." : "JPG, PNG, screenshot ou PDF no modo formatado."}
+              </p>
             </div>
           </div>
 

@@ -14,8 +14,6 @@ import {
   SITE_NAME,
   SITE_URL,
   SIMPLE_MODE_LABEL,
-  SUPPORT_EMAIL,
-  SUPPORT_MAILTO,
   toolPageContent,
 } from "@/lib/site";
 
@@ -70,91 +68,24 @@ export default function Home() {
         }}
       />
 
-      <section className="scanlume-hero-shell">
-        <div className="container scanlume-hero-grid">
-          <div className="scanlume-hero-copy">
-            <p className="eyebrow scanlume-signal-label">Scanlume em pt-BR</p>
-            <h1>OCR online para transformar imagens e PDF em texto editavel.</h1>
-            <p className="hero-lead">
-              Use o Scanlume para testar OCR simples em imagens ou Texto formatado em imagens e PDF, levando o resultado para Word, Markdown, HTML ou downloads em PDF sem instalar app.
+      <section id={OCR_WORKSPACE_ID} className="tool-first-home">
+        <div className="container tool-first-home-inner">
+          <div className="tool-first-intro">
+            <p className="eyebrow scanlume-signal-label">Scanlume OCR</p>
+            <h1>OCR online em pt-BR.</h1>
+            <p>
+              Envie imagem ou PDF, extraia texto editavel e baixe em TXT, Markdown, HTML ou PDF.
             </p>
-            <p className="hero-lead">
-              A rota principal de <Link href="/imagem-para-texto">imagem para texto</Link> tambem atende buscas por <Link href="/imagem-para-texto">converter imagem em texto</Link> e <Link href="/imagem-para-texto">imagem em texto</Link>, mantendo o caso geral concentrado em uma pagina central.
-              Quando a origem ja esta em documento, a rota dedicada de <Link href="/pdf-para-texto">PDF para texto</Link> explica o fluxo de OCR por regiao, PDF pesquisavel e PDF reorganizado.
-            </p>
-            <div className="hero-bullets">
+            <div className="tool-first-pills" aria-label="Recursos principais">
               <span>Gratis para testar</span>
-              <span>Sem instalar aplicativo</span>
-              <span>TXT, MD, HTML e PDF</span>
-            </div>
-            <div className="hero-actions">
-              <Link href="/imagem-para-texto" className="solid-button large-button">
-                Abrir a ferramenta
-              </Link>
-              <Link href="/imagem-para-word" className="ghost-button large-button">
-                Ver modo formatado
-              </Link>
-              <Link href="/precos" className="ghost-button large-button">
-                Ver planos
-              </Link>
-            </div>
-            <p className="support-email-note">
-              Suporte e faturamento:
-              {" "}
-              <a href={SUPPORT_MAILTO} className="support-email-link">
-                {SUPPORT_EMAIL}
-              </a>
-            </p>
-          </div>
-
-          <div className="scanlume-hero-stage" aria-label="Previa visual do workspace OCR">
-            <div className="scanlume-stage-toolbar">
-              <span>Fila OCR</span>
-              <strong>Escaneando</strong>
-            </div>
-            <div className="scanlume-stage-document" aria-hidden="true">
-              <span className="scanlume-stage-beam" />
-              <div className="scanlume-stage-paper">
-                <span />
-                <span />
-                <span />
-                <span />
-              </div>
-            </div>
-            <div className="scanlume-stage-output">
-              <span>Resultado</span>
-              <strong>Copiar / Baixar</strong>
+              <span>Imagem e PDF</span>
+              <span>TXT, MD, HTML, PDF</span>
             </div>
           </div>
 
-          <div className="scanlume-workflow-strip" aria-label="Fluxo principal do OCR">
-            <article>
-              <span>01</span>
-              <strong>Upload</strong>
-              <p>JPG, PNG, screenshot ou PDF.</p>
-            </article>
-            <article>
-              <span>02</span>
-              <strong>{SIMPLE_MODE_LABEL}</strong>
-              <p>Texto puro para prints e fotos.</p>
-            </article>
-            <article>
-              <span>03</span>
-              <strong>{FORMATTED_MODE_LABEL}</strong>
-              <p>Leitura organizada para docs.</p>
-            </article>
-            <article>
-              <span>04</span>
-              <strong>Saida</strong>
-              <p>Copiar, TXT, MD, HTML ou PDF.</p>
-            </article>
+          <div className="tool-first-workspace">
+            <OcrWorkspace defaultMode="simple" priorityLayout />
           </div>
-        </div>
-      </section>
-
-      <section id={OCR_WORKSPACE_ID} className="section-band tool-workspace-band is-priority">
-        <div className="container">
-          <OcrWorkspace defaultMode="simple" priorityLayout />
         </div>
       </section>
 
