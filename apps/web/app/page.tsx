@@ -70,10 +70,10 @@ export default function Home() {
         }}
       />
 
-      <section className="command-hero">
-        <div className="container">
-          <div className="command-hero-card">
-            <p className="eyebrow">Scanlume em pt-BR</p>
+      <section className="scanlume-hero-shell">
+        <div className="container scanlume-hero-grid">
+          <div className="scanlume-hero-copy">
+            <p className="eyebrow scanlume-signal-label">Scanlume em pt-BR</p>
             <h1>OCR online para transformar imagens e PDF em texto editavel.</h1>
             <p className="hero-lead">
               Use o Scanlume para testar OCR simples em imagens ou Texto formatado em imagens e PDF, levando o resultado para Word, Markdown, HTML ou downloads em PDF sem instalar app.
@@ -85,15 +85,8 @@ export default function Home() {
             <div className="hero-bullets">
               <span>Gratis para testar</span>
               <span>Sem instalar aplicativo</span>
-              <span>Copiar ou baixar em TXT, MD, HTML e PDF</span>
+              <span>TXT, MD, HTML e PDF</span>
             </div>
-            <p className="support-email-note">
-              Suporte e faturamento:
-              {" "}
-              <a href={SUPPORT_MAILTO} className="support-email-link">
-                {SUPPORT_EMAIL}
-              </a>
-            </p>
             <div className="hero-actions">
               <Link href="/imagem-para-texto" className="solid-button large-button">
                 Abrir a ferramenta
@@ -105,18 +98,56 @@ export default function Home() {
                 Ver planos
               </Link>
             </div>
-            <div className="command-mode-row">
-              <article>
-                <span>Modo 01</span>
-                <strong>{SIMPLE_MODE_LABEL}</strong>
-                <p>Texto puro para prints, posters e fotos do celular.</p>
-              </article>
-              <article>
-                <span>Modo 02</span>
-                <strong>{FORMATTED_MODE_LABEL}</strong>
-                <p>Estrutura principal organizada para Word, Markdown, HTML e PDF.</p>
-              </article>
+            <p className="support-email-note">
+              Suporte e faturamento:
+              {" "}
+              <a href={SUPPORT_MAILTO} className="support-email-link">
+                {SUPPORT_EMAIL}
+              </a>
+            </p>
+          </div>
+
+          <div className="scanlume-hero-stage" aria-label="Previa visual do workspace OCR">
+            <div className="scanlume-stage-toolbar">
+              <span>Fila OCR</span>
+              <strong>Escaneando</strong>
             </div>
+            <div className="scanlume-stage-document" aria-hidden="true">
+              <span className="scanlume-stage-beam" />
+              <div className="scanlume-stage-paper">
+                <span />
+                <span />
+                <span />
+                <span />
+              </div>
+            </div>
+            <div className="scanlume-stage-output">
+              <span>Resultado</span>
+              <strong>Copiar / Baixar</strong>
+            </div>
+          </div>
+
+          <div className="scanlume-workflow-strip" aria-label="Fluxo principal do OCR">
+            <article>
+              <span>01</span>
+              <strong>Upload</strong>
+              <p>JPG, PNG, screenshot ou PDF.</p>
+            </article>
+            <article>
+              <span>02</span>
+              <strong>{SIMPLE_MODE_LABEL}</strong>
+              <p>Texto puro para prints e fotos.</p>
+            </article>
+            <article>
+              <span>03</span>
+              <strong>{FORMATTED_MODE_LABEL}</strong>
+              <p>Leitura organizada para docs.</p>
+            </article>
+            <article>
+              <span>04</span>
+              <strong>Saida</strong>
+              <p>Copiar, TXT, MD, HTML ou PDF.</p>
+            </article>
           </div>
         </div>
       </section>

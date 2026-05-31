@@ -687,7 +687,7 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
     : `Teste anonimo: 5 credits. Conta gratis libera 50 credits totais.`;
 
   return (
-    <section className={`workspace-shell${priorityLayout ? " workspace-shell-priority" : ""}`}>
+    <section className={`workspace-shell ocr-desk-shell${priorityLayout ? " workspace-shell-priority" : ""}`}>
       {!priorityLayout && (
         <div className="workspace-head">
           <div>
@@ -700,7 +700,7 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
         </div>
       )}
 
-      <div className="workspace-grid workspace-desk-grid">
+      <div className="workspace-grid workspace-desk-grid ocr-desk-command-bar">
         <div className="upload-panel card-surface" role="region" aria-label="Entrada de arquivos">
           <div className="upload-panel-head">
             <div>
@@ -803,7 +803,7 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
             </span>
           </div>
 
-          <div className="scan-visual-frame">
+          <div className="scan-visual-frame ocr-desk-scan-lane">
             <Image
               src="/brand/scanlume-ocr-desk.png"
               alt="Mesa visual de OCR com documento sendo escaneado"

@@ -18,7 +18,7 @@ describe("Home and product surfacing", () => {
     const { container } = render(<Home />);
 
     expect(screen.getAllByText(/PDF para texto/i).length).toBeGreaterThan(0);
-    expect(container.querySelector(".command-hero")).not.toBeNull();
+    expect(container.querySelector(".scanlume-hero-shell")).not.toBeNull();
     expect(container.querySelector(".hero-grid")).toBeNull();
     expect(container.querySelector(".split-content")).toBeNull();
   });
@@ -36,5 +36,16 @@ describe("Home and product surfacing", () => {
     render(<ImageToTextPage />);
 
     expect(screen.getAllByText(/PDF para texto/i).length).toBeGreaterThan(0);
+  });
+
+  it("uses the optical desk refresh structure without losing the primary OCR workspace", () => {
+    const { container } = render(<Home />);
+
+    expect(container.querySelector(".scanlume-hero-shell")).not.toBeNull();
+    expect(container.querySelector(".scanlume-hero-stage")).not.toBeNull();
+    expect(container.querySelector(".scanlume-workflow-strip")).not.toBeNull();
+    expect(container.querySelector(".command-hero-card")).toBeNull();
+    expect(screen.getByTestId("ocr-workspace")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /abrir a ferramenta/i })).toHaveAttribute("href", "/imagem-para-texto");
   });
 });

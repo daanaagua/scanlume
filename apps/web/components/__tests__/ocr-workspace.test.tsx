@@ -111,4 +111,16 @@ describe("OcrWorkspace", () => {
     expect(within(uploadRegion).queryByText(/Hoje \/ limite/i)).toBeNull();
     expect(await screen.findByText(/Hoje \/ limite/i)).not.toBeNull();
   });
+
+  it("uses the optical desk workspace frame while preserving upload scan and result regions", async () => {
+    const { container } = render(<OcrWorkspace defaultMode="simple" priorityLayout />);
+
+    expect(await screen.findByText(/Upload rapido/i)).not.toBeNull();
+    expect(container.querySelector(".ocr-desk-shell")).not.toBeNull();
+    expect(container.querySelector(".ocr-desk-command-bar")).not.toBeNull();
+    expect(container.querySelector(".ocr-desk-scan-lane")).not.toBeNull();
+    expect(screen.getByRole("region", { name: /entrada de arquivos/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/Leitura OCR ao vivo/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Preview do resultado/i)).toBeInTheDocument();
+  });
 });
