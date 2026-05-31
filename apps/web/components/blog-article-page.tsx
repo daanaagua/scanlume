@@ -14,6 +14,10 @@ import {
 } from "@/lib/blog";
 import { EVIDENCE_PATH } from "@/lib/site";
 
+function isExternalHref(href: string) {
+  return /^https?:\/\//.test(href);
+}
+
 export function BlogArticlePage({ post }: { post: BlogPost }) {
   const relatedPosts = post.relatedPosts
     .map((slug) => getBlogPost(slug))
@@ -184,11 +188,25 @@ export function BlogArticlePage({ post }: { post: BlogPost }) {
 
           <div className="related-grid">
             {post.relatedLinks.map((link) => (
-              <Link key={link.href} href={link.href} className="related-card blog-related-card">
-                <span>{link.label}</span>
-                <strong>{link.description}</strong>
-                <p>Abrir {link.href}</p>
-              </Link>
+              isExternalHref(link.href) ? (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  className="related-card blog-related-card"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span>{link.label}</span>
+                  <strong>{link.description}</strong>
+                  <p>Abrir {link.href}</p>
+                </a>
+              ) : (
+                <Link key={link.href} href={link.href} className="related-card blog-related-card">
+                  <span>{link.label}</span>
+                  <strong>{link.description}</strong>
+                  <p>Abrir {link.href}</p>
+                </Link>
+              )
             ))}
           </div>
         </div>

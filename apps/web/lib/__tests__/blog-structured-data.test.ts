@@ -1,4 +1,4 @@
-import { cleanup, render } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -54,5 +54,22 @@ describe("blog structured data", () => {
 
     expect(scripts.some((json) => json.includes('"@type":"FAQPage"'))).toBe(true);
     expect(scripts.some((json) => json.includes(post!.faq[0].question))).toBe(true);
+  });
+
+  it("renders the public backlink inventory post with external profile links", () => {
+    const post = getBlogPost("perfis-e-links-publicos-database-optimization-tool");
+
+    expect(post).toBeDefined();
+
+    render(createElement(BlogArticlePage, { post: post! }));
+
+    const calLink = screen.getByRole("link", { name: /Cal\.com/i });
+    const magicLink = screen.getByRole("link", { name: /Magic\.ly/i });
+
+    expect(calLink).toHaveAttribute("href", "https://cal.com/danagua");
+    expect(calLink).toHaveAttribute("target", "_blank");
+    expect(calLink).toHaveAttribute("rel", "noopener noreferrer");
+    expect(magicLink).toHaveAttribute("href", "https://magic.ly/danagua");
+    expect(magicLink).toHaveAttribute("target", "_blank");
   });
 });

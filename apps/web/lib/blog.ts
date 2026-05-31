@@ -53,6 +53,123 @@ export type BlogPost = {
 export const BLOG_PATH = "/blog";
 
 export const blogPosts = {
+  "perfis-e-links-publicos-database-optimization-tool": {
+    slug: "perfis-e-links-publicos-database-optimization-tool",
+    category: "Atualizacao editorial",
+    title: "Links publicos que apontam para Database Optimization Tool",
+    description:
+      "Inventario publico de perfis, diretorios e paginas externas rechecadas onde Database Optimization Tool ja aparece com link publico e crawlavel.",
+    excerpt:
+      "Esta pagina registra os perfis publicos mais estaveis que hoje apontam para Database Optimization Tool e foi publicada para facilitar recrawl, verificacao manual e atualizacao editorial.",
+    heroLead:
+      "Nem toda referencia externa continua publica, limpa e rastreavel ao longo do tempo. Por isso abrimos este inventario dentro do blog: para reunir as paginas externas rechecadas nesta rodada e deixar um ponto unico, claro e crawlavel para quem precisa validar onde o projeto ja esta publicado.",
+    publishedAt: "2026-05-31",
+    lastReviewedAt: "2026-05-31",
+    readTime: "5 min",
+    coverImage: "/blog/ocr-portuguese-benchmark-board.png",
+    coverAlt: "Quadro editorial usado para revisar links publicos e inventarios de paginas externas",
+    coverCaption:
+      "Em vez de depender de memoria ou planilhas soltas, esta rodada reuniu apenas paginas externas rechecadas e ainda publicas em um inventario editorial simples.",
+    summary: [
+      "O artigo concentra apenas paginas externas rechecadas na rodada atual e que continuam publicas sem login obrigatorio.",
+      "A prioridade foi manter `anchors` simples para perfis, bio pages e listings onde `Database Optimization Tool` ja aparece com URL publica.",
+      "Paginas com bloqueio pesado, 404, output fraco ou dominio duplicado ficaram fora desta lista para nao diluir o recrawl.",
+    ],
+    editorialMethod: [
+      "Cada link abaixo foi revisto manualmente antes da publicacao desta pagina, com foco em disponibilidade publica e presenca visivel do projeto atual.",
+      "A lista evita repetir o mesmo dominio varias vezes e prioriza paginas owner-controlled, perfis publicos e listagens que continuam carregando sem depender de sessao ativa.",
+      "Quando uma pagina caiu, ficou atras de bloqueio forte ou deixou de mostrar o projeto com clareza, ela foi removida deste inventario em vez de ser mantida por inercia.",
+    ],
+    sections: [
+      {
+        heading: "Por que este inventario foi para o blog",
+        paragraphs: [
+          "A ideia aqui nao e inflar navegacao nem repetir um diretorio de backlinks dentro do dominio principal. O objetivo e mais especifico: deixar uma pagina editorial, simples e publica que concentre referencias externas rechecadas para facilitar revisita humana e recrawl.",
+          "Como varias dessas paginas mudam ao longo do tempo, um post do blog funciona melhor do que depender apenas de memoria operacional. Ele preserva contexto, data da revisao e uma lista curta das URLs que continuam de pe nesta rodada.",
+        ],
+      },
+      {
+        heading: "O que entrou nesta rodada",
+        paragraphs: [
+          "Entraram apenas paginas publicas com bom sinal de controle editorial ou de perfil publico: agenda, bio page, landing de perfil, review page e author page. Em todos os casos, a meta foi manter links simples, com URL absoluta e sem depender de interacao para aparecer.",
+          "Quando havia varios enderecos do mesmo dominio, mantivemos so a melhor pagina publica daquela familia. Isso evita repeticao desnecessaria e ajuda a deixar o inventario mais enxuto para leitura e rastreamento.",
+        ],
+        bullets: [
+          "Cal.com",
+          "Calendly",
+          "Magic.ly",
+          "ProvenExpert",
+          "Fazier",
+          "Pinterest",
+          "Tools AI App",
+        ],
+      },
+      {
+        heading: "O que ficou de fora",
+        paragraphs: [
+          "Nem todo link historico vale a pena reaparecer aqui. Paginas com 404, respostas inconsistentes, bloqueio agressivo por rate limit ou publicacao fraca demais ficaram fora desta lista mesmo que tenham sido tocadas em rodadas anteriores.",
+          "Isso vale tambem para paginas onde o dominio se repetia com pouco ganho adicional. Em vez de empilhar variacoes do mesmo site, mantivemos apenas a rota publica que hoje comunica melhor a existencia do projeto atual.",
+        ],
+      },
+      {
+        heading: "Como usar esta pagina",
+        paragraphs: [
+          "Os cards abaixo funcionam como um inventario publico de referencia. Cada um abre uma pagina externa que hoje exibe `Database Optimization Tool` de forma publica, seja em bio, descricao, website field ou author page.",
+          "Se algum desses destinos mudar, o ideal e atualizar esta pagina junto com a revisao da propria publicacao externa. Assim o blog continua servindo como trilha editorial das referencias que ainda valem a pena recrawlear.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: "Por que nem todo backlink historico entrou neste artigo?",
+        answer:
+          "Porque a meta desta pagina nao e volume bruto. Ela existe para listar apenas paginas publicas, rechecadas e estaveis nesta rodada. Links com 404, bloqueio forte, dominio repetido ou presenca fraca do projeto ficaram de fora.",
+      },
+      {
+        question: "Esses links substituem a pagina Featured On?",
+        answer:
+          "Nao. A ideia e complementar. `Featured On` continua sendo a pagina mais direta de listagem, enquanto este post registra a rodada editorial em formato de artigo para facilitar contexto, recrawl e manutencao futura.",
+      },
+    ],
+    relatedPosts: ["quando-usar-ocr-no-navegador-vs-api", "pdf-layout-reconstruction-update"],
+    relatedLinks: [
+      {
+        href: "https://cal.com/danagua",
+        label: "Cal.com",
+        description: "Perfil publico com quatro links oficiais, incluindo Database Optimization Tool.",
+      },
+      {
+        href: "https://calendly.com/pony17620",
+        label: "Calendly",
+        description: "Pagina publica de agendamento cujo texto descritivo ja inclui o projeto atual.",
+      },
+      {
+        href: "https://magic.ly/danagua",
+        label: "Magic.ly",
+        description: "Link page publica com entrada dedicada para databaseoptimizationtool.com.",
+      },
+      {
+        href: "https://www.provenexpert.com/pt-pt/danagua/",
+        label: "ProvenExpert",
+        description: "Perfil publico com website atual e bio revisada para o projeto novo.",
+      },
+      {
+        href: "https://fazier.com/launches/www.myreadingspeed.top",
+        label: "Fazier launch",
+        description: "Launch page publica onde a rodada mais recente passou a citar Database Optimization Tool.",
+      },
+      {
+        href: "https://www.pinterest.com/pony17620/",
+        label: "Pinterest",
+        description: "Perfil publico com website field apontando para databaseoptimizationtool.com.",
+      },
+      {
+        href: "https://toolsaiapp.com/author/pony17620/",
+        label: "Tools AI App",
+        description: "Author page publica com bio e website atualizados para o projeto.",
+      },
+    ],
+  },
   "pdf-layout-reconstruction-update": {
     slug: "pdf-layout-reconstruction-update",
     category: "Atualizacao",
