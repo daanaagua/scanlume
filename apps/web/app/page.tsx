@@ -72,7 +72,7 @@ export default function Home() {
         <div className="container tool-first-home-inner">
           <div className="tool-first-intro">
             <p className="eyebrow scanlume-signal-label">Scanlume OCR</p>
-            <h1>OCR online em pt-BR.</h1>
+            <h1>OCR online em pt-BR</h1>
             <p>
               Envie imagem ou PDF, extraia texto editavel e baixe em TXT, Markdown, HTML ou PDF.
             </p>

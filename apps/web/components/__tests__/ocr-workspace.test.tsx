@@ -119,7 +119,7 @@ describe("OcrWorkspace", () => {
     expect(container.querySelector(".ocr-desk-shell")).not.toBeNull();
     expect(container.querySelector(".ocr-tool-first-shell")).not.toBeNull();
     expect(container.querySelector(".ocr-desk-command-bar")).not.toBeNull();
-    expect(container.querySelector(".ocr-desk-scan-lane")).not.toBeNull();
+    expect(container.querySelector('img[src*="scanlume-ocr-desk.png"]')).toBeNull();
     expect(screen.getByRole("region", { name: /entrada de arquivos/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/Leitura OCR ao vivo/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Preview do resultado/i)).toBeInTheDocument();

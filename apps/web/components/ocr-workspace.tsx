@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { AuthDialog } from "@/components/auth-dialog";
@@ -667,7 +666,6 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
   const isPdfPreview = primaryPreview?.kind === "pdf";
   const hasQueuedPdf = selectedFiles.some((file) => file.kind === "pdf");
   const hasQueuedFiles = selectedFiles.length > 0;
-  const hasCompletedResults = completedItems.length > 0;
   const canStart = hasQueuedFiles && !isSubmitting && !(mode === "simple" && hasQueuedPdf);
   const modeActionLabel = mode === "simple" ? `Iniciar ${SIMPLE_MODE_LABEL}` : `Iniciar ${FORMATTED_MODE_LABEL}`;
   const budgetUsed = limits?.budget.totalCostRmb ?? 0;
@@ -688,6 +686,11 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
 
   return (
     <section className={`workspace-shell ocr-desk-shell ocr-tool-first-shell${priorityLayout ? " workspace-shell-priority" : ""}`}>
+      {limits && (
+        <div className="upload-credit-pill-new">
+          Créditos: {limits.usage.remainingCredits} / {limits.limits.dailyCredits}
+        </div>
+      )}
       {!priorityLayout && (
         <div className="workspace-head">
           <div>
@@ -715,213 +718,268 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
             </div>
           </div>
 
-          <div className="mode-toggle" role="tablist" aria-label="Modo OCR">
-            <button
-              className={mode === "simple" ? "is-active" : ""}
-              onClick={() => {
-                setMode("simple");
-                if (hasQueuedPdf) {
-                  setGlobalError("PDFs so podem ser processados no modo Texto formatado.");
-                }
-              }}
-              type="button"
-            >
-              {SIMPLE_MODE_LABEL}
-            </button>
-            <button
-              className={mode === "formatted" ? "is-active" : ""}
-              onClick={() => setMode("formatted")}
-              type="button"
-            >
-              {FORMATTED_MODE_LABEL}
-            </button>
-          </div>
-
-          <label className="upload-dropzone" htmlFor="scanlume-upload">
-            <input
-              id="scanlume-upload"
-              ref={fileInputRef}
-              type="file"
-              accept={mode === "formatted" ? "image/*,application/pdf" : "image/*"}
-              multiple
-              onChange={(event) => {
-                const files = Array.from(event.target.files ?? []);
-                if (files.length > 0) {
-                  void handleFiles(files);
-                }
-              }}
-            />
-            <strong>{mode === "formatted" ? "Solte imagem ou PDF" : "Solte imagens"}</strong>
-            <span>Fila aparece na hora; voce inicia o OCR quando quiser.</span>
-            <small>
-              {uploadLimitLabel} {maxBatchFiles} arquivo(s) por envio.
-            </small>
-          </label>
-
-          <div className="upload-actions">
-            <button
-              className="ghost-button"
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              Selecionar arquivos
-            </button>
-            <button className="ghost-button" type="button" onClick={resetFiles}>
-              Limpar
-            </button>
-            <button
-              className="solid-button"
-              type="button"
-              disabled={!canStart}
-              onClick={() => void processFiles(selectedFiles, mode)}
-            >
-              {isSubmitting ? "Reconhecendo..." : modeActionLabel}
-            </button>
-          </div>
-
-          {hasQueuedFiles && (
-            <div className="queue-summary">
-              <strong>{selectedFiles.length} arquivo(s) pronto(s) para reconhecimento</strong>
-              <span>
-                {hasCompletedResults
-                  ? "Voce pode trocar o modo e clicar novamente para gerar outra saida."
-                  : "Os arquivos ficam na fila ate voce clicar em iniciar."}
-                </span>
+          <div className="dropzone-dashed-wrap">
+            <div className="mode-toggle" role="tablist" aria-label="Modo OCR">
+              <button
+                className={mode === "simple" ? "is-active" : ""}
+                onClick={() => {
+                  setMode("simple");
+                  if (hasQueuedPdf) {
+                    setGlobalError("PDFs so podem ser processados no modo Texto formatado.");
+                  }
+                }}
+                type="button"
+              >
+                {SIMPLE_MODE_LABEL}
+              </button>
+              <button
+                className={mode === "formatted" ? "is-active" : ""}
+                onClick={() => setMode("formatted")}
+                type="button"
+              >
+                {FORMATTED_MODE_LABEL}
+              </button>
             </div>
-          )}
+
+            <label className="upload-dropzone" htmlFor="scanlume-upload">
+              <input
+                id="scanlume-upload"
+                ref={fileInputRef}
+                type="file"
+                accept={mode === "formatted" ? "image/*,application/pdf" : "image/*"}
+                multiple
+                onChange={(event) => {
+                  const files = Array.from(event.target.files ?? []);
+                  if (files.length > 0) {
+                    void handleFiles(files);
+                  }
+                }}
+              />
+              <div className="upload-dropzone-inner">
+                {/* SVG Upload Icon */}
+                <svg className="upload-icon-svg" viewBox="0 0 24 24" fill="none" stroke="#0b5334" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="48" height="48">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="12" y1="18" x2="12" y2="12" />
+                  <polyline points="9 15 12 12 15 15" />
+                </svg>
+                
+                <strong>{mode === "formatted" ? "Solte imagem ou PDF" : "Solte imagens"}</strong>
+                <span className="upload-subtext">{uploadLimitLabel} {maxBatchFiles} arquivo(s) por envio.</span>
+                
+                <div className="divider-ou">
+                  <span className="divider-line"></span>
+                  <span className="divider-text">ou</span>
+                  <span className="divider-line"></span>
+                </div>
+                
+                <button
+                  className="select-file-btn"
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    fileInputRef.current?.click();
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14" className="btn-icon">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  Selecionar arquivo
+                </button>
+              </div>
+            </label>
+          </div>
+
+          <button
+            className="solid-button start-ocr-btn"
+            type="button"
+            disabled={!canStart}
+            onClick={() => void processFiles(selectedFiles, mode)}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" className="magic-wand-icon">
+              <path d="m15 4-2-2-2 2-2-2-2 2-2-2-2 2" />
+              <path d="M19 11v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4" />
+              <path d="M21 7v4" />
+              <path d="M17 9h4" />
+              <path d="m11 11 9-9" />
+            </svg>
+            {isSubmitting ? "Reconhecendo..." : modeActionLabel}
+          </button>
 
           {globalError && <p className="error-banner">{globalError}</p>}
-
         </div>
 
+        {/* Region: Leitura OCR ao vivo. Styled as the bottom file list */}
         <div className="scan-panel card-surface" role="region" aria-label="Leitura OCR ao vivo">
           <div className="scan-panel-head">
             <div>
-              <p className="eyebrow">Leitura OCR ao vivo</p>
-              <h3>{isSubmitting ? "Escaneando arquivo" : hasQueuedFiles ? "Fila pronta para OCR" : "Workspace de leitura"}</h3>
+              <h3>Fila de arquivos</h3>
             </div>
-            <span className={`scan-live-pill${isSubmitting ? " is-active" : ""}`}>
-              {isSubmitting ? "Ativo" : hasCompletedResults ? "Pronto" : "Standby"}
-            </span>
           </div>
-
-          <div className="scan-visual-frame ocr-desk-scan-lane">
-            <Image
-              src="/brand/scanlume-ocr-desk.png"
-              alt="Mesa visual de OCR com documento sendo escaneado"
-              width={1672}
-              height={941}
-              sizes="(max-width: 960px) 100vw, 42vw"
-            />
-            <span className="scan-pass-line" aria-hidden="true" />
-          </div>
-
-          {progressSummary && (
-            <div className="progress-card" aria-live="polite">
-              <div className="progress-meta">
-                <strong>{progressSummary.label}</strong>
-                <span>{Math.round(animatedPercent)}%</span>
-              </div>
-              <div className="progress-track" aria-hidden="true">
-                <div
-                  className={`progress-fill${isSubmitting ? " is-processing" : ""}`}
-                  style={{ width: `${animatedPercent}%` }}
-                />
-              </div>
-              <small>
-                {isSubmitting
-                  ? "O indicador acompanha o OCR sem tirar upload e resultado do mesmo campo de visao."
-                  : "O progresso total aparece aqui durante o OCR e ajuda a acompanhar lotes maiores."}
-              </small>
-            </div>
-          )}
 
           <div className="preview-stack">
-            {selectedFiles.length === 0 && (
-              <div className="empty-state">
-                <p>Suba uma screenshot, poster, foto ou PDF para ver a fila e a leitura no centro do workspace.</p>
+            {selectedFiles.length === 0 ? (
+              <div className="empty-state queue-empty-state">
+                <p>Nenhum arquivo na fila. Arraste ou selecione uma imagem ou PDF acima para começar.</p>
+              </div>
+            ) : (
+              <div className="selected-file-table-wrapper">
+                <table className="selected-file-table">
+                  <thead>
+                    <tr>
+                      <th>Arquivo</th>
+                      <th>Páginas</th>
+                      <th>Modo</th>
+                      <th>Status</th>
+                      <th>Progresso</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedFiles.map((item) => {
+                      const result = results[item.id];
+                      const pageCount = item.pageCount ?? 1;
+                      
+                      let progressPercent = 0;
+                      if (result?.status === "success") progressPercent = 100;
+                      else if (result?.status === "processing") progressPercent = animatedPercent;
+                      
+                      return (
+                        <tr key={item.id}>
+                          <td>
+                            <div className="file-info-cell">
+                              <svg className="file-icon-svg" viewBox="0 0 24 24" fill="none" stroke="#0b5334" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                <polyline points="14 2 14 8 20 8" />
+                              </svg>
+                              <div className="file-name-meta">
+                                <strong className="file-name">{item.file.name}</strong>
+                                <span className="file-size">{(item.file.size / 1024 / 1024).toFixed(2)} MB</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="pages-col">{pageCount}</td>
+                          <td>
+                            <span className="mode-badge">
+                              {mode === "simple" ? "OCR simples" : "Texto formatado"}
+                            </span>
+                          </td>
+                          <td>
+                            <span className={`status-badge status-${result?.status ?? "idle"}`}>
+                              {result?.status === "processing" ? "Processando" :
+                               result?.status === "success" ? "Concluído" :
+                               result?.status === "error" ? "Erro" : "Aguardando"}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="progress-cell">
+                              <div className="progress-bar-track">
+                                <div
+                                  className="progress-bar-fill"
+                                  style={{ width: `${progressPercent}%` }}
+                                />
+                              </div>
+                              <span className="progress-text">
+                                {result?.status === "success" ? `${pageCount}/${pageCount}` :
+                                 result?.status === "processing" ? `${Math.round(animatedPercent)}%` : `0/${pageCount}`}
+                              </span>
+                            </div>
+                          </td>
+                          <td>
+                            <div className="actions-cell">
+                              {result?.status === "success" && result.payload && (
+                                <button
+                                  type="button"
+                                  aria-label="Baixar resultado"
+                                  onClick={() => handleDownload(item, result.payload!)}
+                                  className="download-row-btn"
+                                >
+                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="7 10 12 15 17 10" />
+                                    <line x1="12" y1="15" x2="12" y2="3" />
+                                  </svg>
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                aria-label={`Remover ${item.file.name}`}
+                                disabled={isSubmitting}
+                                onClick={() => removeFile(item.id)}
+                                className="delete-row-btn"
+                              >
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
+                                  <polyline points="3 6 5 6 21 6" />
+                                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                </svg>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
-
-            <div className="selected-file-grid">
-              {selectedFiles.map((item) => {
-                const result = results[item.id];
-                return (
-                  <article key={item.id} className="mini-file-card">
-                    <button
-                      className="mini-file-remove"
-                      type="button"
-                      aria-label={`Remover ${item.file.name}`}
-                      disabled={isSubmitting}
-                      onClick={() => removeFile(item.id)}
-                    >
-                      x
-                    </button>
-                    {item.previewUrl ? (
-                      <>
-                        {/* Local object URLs are not compatible with Next image optimization. */}
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={item.previewUrl} alt={item.file.name} width={92} height={92} />
-                      </>
-                    ) : (
-                      <div className="mini-file-pdf">PDF</div>
-                    )}
-                    <div className="mini-file-meta">
-                      <strong>{item.file.name}</strong>
-                      <span>
-                        {(item.file.size / 1024 / 1024).toFixed(2)} MB
-                        {item.kind === "pdf" && item.pageCount ? ` • ${item.pageCount} paginas` : ""}
-                      </span>
-                      <p>
-                        {result?.status === "processing" && "Processando..."}
-                        {result?.status === "success" && "Pronto para copiar e baixar."}
-                        {result?.status === "error" && result.message}
-                        {(result?.status === "idle" || !result) && "Aguardando clique em iniciar."}
-                      </p>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
           </div>
         </div>
 
+        {/* Region: Preview do resultado */}
         <div className="result-panel card-surface" role="region" aria-label="Preview do resultado">
           <div className="result-head">
             <div>
-              <p className="eyebrow">Preview do resultado</p>
-              <h3>{primaryFile ? primaryFile.file.name : "Resultado aparece aqui"}</h3>
+              <h3>Resultado</h3>
             </div>
-            <div className="format-tabs">
+            
+            <div className="result-head-right">
+              <div className="format-tabs">
+                <button
+                  className={activeFormat === "txt" ? "is-active" : ""}
+                  onClick={() => setActiveFormat("txt")}
+                  type="button"
+                >
+                  TXT
+                </button>
+                <button
+                  className={activeFormat === "md" ? "is-active" : ""}
+                  onClick={() => setActiveFormat("md")}
+                  type="button"
+                  disabled={!isPdfPreview && mode === "simple"}
+                >
+                  MD
+                </button>
+                <button
+                  className={activeFormat === "html" ? "is-active" : ""}
+                  onClick={() => setActiveFormat("html")}
+                  type="button"
+                  disabled={!isPdfPreview && mode === "simple"}
+                >
+                  HTML
+                </button>
+              </div>
+              
               <button
-                className={activeFormat === "txt" ? "is-active" : ""}
-                onClick={() => setActiveFormat("txt")}
+                className="result-clear-btn"
                 type="button"
+                onClick={resetFiles}
+                disabled={selectedFiles.length === 0}
+                aria-label="Limpar resultados"
               >
-                TXT
-              </button>
-              <button
-                className={activeFormat === "md" ? "is-active" : ""}
-                onClick={() => setActiveFormat("md")}
-                type="button"
-                disabled={!isPdfPreview && mode === "simple"}
-              >
-                MD
-              </button>
-              <button
-                className={activeFormat === "html" ? "is-active" : ""}
-                onClick={() => setActiveFormat("html")}
-                type="button"
-                disabled={!isPdfPreview && mode === "simple"}
-              >
-                HTML
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+                Limpar
               </button>
             </div>
           </div>
 
           {!primaryPreview && (
             <div className="empty-state preview-placeholder">
-              <p>Selecione uma imagem para testar `imagem para texto` agora mesmo.</p>
+              <p>O texto extraído aparecerá aqui após o processamento.</p>
             </div>
           )}
 
@@ -938,9 +996,26 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
                   {primaryPreview.billingUpsell?.required ? <a href={primaryPreview.billingUpsell.ctaHref}>{primaryPreview.billingUpsell.ctaLabel}</a> : null}
                 </div>
               )}
+
+              <div className="result-preview">
+                {activeFormat === "html" && (primaryPreview.kind === "pdf" ? primaryPreview.html : primaryPreview.html) ? (
+                  <div
+                    className="html-preview"
+                    data-testid={isPdfPreview ? "pdf-preview-html" : undefined}
+                    dangerouslySetInnerHTML={{ __html: primaryPreview.kind === "pdf" ? primaryPreview.previewHtml : primaryPreview.html ?? "" }}
+                  />
+                ) : (
+                  <pre>
+                    {activeFormat === "md"
+                      ? primaryPreview.md ?? primaryPreview.txt
+                      : primaryPreview.txt}
+                  </pre>
+                )}
+              </div>
+
               <div className="preview-actions">
                 <button
-                  className="ghost-button"
+                  className="ghost-button copy-result-btn"
                   type="button"
                   onClick={() => navigator.clipboard.writeText(
                     activeFormat === "html"
@@ -950,15 +1025,27 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
                         : primaryPreview.txt,
                   )}
                 >
-                  Copiar resultado
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14" className="btn-icon">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  </svg>
+                  Copiar texto
                 </button>
                 {primaryFile && (
                   <button
-                    className="solid-button"
+                    className="solid-button download-result-btn"
                     type="button"
                     onClick={() => handleDownload(primaryFile, primaryPreview)}
                   >
-                    Baixar arquivo
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14" className="btn-icon">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    Baixar como
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="12" height="12" className="chevron-down-icon">
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
                   </button>
                 )}
                 {isPdfPreview && primaryFile && (
@@ -995,22 +1082,6 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
                   </button>
                 )}
               </div>
-
-              <div className="result-preview">
-                {activeFormat === "html" && (primaryPreview.kind === "pdf" ? primaryPreview.html : primaryPreview.html) ? (
-                  <div
-                    className="html-preview"
-                    data-testid={isPdfPreview ? "pdf-preview-html" : undefined}
-                    dangerouslySetInnerHTML={{ __html: primaryPreview.kind === "pdf" ? primaryPreview.previewHtml : primaryPreview.html ?? "" }}
-                  />
-                ) : (
-                  <pre>
-                    {activeFormat === "md"
-                      ? primaryPreview.md ?? primaryPreview.txt
-                      : primaryPreview.txt}
-                  </pre>
-                )}
-              </div>
             </>
           )}
         </div>
@@ -1018,7 +1089,7 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
         {limits && (
           <div className="workspace-status-wide">
             {!limits.viewer.authenticated && (
-              <div className="login-promo">
+              <div className="login-promo sr-only">
                 <div className="login-promo-copy">
                   <strong>Entre para transformar o teste em conta gratuita</strong>
                   <small>Usuarios conectados recebem 50 credits totais e acompanham o saldo direto na conta.</small>
@@ -1029,7 +1100,7 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
               </div>
             )}
 
-            <div className="status-board">
+            <div className="status-board sr-only">
               <div className="budget-status-card status-compact-card">
                 <span>Hoje / limite</span>
                 <strong>{budgetUsageLabel}</strong>
