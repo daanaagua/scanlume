@@ -4,9 +4,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { OcrWorkspace } from "@/components/ocr-workspace";
 
+const downloadMocks = vi.hoisted(() => ({
+  downloadBatchZip: vi.fn(),
+  downloadHtmlFile: vi.fn(),
+  downloadTextFile: vi.fn(),
+  requestPdfExport: vi.fn(),
+}));
+
 vi.mock("@/lib/browser-id", () => ({
   getOrCreateBrowserId: () => "browser-id-test",
 }));
+
+vi.mock("@/lib/downloads", () => downloadMocks);
 
 const authenticatedLimitsResponse = {
   viewer: {
@@ -66,6 +75,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  Object.values(downloadMocks).forEach((mock) => mock.mockReset());
   vi.unstubAllGlobals();
 });
 
@@ -154,5 +164,92 @@ describe("OcrWorkspace", () => {
     await user.click(startButton);
 
     expect(await screen.findByText(/Pode levar alguns segundos/i)).toBeInTheDocument();
+  });
+
+  it("sends the selected OCR language with image requests", async () => {
+    const fetchMock = vi.fn((url: string) => {
+      if (url.includes("/v1/limits")) {
+        return Promise.resolve({
+          json: async () => authenticatedLimitsResponse,
+        });
+      }
+
+      return Promise.resolve(
+        new Response(JSON.stringify({ result: { txt: "English text", preview: "English text" } }), { status: 200 }),
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+    render(<OcrWorkspace defaultMode="simple" locale="en" priorityLayout />);
+
+    await user.selectOptions(screen.getByRole("combobox", { name: /OCR language/i }), "en");
+    const input = document.querySelector("#scanlume-upload") as HTMLInputElement;
+    await user.upload(input, new File(["scanlume"], "english.png", { type: "image/png" }));
+    await user.click(screen.getByRole("button", { name: /Start Simple OCR/i }));
+
+    await screen.findByDisplayValue("English text");
+    const ocrRequest = fetchMock.mock.calls.find(([url]) => String(url).includes("/v1/ocr"));
+    expect(JSON.parse(String(ocrRequest?.[1]?.body))).toMatchObject({ mode: "simple", ocrLanguage: "en" });
+  });
+
+  it("downloads the edited result text instead of the original payload", async () => {
+    const fetchMock = vi.fn((url: string) => {
+      if (url.includes("/v1/limits")) {
+        return Promise.resolve({
+          json: async () => authenticatedLimitsResponse,
+        });
+      }
+
+      return Promise.resolve(
+        new Response(JSON.stringify({ result: { txt: "Original text", preview: "Original text" } }), { status: 200 }),
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+    render(<OcrWorkspace defaultMode="simple" priorityLayout />);
+
+    const input = document.querySelector("#scanlume-upload") as HTMLInputElement;
+    await user.upload(input, new File(["scanlume"], "receipt.png", { type: "image/png" }));
+    await user.click(screen.getByRole("button", { name: /Iniciar OCR simples/i }));
+
+    const editor = await screen.findByDisplayValue("Original text");
+    await user.clear(editor);
+    await user.type(editor, "Edited text");
+    await user.click(screen.getByRole("button", { name: /Baixar como/i }));
+
+    expect(downloadMocks.downloadTextFile).toHaveBeenCalledWith("receipt.txt", "Edited text");
+  });
+
+  it("retries a single failed file without clearing the queue", async () => {
+    let ocrCalls = 0;
+    const fetchMock = vi.fn((url: string) => {
+      if (url.includes("/v1/limits")) {
+        return Promise.resolve({
+          json: async () => authenticatedLimitsResponse,
+        });
+      }
+
+      ocrCalls += 1;
+      if (ocrCalls === 1) {
+        return Promise.resolve(new Response(JSON.stringify({ error: "Temporary OCR failure" }), { status: 500 }));
+      }
+
+      return Promise.resolve(
+        new Response(JSON.stringify({ result: { txt: "Recovered text", preview: "Recovered text" } }), { status: 200 }),
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+    render(<OcrWorkspace defaultMode="simple" priorityLayout />);
+
+    const input = document.querySelector("#scanlume-upload") as HTMLInputElement;
+    await user.upload(input, new File(["scanlume"], "retry.png", { type: "image/png" }));
+    await user.click(screen.getByRole("button", { name: /Iniciar OCR simples/i }));
+
+    await screen.findByText("Temporary OCR failure");
+    await user.click(screen.getByRole("button", { name: /Tentar novamente/i }));
+
+    expect(await screen.findByDisplayValue("Recovered text")).toBeInTheDocument();
+    expect(ocrCalls).toBe(2);
   });
 });

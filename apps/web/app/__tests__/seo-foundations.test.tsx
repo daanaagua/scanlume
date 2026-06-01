@@ -2,6 +2,8 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import Home from "@/app/page";
+import EnglishHome from "@/app/en/page";
+import EnglishImageToTextPage from "@/app/en/image-to-text/page";
 import sitemap from "@/app/sitemap";
 import { BLOG_POSTS } from "@/lib/blog";
 import { getLlmsFullTxt, getLlmsTxt } from "@/lib/llms";
@@ -21,6 +23,8 @@ describe("SEO and GEO foundations", () => {
 
     expect(urls).toContain("https://www.scanlume.com/precos");
     expect(urls).toContain("https://www.scanlume.com/api");
+    expect(urls).toContain("https://www.scanlume.com/en");
+    expect(urls).toContain("https://www.scanlume.com/en/image-to-text");
     expect(urls).toContain("https://www.scanlume.com/metodo-e-evidencia");
   });
 
@@ -28,6 +32,19 @@ describe("SEO and GEO foundations", () => {
     render(<Home />);
 
     expect(screen.getByRole("link", { name: /metodo e evidencia/i })).toBeInTheDocument();
+  });
+
+  it("renders English entry pages with English-first copy", () => {
+    render(<EnglishHome />);
+
+    expect(screen.getByRole("heading", { name: /Online OCR for images and PDF/i })).toBeInTheDocument();
+    expect(screen.queryByText(/OCR online em pt-BR/i)).not.toBeInTheDocument();
+
+    cleanup();
+    render(<EnglishImageToTextPage />);
+
+    expect(screen.getByRole("heading", { name: /Convert image to text online/i })).toBeInTheDocument();
+    expect(screen.getByText(/Edit before export/i)).toBeInTheDocument();
   });
 
   it("uses stable reviewed dates in the sitemap instead of build-time dates", () => {

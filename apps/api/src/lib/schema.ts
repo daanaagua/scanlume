@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const modeSchema = z.enum(["simple", "formatted"]);
+export const ocrLanguageSchema = z.enum(["auto", "pt", "en", "es"]).default("auto");
 
 export const imagePayloadSchema = z.object({
   name: z.string().min(1).max(255),
@@ -11,6 +12,7 @@ export const imagePayloadSchema = z.object({
 
 export const ocrRequestSchema = z.object({
   mode: modeSchema,
+  ocrLanguage: ocrLanguageSchema.optional().default("auto"),
   image: imagePayloadSchema,
   browserId: z.string().min(8).max(128).optional(),
   turnstileToken: z.string().min(10).optional(),
@@ -172,6 +174,7 @@ export const formattedJsonSchema = {
 } as const;
 
 export type Mode = z.infer<typeof modeSchema>;
+export type OcrLanguage = z.infer<typeof ocrLanguageSchema>;
 export type OcrRequest = z.infer<typeof ocrRequestSchema>;
 export type FormattedBlock = z.infer<typeof formattedBlockSchema>;
 export type SupportAssistant = z.infer<typeof supportAssistantSchema>;

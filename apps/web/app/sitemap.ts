@@ -7,6 +7,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const contentReviewedAt = new Date("2026-04-24");
   const trustRoutes = ["/sobre", "/metodo-e-evidencia", "/contato", "/privacidade", "/termos"] as const;
   const commercialRoutes = ["/precos", "/api"] as const;
+  const englishRoutes = ["/en", "/en/image-to-text", "/en/pricing", "/en/api"] as const;
 
   return [
     {
@@ -44,6 +45,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: contentReviewedAt,
       changeFrequency: "weekly" as const,
       priority: 0.7,
+    })),
+    ...englishRoutes.map((route) => ({
+      url: `${SITE_URL}${route}`,
+      lastModified: contentReviewedAt,
+      changeFrequency: "weekly" as const,
+      priority: route === "/en" ? 0.72 : 0.64,
     })),
   ];
 }

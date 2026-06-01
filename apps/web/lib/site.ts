@@ -1463,6 +1463,13 @@ export function buildMetadata({
   index?: boolean;
 }): Metadata {
   const canonical = getCanonicalUrl(pathname);
+  const englishAlternates: Record<string, string> = {
+    "/": "/en",
+    "/imagem-para-texto": "/en/image-to-text",
+    "/precos": "/en/pricing",
+    "/api": "/en/api",
+  };
+  const englishPathname = englishAlternates[pathname];
 
   return {
     title,
@@ -1474,6 +1481,7 @@ export function buildMetadata({
       canonical,
       languages: {
         "pt-BR": canonical,
+        ...(englishPathname ? { en: `${SITE_URL}${englishPathname}` } : {}),
         "x-default": canonical,
       },
     },

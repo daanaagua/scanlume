@@ -11,7 +11,11 @@ function createEnv() {
   };
 }
 
-function createImageRequest(browserId: string, mode: "simple" | "formatted") {
+function createImageRequest(
+  browserId: string,
+  mode: "simple" | "formatted",
+  overrides: Record<string, unknown> = {},
+) {
   return new Request("https://api.scanlume.com/v1/ocr", {
     method: "POST",
     headers: {
@@ -20,6 +24,7 @@ function createImageRequest(browserId: string, mode: "simple" | "formatted") {
     body: JSON.stringify({
       mode,
       browserId,
+      ...overrides,
       image: {
         name: "receipt.png",
         mimeType: "image/png",
@@ -75,5 +80,25 @@ describe("/v1/ocr credit settlement", () => {
 
     expect(response.status).toBe(502);
     await expect(readAnonymousBalance(env, browserId)).resolves.toMatchObject({ remainingCredits: 5 });
+  });
+
+  it("passes the selected OCR language to the upstream prompt", async () => {
+    const env = createEnv();
+    const browserId = "anon-ocr-language";
+    const fetchMock = vi.mocked(fetch);
+
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ output_text: "plain text", usage: { input_tokens: 0, output_tokens: 0 } }), { status: 200 }),
+    );
+
+    const response = await app.fetch(createImageRequest(browserId, "simple", { ocrLanguage: "en" }), env as never);
+
+    expect(response.status).toBe(200);
+    const upstreamBody = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body ?? "{}")) as {
+      input?: Array<{ content?: Array<{ type?: string; text?: string }> }>;
+    };
+    const promptText = upstreamBody.input?.[0]?.content?.find((item) => item.type === "input_text")?.text ?? "";
+    expect(promptText).toContain("Do not translate");
+    expect(promptText).toContain("English");
   });
 });

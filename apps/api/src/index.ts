@@ -35,10 +35,13 @@ import {
   extractResponseText,
 } from "./lib/formatters";
 import {
+  buildFormattedOcrPrompt,
+  buildFormattedSystemPrompt,
+  buildSimpleOcrPrompt,
+  withOcrLanguageInstruction,
   FORMATTED_PROMPT,
-  FORMATTED_SYSTEM_PROMPT,
-  SIMPLE_PROMPT,
   SUPPORT_SYSTEM_PROMPT,
+  type PromptOcrLanguage,
 } from "./lib/prompts";
 import { inspectPdfFile, parsePreparedPagesJson } from "./lib/pdf-ingest";
 import { defaultPdfUpsell, buildPdfAllowance, countBillablePdfPages, acquirePdfProcessingLock, releasePdfProcessingLock } from "./lib/pdf-limits";
@@ -63,10 +66,12 @@ import {
   formattedBlocksEnvelopeSchema,
   formattedJsonSchema,
   ocrRequestSchema,
+  ocrLanguageSchema,
   supportAssistantJsonSchema,
   supportAssistantSchema,
   supportChatRequestSchema,
   type SupportAssistant,
+  type OcrLanguage,
 } from "./lib/schema";
 import { pdfLimitSnapshotSchema, pdfOcrUploadSchema } from "./lib/pdf-schema";
 import {
@@ -386,16 +391,20 @@ app.post("/v1/api/ocr", async (c) => {
     return auth.response;
   }
 
-  const payload = await c.req.json().catch(() => null) as { mode?: "simple" | "formatted"; base64?: string } | null;
+  const payload = await c.req.json().catch(() => null) as { mode?: "simple" | "formatted"; base64?: string; ocrLanguage?: unknown } | null;
   if (!payload?.mode || !payload?.base64) {
     return c.json({ error: "mode and base64 are required.", code: "api_invalid_payload" }, 400);
+  }
+  const parsedLanguage = ocrLanguageSchema.safeParse(payload.ocrLanguage ?? "auto");
+  if (!parsedLanguage.success) {
+    return c.json({ error: "Invalid OCR language.", code: "api_invalid_payload" }, 400);
   }
 
   const amount = payload.mode === "formatted" ? 2 : 1;
 
   const result = payload.mode === "formatted"
-    ? await runFormattedOcr(c.env, payload.base64)
-    : await runSimpleOcr(c.env, payload.base64);
+    ? await runFormattedOcr(c.env, payload.base64, undefined, parsedLanguage.data)
+    : await runSimpleOcr(c.env, payload.base64, parsedLanguage.data);
   if (!result.ok) {
     return c.json({ error: result.error, code: "api_ocr_failed" }, 502);
   }
@@ -867,7 +876,7 @@ app.post("/v1/ocr", async (c) => {
     return c.json({ error: "Invalid request payload.", details: parsed.error.flatten() }, 400);
   }
 
-  const { image, mode, browserId, turnstileToken } = parsed.data;
+  const { image, mode, browserId, turnstileToken, ocrLanguage } = parsed.data;
   const viewer = await resolveViewerContext(c, browserId);
   const imageLimitBytes = viewer.currentPlan.entitlements.maxImageMb * 1024 * 1024;
   if (image.size > imageLimitBytes) {
@@ -901,8 +910,8 @@ app.post("/v1/ocr", async (c) => {
 
   const startedAt = Date.now();
   const result = mode === "simple"
-    ? await runSimpleOcr(c.env, image.dataUrl)
-    : await runFormattedOcr(c.env, image.dataUrl);
+    ? await runSimpleOcr(c.env, image.dataUrl, ocrLanguage)
+    : await runFormattedOcr(c.env, image.dataUrl, undefined, ocrLanguage);
 
   if (!result.ok) {
     return c.json({ error: result.error }, 502);
@@ -1008,6 +1017,11 @@ app.post("/v1/pdf/ocr", async (c) => {
   const totalPages = Number(form.get("totalPages") ?? 0);
   const sourcePath = String(form.get("sourcePath") ?? "");
   const preparedPagesRaw = String(form.get("preparedPages") ?? "[]");
+  const languageParsed = ocrLanguageSchema.safeParse(form.get("ocrLanguage") ?? "auto");
+  if (!languageParsed.success) {
+    return c.json({ error: "Invalid OCR language.", code: "pdf_invalid_language", remainingPdfPagesToday: 0 }, 400);
+  }
+  const ocrLanguage = languageParsed.data;
 
   if (!(file instanceof File)) {
     return c.json({ error: "Invalid request payload.", code: "pdf_file_type_invalid", remainingPdfPagesToday: 0 }, 400);
@@ -1093,6 +1107,7 @@ app.post("/v1/pdf/ocr", async (c) => {
               c.env,
               `data:image/png;base64,${page.pagePngBase64}`,
               buildPdfRegionPrompt({ pageNumber: page.pageNumber, regionKind: "page" }),
+              ocrLanguage,
             );
             if (!result.ok) {
               throw new Error(result.error);
@@ -1118,6 +1133,7 @@ app.post("/v1/pdf/ocr", async (c) => {
                 c.env,
                 `data:image/png;base64,${region.imageBase64}`,
                 buildPdfRegionPrompt({ pageNumber: page.pageNumber, regionKind: "region" }),
+                ocrLanguage,
               );
               if (result.ok && result.payload.txt.trim()) {
                 successfulRegions += 1;
@@ -1331,7 +1347,7 @@ app.post("/v1/pdf/export/reflowed", async (c) => {
   }
 });
 
-async function runSimpleOcr(env: WorkerEnv, imageUrl: string) {
+async function runSimpleOcr(env: WorkerEnv, imageUrl: string, ocrLanguage: OcrLanguage = "auto") {
   const response = await fetch(`${env.ARK_API_BASE}/responses`, {
     method: "POST",
     headers: {
@@ -1347,7 +1363,7 @@ async function runSimpleOcr(env: WorkerEnv, imageUrl: string) {
           role: "user",
           content: [
             { type: "input_image", image_url: imageUrl },
-            { type: "input_text", text: SIMPLE_PROMPT },
+            { type: "input_text", text: buildSimpleOcrPrompt(ocrLanguage) },
           ],
         },
       ],
@@ -1374,7 +1390,17 @@ async function runSimpleOcr(env: WorkerEnv, imageUrl: string) {
   };
 }
 
-async function runFormattedOcr(env: WorkerEnv, imageUrl: string, promptText = FORMATTED_PROMPT) {
+async function runFormattedOcr(
+  env: WorkerEnv,
+  imageUrl: string,
+  promptText = FORMATTED_PROMPT,
+  ocrLanguage: PromptOcrLanguage = "auto",
+) {
+  const resolvedPromptText =
+    promptText === FORMATTED_PROMPT
+      ? buildFormattedOcrPrompt(ocrLanguage)
+      : withOcrLanguageInstruction(promptText, ocrLanguage);
+
   const response = await fetch(`${env.ARK_API_BASE}/chat/completions`, {
     method: "POST",
     headers: {
@@ -1387,12 +1413,12 @@ async function runFormattedOcr(env: WorkerEnv, imageUrl: string, promptText = FO
       messages: [
         {
           role: "system",
-          content: FORMATTED_SYSTEM_PROMPT,
+          content: buildFormattedSystemPrompt(ocrLanguage),
         },
         {
           role: "user",
           content: [
-            { type: "text", text: promptText },
+            { type: "text", text: resolvedPromptText },
             {
               type: "image_url",
               image_url: {

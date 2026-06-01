@@ -26,7 +26,7 @@ export const BILLING_DISCLOSURES = [
 ] as const;
 
 export const API_INPUT_NOTE =
-  "A API de imagem no v1 aceita JSON com `mode` e `base64` em formato data URL. Se voce comecar com um arquivo local, primeiro converta a imagem para data URL e depois envie o payload.";
+  "A API de imagem no v1 aceita JSON com `mode`, `base64` em formato data URL e `ocrLanguage` opcional (`auto`, `pt`, `en` ou `es`). Se voce comecar com um arquivo local, primeiro converta a imagem para data URL e depois envie o payload.";
 
 export const API_CODE_EXAMPLES = {
   cURL: `DATA_URL=$(python -c "import base64; print('data:image/png;base64,' + base64.b64encode(open('example.png', 'rb').read()).decode())")
@@ -35,7 +35,7 @@ cat <<EOF | curl -X POST "https://api.scanlume.com/v1/api/ocr" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   --data @-
-{"mode":"simple","base64":"\${DATA_URL}"}
+{"mode":"simple","ocrLanguage":"auto","base64":"\${DATA_URL}"}
 EOF`,
   JavaScript: `import { readFile } from "node:fs/promises";
 
@@ -48,7 +48,7 @@ const response = await fetch("https://api.scanlume.com/v1/api/ocr", {
     Authorization: "Bearer YOUR_API_KEY",
     "Content-Type": "application/json",
   },
-  body: JSON.stringify({ mode: "formatted", base64: dataUrl }),
+  body: JSON.stringify({ mode: "formatted", ocrLanguage: "auto", base64: dataUrl }),
 });
 
 const data = await response.json();
@@ -62,7 +62,7 @@ with open("example.png", "rb") as f:
 response = requests.post(
     "https://api.scanlume.com/v1/api/ocr",
     headers={"Authorization": "Bearer YOUR_API_KEY", "Content-Type": "application/json"},
-    json={"mode": "simple", "base64": data_url},
+    json={"mode": "simple", "ocrLanguage": "auto", "base64": data_url},
     timeout=60,
 )
 

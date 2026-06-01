@@ -40,6 +40,7 @@ export const metadata: Metadata = {
   alternates: {
     languages: {
       "pt-BR": `${SITE_URL}/`,
+      en: `${SITE_URL}/en`,
       "x-default": `${SITE_URL}/`,
     },
   },

@@ -7,6 +7,38 @@ export const FORMATTED_SYSTEM_PROMPT =
 export const FORMATTED_PROMPT =
   "请把这张截图转换成轻量的 formatted text。只保留主要可见文字与大致层级。同一视觉块中的连续文本可以合并。输出 blocks 数组，type 只允许 h1、h2、p、br，order 从上到下递增。";
 
+export type PromptOcrLanguage = "auto" | "pt" | "en" | "es";
+
+export function buildOcrLanguageInstruction(language: PromptOcrLanguage) {
+  switch (language) {
+    case "pt":
+      return "Language constraint: treat ambiguous text as Portuguese. Do not translate. Preserve the source language, pt-BR accents, spelling, and line breaks visible in the image.";
+    case "en":
+      return "Language constraint: treat ambiguous text as English. Do not translate. Preserve the source language, English spelling, capitalization, and line breaks visible in the image.";
+    case "es":
+      return "Language constraint: treat ambiguous text as Spanish. Do not translate. Preserve the source language, Spanish accents, spelling, and line breaks visible in the image.";
+    case "auto":
+    default:
+      return "Language constraint: detect the source language from the image. Do not translate. Preserve the original language, accents, spelling, and line breaks visible in the image.";
+  }
+}
+
+export function withOcrLanguageInstruction(promptText: string, language: PromptOcrLanguage) {
+  return `${promptText}\n\n${buildOcrLanguageInstruction(language)}`;
+}
+
+export function buildSimpleOcrPrompt(language: PromptOcrLanguage) {
+  return withOcrLanguageInstruction(SIMPLE_PROMPT, language);
+}
+
+export function buildFormattedSystemPrompt(language: PromptOcrLanguage) {
+  return `${FORMATTED_SYSTEM_PROMPT}\n${buildOcrLanguageInstruction(language)}`;
+}
+
+export function buildFormattedOcrPrompt(language: PromptOcrLanguage) {
+  return withOcrLanguageInstruction(FORMATTED_PROMPT, language);
+}
+
 export const SUPPORT_SYSTEM_PROMPT = `You are the Tier-1 customer support assistant for Scanlume.
 By default, reply in Brazilian Portuguese (pt-BR), with a calm, helpful, concise, and professional tone.
 If the user clearly writes in another language, reply in that same language instead of pt-BR.

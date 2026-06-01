@@ -4249,6 +4249,7 @@ body {
 }
 
 .download-row-btn,
+.retry-row-btn,
 .delete-row-btn {
   display: inline-flex !important;
   align-items: center !important;
@@ -4261,6 +4262,89 @@ body {
   color: #4b5563 !important;
   cursor: pointer !important;
   transition: all 0.2s ease !important;
+}
+
+.ocr-options-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 190px) !important;
+  gap: 0.75rem !important;
+  align-items: stretch !important;
+}
+
+.ocr-language-control {
+  display: grid !important;
+  gap: 0.25rem !important;
+  min-width: 0 !important;
+  font-size: 0.74rem !important;
+  font-weight: 700 !important;
+  color: #4b5563 !important;
+}
+
+.ocr-language-control select {
+  width: 100% !important;
+  min-height: 38px !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  color: #1f2937 !important;
+  font: inherit !important;
+  font-size: 0.84rem !important;
+  padding: 0.45rem 0.65rem !important;
+}
+
+.status-cell-stack {
+  display: grid !important;
+  gap: 0.35rem !important;
+  max-width: 220px !important;
+}
+
+.status-cell-stack small {
+  color: #991b1b !important;
+  font-size: 0.72rem !important;
+  line-height: 1.35 !important;
+}
+
+.result-editor-block {
+  display: grid !important;
+  gap: 0.45rem !important;
+}
+
+.result-editor-block span {
+  color: #4b5563 !important;
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+}
+
+.result-editor-textarea {
+  width: 100% !important;
+  min-height: 220px !important;
+  resize: vertical !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  background: #fffefa !important;
+  color: #334155 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+  font-size: 0.88rem !important;
+  line-height: 1.6 !important;
+  padding: 0.8rem !important;
+}
+
+.html-preview + .result-editor-block {
+  margin-top: 0.9rem !important;
+}
+
+.restore-result-btn:disabled,
+.retry-row-btn:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+@media (max-width: 720px) {
+  .ocr-options-row {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 .download-row-btn:hover {

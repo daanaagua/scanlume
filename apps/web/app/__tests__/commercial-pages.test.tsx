@@ -2,6 +2,8 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import ApiPage, { metadata as apiMetadata } from "@/app/api/page";
+import EnglishApiPage, { metadata as englishApiMetadata } from "@/app/en/api/page";
+import EnglishPricingPage, { metadata as englishPricingMetadata } from "@/app/en/pricing/page";
 import PrecosPage, { metadata as precosMetadata } from "@/app/precos/page";
 import sitemap from "@/app/sitemap";
 
@@ -38,6 +40,8 @@ describe("Commercial page discovery and schema", () => {
 
     expect(entries).toContain("https://www.scanlume.com/precos");
     expect(entries).toContain("https://www.scanlume.com/api");
+    expect(entries).toContain("https://www.scanlume.com/en/pricing");
+    expect(entries).toContain("https://www.scanlume.com/en/api");
   });
 
   it("exposes Q&A-oriented metadata for pricing and developer pages", () => {
@@ -45,6 +49,8 @@ describe("Commercial page discovery and schema", () => {
     expect(precosMetadata.description).toMatch(/perguntas frequentes|FAQ|duvidas|guia/i);
     expect(apiMetadata.title).toContain("API");
     expect(apiMetadata.description).toMatch(/perguntas frequentes|FAQ|integracao|developer/i);
+    expect(englishPricingMetadata.title).toContain("pricing");
+    expect(englishApiMetadata.description).toMatch(/API key|examples/i);
   });
 
   it("adds pricing structured data to the pricing page output", () => {
@@ -87,5 +93,20 @@ describe("Commercial page discovery and schema", () => {
     expect(screen.getByRole("heading", { name: /Como os credits funcionam/i })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /Regras de cobranca/i })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /Exemplos da API de OCR para imagem/i })).toBeInTheDocument();
+  });
+
+  it("renders English commercial pages without Portuguese primary CTAs", () => {
+    render(<EnglishApiPage />);
+
+    expect(screen.getByRole("heading", { name: /Scanlume OCR API/i })).toBeInTheDocument();
+    expect(screen.getByText(/optional OCR language/i)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Ver planos/i })).not.toBeInTheDocument();
+
+    cleanup();
+    render(<EnglishPricingPage />);
+
+    expect(screen.getByRole("heading", { name: /Simple plans/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /How credits work/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Assinar mensal/i })).not.toBeInTheDocument();
   });
 });
