@@ -4,8 +4,70 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { loginWithPassword, registerWithPassword, startGoogleLogin } from "@/lib/auth";
+import type { ClientLocale } from "@/lib/client-locale";
 
 type AuthDialogMode = "login" | "register";
+
+const AUTH_DIALOG_COPY = {
+  "pt-BR": {
+    account: "Conta",
+    loginTitle: "Entrar na sua conta",
+    registerTitle: "Criar conta gratis",
+    closeLogin: "Fechar login",
+    modeAria: "Modo de autenticacao",
+    loginTab: "Entrar",
+    registerTab: "Criar conta",
+    google: "Continuar com Google",
+    divider: "ou use email e senha",
+    name: "Nome",
+    namePlaceholder: "Seu nome",
+    email: "Email",
+    emailPlaceholder: "seu@email.com",
+    password: "Senha",
+    passwordPlaceholder: "Minimo de 8 caracteres",
+    registerNoticeDelivered: (emailHint: string) =>
+      `Conta criada. Enviamos um link de verificacao para ${emailHint}. Confirme o email para liberar o login.`,
+    registerNoticeNoEmail: (emailHint: string) =>
+      `Conta criada para ${emailHint}, mas o envio de email ainda nao esta configurado neste ambiente.`,
+    fallbackError: "Nao foi possivel autenticar agora.",
+    loginSubmitting: "Entrando...",
+    registerSubmitting: "Criando conta...",
+    loginSubmit: "Entrar com email",
+    registerSubmit: "Criar conta com email",
+    forgotPassword: "Esqueci minha senha",
+    loginNote: "Se voce ja entrou com Google antes, pode continuar com Google ou criar uma senha usando o mesmo email.",
+    registerNote: "Se este email ja existe via Google, vamos anexar a senha na mesma conta para voce entrar dos dois jeitos.",
+  },
+  en: {
+    account: "Account",
+    loginTitle: "Sign in to your account",
+    registerTitle: "Create a free account",
+    closeLogin: "Close login",
+    modeAria: "Authentication mode",
+    loginTab: "Sign in",
+    registerTab: "Create account",
+    google: "Continue with Google",
+    divider: "or use email and password",
+    name: "Name",
+    namePlaceholder: "Your name",
+    email: "Email",
+    emailPlaceholder: "you@example.com",
+    password: "Password",
+    passwordPlaceholder: "Minimum 8 characters",
+    registerNoticeDelivered: (emailHint: string) =>
+      `Account created. We sent a verification link to ${emailHint}. Confirm your email to enable sign-in.`,
+    registerNoticeNoEmail: (emailHint: string) =>
+      `Account created for ${emailHint}, but email delivery is not configured in this environment yet.`,
+    fallbackError: "Could not authenticate right now.",
+    loginSubmitting: "Signing in...",
+    registerSubmitting: "Creating account...",
+    loginSubmit: "Sign in with email",
+    registerSubmit: "Create account with email",
+    forgotPassword: "Forgot your password?",
+    loginNote: "If you used Google before, continue with Google or create a password with the same email.",
+    registerNote: "If this email already exists through Google, we attach the password to the same account.",
+  },
+} as const;
 
 export function AuthDialog({
   open,
@@ -14,6 +76,7 @@ export function AuthDialog({
   googleRedirectTo,
   onSuccess,
   reloadOnSuccess = true,
+  locale = "pt-BR",
 }: {
   open: boolean;
   onClose: () => void;
@@ -21,6 +84,7 @@ export function AuthDialog({
   googleRedirectTo?: string;
   onSuccess?: () => void;
   reloadOnSuccess?: boolean;
+  locale?: ClientLocale;
 }) {
   const [mode, setMode] = useState<AuthDialogMode>(defaultMode);
   const [name, setName] = useState("");
@@ -55,10 +119,8 @@ export function AuthDialog({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose, open]);
 
-  const title = useMemo(
-    () => (mode === "login" ? "Entrar na sua conta" : "Criar conta gratis"),
-    [mode],
-  );
+  const copy = AUTH_DIALOG_COPY[locale];
+  const title = useMemo(() => (mode === "login" ? copy.loginTitle : copy.registerTitle), [copy, mode]);
 
   if (!open) {
     return null;
@@ -82,14 +144,14 @@ export function AuthDialog({
         const result = await registerWithPassword({ name, email, password });
         setNotice(
           result.verification.emailDeliveryConfigured
-            ? `Conta criada. Enviamos um link de verificacao para ${result.emailHint}. Confirme o email para liberar o login.`
-            : `Conta criada para ${result.emailHint}, mas o envio de email ainda nao esta configurado neste ambiente.`,
+            ? copy.registerNoticeDelivered(result.emailHint)
+            : copy.registerNoticeNoEmail(result.emailHint),
         );
         setMode("login");
         setPassword("");
       }
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Nao foi possivel autenticar agora.");
+      setError(reason instanceof Error ? reason.message : copy.fallbackError);
     } finally {
       setIsSubmitting(false);
     }
@@ -110,48 +172,48 @@ export function AuthDialog({
       >
         <div className="auth-modal-head">
           <div>
-            <p className="eyebrow">Conta</p>
+            <p className="eyebrow">{copy.account}</p>
             <h2 id="auth-modal-title">{title}</h2>
           </div>
-          <button type="button" className="auth-modal-close" onClick={onClose} aria-label="Fechar login">
+          <button type="button" className="auth-modal-close" onClick={onClose} aria-label={copy.closeLogin}>
             x
           </button>
         </div>
 
-        <div className="auth-modal-tabs" role="tablist" aria-label="Modo de autenticacao">
+        <div className="auth-modal-tabs" role="tablist" aria-label={copy.modeAria}>
           <button
             type="button"
             className={mode === "login" ? "is-active" : ""}
             onClick={() => setMode("login")}
           >
-            Entrar
+            {copy.loginTab}
           </button>
           <button
             type="button"
             className={mode === "register" ? "is-active" : ""}
             onClick={() => setMode("register")}
           >
-            Criar conta
+            {copy.registerTab}
           </button>
         </div>
 
         <button type="button" className="ghost-button auth-provider-button" onClick={handleGoogleClick}>
-          Continuar com Google
+          {copy.google}
         </button>
 
         <div className="auth-modal-divider">
-          <span>ou use email e senha</span>
+          <span>{copy.divider}</span>
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>
           {mode === "register" && (
             <label className="auth-field">
-              <span>Nome</span>
+              <span>{copy.name}</span>
               <input
                 type="text"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                placeholder="Seu nome"
+                placeholder={copy.namePlaceholder}
                 autoComplete="name"
                 required
               />
@@ -159,24 +221,24 @@ export function AuthDialog({
           )}
 
           <label className="auth-field">
-            <span>Email</span>
+            <span>{copy.email}</span>
             <input
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              placeholder="seu@email.com"
+              placeholder={copy.emailPlaceholder}
               autoComplete={mode === "login" ? "email" : "username"}
               required
             />
           </label>
 
           <label className="auth-field">
-            <span>Senha</span>
+            <span>{copy.password}</span>
             <input
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              placeholder="Minimo de 8 caracteres"
+              placeholder={copy.passwordPlaceholder}
               autoComplete={mode === "login" ? "current-password" : "new-password"}
               minLength={8}
               required
@@ -189,24 +251,22 @@ export function AuthDialog({
           <button type="submit" className="solid-button auth-submit-button" disabled={isSubmitting}>
             {isSubmitting
               ? mode === "login"
-                ? "Entrando..."
-                : "Criando conta..."
+                ? copy.loginSubmitting
+                : copy.registerSubmitting
               : mode === "login"
-                ? "Entrar com email"
-                : "Criar conta com email"}
+                ? copy.loginSubmit
+                : copy.registerSubmit}
           </button>
 
           {mode === "login" && (
             <Link href="/esqueci-a-senha" className="auth-inline-link" onClick={onClose}>
-              Esqueci minha senha
+              {copy.forgotPassword}
             </Link>
           )}
         </form>
 
         <p className="auth-modal-note">
-          {mode === "login"
-            ? "Se voce ja entrou com Google antes, pode continuar com Google ou criar uma senha usando o mesmo email."
-            : "Se este email ja existe via Google, vamos anexar a senha na mesma conta para voce entrar dos dois jeitos."}
+          {mode === "login" ? copy.loginNote : copy.registerNote}
         </p>
       </div>
     </div>

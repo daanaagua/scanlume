@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { PricingPage } from "@/components/pricing-page";
 
 const fetchAccountMock = vi.fn();
+const createBillingCheckoutMock = vi.fn();
 
 function createAccountResponse(overrides: Record<string, unknown> = {}) {
   return {
@@ -27,6 +28,7 @@ vi.mock("@/lib/account", async () => {
   return {
     ...actual,
     fetchAccount: (...args: unknown[]) => fetchAccountMock(...args),
+    createBillingCheckout: (...args: unknown[]) => createBillingCheckoutMock(...args),
   };
 });
 
@@ -37,6 +39,7 @@ vi.mock("@/lib/browser-id", () => ({
 afterEach(() => {
   cleanup();
   fetchAccountMock.mockReset();
+  createBillingCheckoutMock.mockReset();
 });
 
 describe("PricingPage", () => {
@@ -139,5 +142,24 @@ describe("PricingPage", () => {
     expect(screen.queryByRole("button", { name: /Assinar mensal/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Assinar anual/i })).not.toBeInTheDocument();
     expect(screen.getAllByText(/Verificando plano/i).length).toBeGreaterThan(0);
+  });
+
+  it("keeps English checkout authentication on the English account route", async () => {
+    fetchAccountMock.mockResolvedValue(createAccountResponse());
+    createBillingCheckoutMock.mockRejectedValue(new Error("auth_required"));
+    const assignSpy = vi.fn();
+
+    render(<PricingPage locale="en" navigate={assignSpy} />);
+    const user = userEvent.setup();
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("button", { name: /Subscribe monthly/i }).length).toBeGreaterThan(0);
+    });
+
+    await user.click(screen.getAllByRole("button", { name: /Subscribe monthly/i })[0]);
+
+    await waitFor(() => {
+      expect(assignSpy).toHaveBeenCalledWith("/en/account?flow=checkout&product=web_starter_monthly");
+    });
   });
 });

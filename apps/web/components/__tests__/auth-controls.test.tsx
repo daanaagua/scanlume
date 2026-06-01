@@ -15,6 +15,10 @@ vi.mock("@/lib/browser-id", () => ({
   getOrCreateBrowserId: () => "browser-123",
 }));
 
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/",
+}));
+
 afterEach(() => {
   cleanup();
   fetchAccountMock.mockReset();
@@ -38,6 +42,47 @@ describe("AuthControls", () => {
     const loginButton = await screen.findByRole("button", { name: "Entrar" });
 
     expect(loginButton).toHaveTextContent(/^Entrar$/);
+  });
+
+  it("uses English account copy when rendered for English pages", async () => {
+    fetchAccountMock.mockResolvedValueOnce({
+      viewer: { authenticated: false, user: null },
+      currentPlan: { id: "anonymous", label: "Free trial", shortLabel: "Trial", description: "", priceLabel: "Free", isPaid: false, isCurrent: true, comingSoon: false, entitlements: { dailyImages: 5, dailyCredits: 5, maxBatchFiles: 3, maxImageMb: 5, maxBatchTotalMb: 10 }, features: [] },
+      usage: { grantedCredits: 5, usedCredits: 0, remainingCredits: 5 },
+      usageToday: { usedImages: 0, usedCredits: 0, remainingImages: 5, remainingCredits: 5 },
+      billing: { status: "inactive", provider: null, billingEmail: null, currentPeriodStart: null, currentPeriodEnd: null, cancelAtPeriodEnd: false },
+      waitlist: { joined: false, count: 0, joinedAt: null, canJoin: true },
+      availablePlans: [],
+      notes: { replyWindow: "", subscriptions: "" },
+    });
+
+    render(<AuthControls locale="en" />);
+
+    const loginButton = await screen.findByRole("button", { name: "Sign in" });
+
+    expect(loginButton).toHaveTextContent(/^Sign in$/);
+    expect(screen.queryByRole("button", { name: "Entrar" })).not.toBeInTheDocument();
+  });
+
+  it("passes English copy into the login dialog", async () => {
+    fetchAccountMock.mockResolvedValueOnce({
+      viewer: { authenticated: false, user: null },
+      currentPlan: { id: "anonymous", label: "Free trial", shortLabel: "Trial", description: "", priceLabel: "Free", isPaid: false, isCurrent: true, comingSoon: false, entitlements: { dailyImages: 5, dailyCredits: 5, maxBatchFiles: 3, maxImageMb: 5, maxBatchTotalMb: 10 }, features: [] },
+      usage: { grantedCredits: 5, usedCredits: 0, remainingCredits: 5 },
+      usageToday: { usedImages: 0, usedCredits: 0, remainingImages: 5, remainingCredits: 5 },
+      billing: { status: "inactive", provider: null, billingEmail: null, currentPeriodStart: null, currentPeriodEnd: null, cancelAtPeriodEnd: false },
+      waitlist: { joined: false, count: 0, joinedAt: null, canJoin: true },
+      availablePlans: [],
+      notes: { replyWindow: "", subscriptions: "" },
+    });
+
+    render(<AuthControls locale="en" />);
+
+    await screen.findByRole("button", { name: "Sign in" });
+    screen.getByRole("button", { name: "Sign in" }).click();
+
+    expect(await screen.findByRole("heading", { name: "Sign in to your account" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continue with Google" })).toBeInTheDocument();
   });
 
   it("refreshes visible usage after a usage-refresh event", async () => {

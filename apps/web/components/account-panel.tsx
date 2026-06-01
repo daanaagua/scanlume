@@ -8,6 +8,7 @@ import { AuthDialog } from "@/components/auth-dialog";
 import { getOrCreateBrowserId } from "@/lib/browser-id";
 import { requestPasswordReset, resendVerificationEmail } from "@/lib/auth";
 import { createApiKey, createBillingCheckout, fetchAccount, joinWaitlist, regenerateApiKey, revokeApiKey, type AccountResponse } from "@/lib/account";
+import type { ClientLocale } from "@/lib/client-locale";
 import { clearPurchaseIntent, readPurchaseIntent, savePurchaseIntent, type PurchaseIntent } from "@/lib/purchase-intent";
 import { subscribeUsageRefresh } from "@/lib/usage-sync";
 
@@ -54,7 +55,8 @@ function formatBillingStatus(status: AccountResponse["billing"]["status"]) {
   }
 }
 
-export function AccountPanel() {
+export function AccountPanel({ locale = "pt-BR" }: { locale?: ClientLocale } = {}) {
+  const isEnglish = locale === "en";
   const [account, setAccount] = useState<AccountResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [waitlistError, setWaitlistError] = useState<string | null>(null);
@@ -281,7 +283,11 @@ export function AccountPanel() {
   const pendingProduct = purchaseIntent && isPurchaseProductId(purchaseIntent.product) ? purchaseIntent.product : null;
   const pendingProductMeta = pendingProduct ? PURCHASE_PRODUCTS[pendingProduct] : null;
   const completedProductMeta = completedProduct ? PURCHASE_PRODUCTS[completedProduct] : null;
-  const authRedirectTo = pendingProduct ? `/conta?flow=checkout&product=${encodeURIComponent(pendingProduct)}` : undefined;
+  const accountPath = isEnglish ? "/en/account" : "/conta";
+  const pricingPath = isEnglish ? "/en/pricing" : "/precos";
+  const apiPath = isEnglish ? "/en/api" : "/api";
+  const toolPath = isEnglish ? "/en/image-to-text" : "/imagem-para-texto";
+  const authRedirectTo = pendingProduct ? `${accountPath}?flow=checkout&product=${encodeURIComponent(pendingProduct)}` : undefined;
 
   return (
     <section className="account-panel-shell">
@@ -321,10 +327,10 @@ export function AccountPanel() {
                     <button type="button" className="solid-button" onClick={() => void handleCreateApiKey()}>
                       Criar API key agora
                     </button>
-                    <Link href="/api" className="ghost-button">Abrir documentacao da API</Link>
+                    <Link href={apiPath} className="ghost-button">Abrir documentacao da API</Link>
                   </>
                 ) : (
-                  <Link href="/imagem-para-texto" className="solid-button">Ir para OCR</Link>
+                  <Link href={toolPath} className="solid-button">Ir para OCR</Link>
                 )}
               </div>
             </>
@@ -355,7 +361,7 @@ export function AccountPanel() {
                     Entrar ou criar conta
                   </button>
                 )}
-                <Link href="/precos" className="ghost-button">Voltar para planos</Link>
+                <Link href={pricingPath} className="ghost-button">Voltar para planos</Link>
               </div>
             </>
           ) : null}
@@ -493,6 +499,7 @@ export function AccountPanel() {
         onClose={() => setIsAuthDialogOpen(false)}
         defaultMode="register"
         googleRedirectTo={authRedirectTo}
+        locale={locale}
         reloadOnSuccess={false}
         onSuccess={() => void refreshAccount()}
       />

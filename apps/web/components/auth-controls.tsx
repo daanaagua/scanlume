@@ -1,15 +1,58 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { AuthDialog } from "@/components/auth-dialog";
 import { getOrCreateBrowserId } from "@/lib/browser-id";
 import { fetchAccount, joinWaitlist, type AccountResponse } from "@/lib/account";
 import { API_BASE_URL } from "@/lib/site";
+import { resolveClientLocale, type ClientLocale } from "@/lib/client-locale";
 import { subscribeUsageRefresh } from "@/lib/usage-sync";
 
-export function AuthControls() {
+const AUTH_CONTROLS_COPY = {
+  "pt-BR": {
+    fallbackName: "Conta",
+    signIn: "Entrar",
+    credits: "creditos",
+    creditsHeading: "Creditos",
+    accountLink: "Minha conta",
+    supportLink: "Falar com suporte",
+    waitlistJoined: "Na lista",
+    waitlistJoining: "Entrando...",
+    waitlistJoin: "Entrar na lista",
+    waitlistJoinedTooltip: (count: number) =>
+      `Voce ja esta na lista. Hoje temos ${count} pessoa(s) aguardando o lancamento de abril.`,
+    waitlistOpenTooltip: (count: number) =>
+      `Entre na lista de espera para receber aviso por email quando os planos pagos abrirem. Hoje temos ${count} pessoa(s) na fila.`,
+    signingOut: "Saindo...",
+    signOut: "Sair",
+  },
+  en: {
+    fallbackName: "Account",
+    signIn: "Sign in",
+    credits: "credits",
+    creditsHeading: "Credits",
+    accountLink: "My account",
+    supportLink: "Contact support",
+    waitlistJoined: "On the list",
+    waitlistJoining: "Joining...",
+    waitlistJoin: "Join the list",
+    waitlistJoinedTooltip: (count: number) =>
+      `You are already on the list. ${count} person(s) are waiting for the April launch today.`,
+    waitlistOpenTooltip: (count: number) =>
+      `Join the waitlist to get an email when paid plans open. ${count} person(s) are in line today.`,
+    signingOut: "Signing out...",
+    signOut: "Sign out",
+  },
+} as const;
+
+export function AuthControls({ locale }: { locale?: ClientLocale } = {}) {
+  const pathname = usePathname();
+  const resolvedLocale = resolveClientLocale(locale, pathname);
+  const isEnglish = resolvedLocale === "en";
+  const copy = AUTH_CONTROLS_COPY[resolvedLocale];
   const [account, setAccount] = useState<AccountResponse | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isJoiningWaitlist, setIsJoiningWaitlist] = useState(false);
@@ -59,8 +102,8 @@ export function AuthControls() {
 
   const firstName = useMemo(() => {
     const name = account?.viewer.user?.name?.trim();
-    return name ? name.split(/\s+/)[0] : "Conta";
-  }, [account?.viewer.user?.name]);
+    return name ? name.split(/\s+/)[0] : copy.fallbackName;
+  }, [account?.viewer.user?.name, copy.fallbackName]);
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -100,9 +143,9 @@ export function AuthControls() {
     return (
       <>
         <button type="button" className="ghost-button auth-login-button" onClick={() => setIsAuthDialogOpen(true)}>
-          Entrar
+          {copy.signIn}
         </button>
-        <AuthDialog open={isAuthDialogOpen} onClose={() => setIsAuthDialogOpen(false)} />
+        <AuthDialog open={isAuthDialogOpen} onClose={() => setIsAuthDialogOpen(false)} locale={resolvedLocale} />
       </>
     );
   }
@@ -110,8 +153,9 @@ export function AuthControls() {
   const remainingCredits = account.usage.remainingCredits;
   const grantedCredits = account.usage.grantedCredits;
   const waitlistTooltip = account.waitlist.joined
-    ? `Voce ja esta na lista. Hoje temos ${account.waitlist.count} pessoa(s) aguardando o lancamento de abril.`
-    : `Entre na lista de espera para receber aviso por email quando os planos pagos abrirem. Hoje temos ${account.waitlist.count} pessoa(s) na fila.`;
+    ? copy.waitlistJoinedTooltip(account.waitlist.count)
+    : copy.waitlistOpenTooltip(account.waitlist.count);
+  const accountHref = isEnglish ? "/en/account" : "/conta";
 
   return (
     <div ref={menuRef} className="auth-controls account-menu-shell">
@@ -128,7 +172,7 @@ export function AuthControls() {
           <small>{account.currentPlan.label}</small>
         </span>
 
-        <span className="account-usage-pill">{remainingCredits}/{grantedCredits} creditos</span>
+        <span className="account-usage-pill">{remainingCredits}/{grantedCredits} {copy.credits}</span>
       </button>
 
       {isMenuOpen && (
@@ -140,7 +184,7 @@ export function AuthControls() {
 
           <div className="account-dropdown-stats">
             <div>
-              <span>Creditos</span>
+              <span>{copy.creditsHeading}</span>
               <strong>{account.usage.remainingCredits}/{account.usage.grantedCredits}</strong>
             </div>
           </div>
@@ -153,13 +197,13 @@ export function AuthControls() {
               onClick={() => void handleJoinWaitlist()}
               disabled={account.waitlist.joined || isJoiningWaitlist}
             >
-              {account.waitlist.joined ? "Na lista" : isJoiningWaitlist ? "Entrando..." : "Entrar na lista"}
+              {account.waitlist.joined ? copy.waitlistJoined : isJoiningWaitlist ? copy.waitlistJoining : copy.waitlistJoin}
             </button>
           </div>
 
           <div className="account-dropdown-links">
-            <Link href="/conta" onClick={() => setIsMenuOpen(false)}>Minha conta</Link>
-            <Link href="/contato" onClick={() => setIsMenuOpen(false)}>Falar com suporte</Link>
+            <Link href={accountHref} onClick={() => setIsMenuOpen(false)}>{copy.accountLink}</Link>
+            <Link href="/contato" onClick={() => setIsMenuOpen(false)}>{copy.supportLink}</Link>
           </div>
 
           <button
@@ -168,7 +212,7 @@ export function AuthControls() {
             onClick={() => void handleLogout()}
             disabled={isLoggingOut}
           >
-            {isLoggingOut ? "Saindo..." : "Sair"}
+            {isLoggingOut ? copy.signingOut : copy.signOut}
           </button>
         </div>
       )}

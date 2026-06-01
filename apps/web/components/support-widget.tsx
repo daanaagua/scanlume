@@ -1,10 +1,30 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 
 import { SupportDesk } from "@/components/support-desk";
+import { resolveClientLocale, type ClientLocale } from "@/lib/client-locale";
 
-export function SupportWidget() {
+const SUPPORT_WIDGET_COPY = {
+  "pt-BR": {
+    open: "Fale conosco",
+    hide: "Ocultar",
+    close: "Fechar",
+    description: "Conte sua duvida, bug ou sugestao. Respondemos em ate 1 dia.",
+  },
+  en: {
+    open: "Contact us",
+    hide: "Hide",
+    close: "Close",
+    description: "Tell us your question, bug, or suggestion. We usually reply within 1 day.",
+  },
+} as const;
+
+export function SupportWidget({ locale }: { locale?: ClientLocale } = {}) {
+  const pathname = usePathname();
+  const resolvedLocale = resolveClientLocale(locale, pathname);
+  const copy = SUPPORT_WIDGET_COPY[resolvedLocale];
   const [isOpen, setIsOpen] = useState(false);
   const [panelStyle, setPanelStyle] = useState<CSSProperties | undefined>(undefined);
 
@@ -45,19 +65,19 @@ export function SupportWidget() {
     };
   }, [isOpen]);
 
-  const triggerLabel = useMemo(() => (isOpen ? "Ocultar" : "Fale conosco"), [isOpen]);
+  const triggerLabel = useMemo(() => (isOpen ? copy.hide : copy.open), [copy.hide, copy.open, isOpen]);
 
   return (
     <>
       {isOpen && (
         <div className="support-widget-panel" style={panelStyle}>
           <div className="support-widget-toolbar">
-            <strong>Fale conosco</strong>
+            <strong>{copy.open}</strong>
             <button type="button" className="ghost-button support-widget-close" onClick={() => setIsOpen(false)}>
-              Fechar
+              {copy.close}
             </button>
           </div>
-          <SupportDesk title="Fale conosco" description="Conte sua duvida, bug ou sugestao. Respondemos em ate 1 dia." />
+          <SupportDesk title={copy.open} description={copy.description} locale={resolvedLocale} />
         </div>
       )}
 

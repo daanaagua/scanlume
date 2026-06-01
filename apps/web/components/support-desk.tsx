@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { getOrCreateBrowserId } from "@/lib/browser-id";
+import type { ClientLocale } from "@/lib/client-locale";
 import { API_BASE_URL } from "@/lib/site";
 
 type AuthResponse = {
@@ -60,17 +61,75 @@ type SupportDeskProps = {
   embedded?: boolean;
   title?: string;
   description?: string;
+  locale?: ClientLocale;
 };
 
 const STORAGE_KEY = "scanlume-support-conversation";
 const TEXTAREA_MIN_HEIGHT = 92;
 const TEXTAREA_MAX_HEIGHT = 240;
 
+const SUPPORT_DESK_COPY = {
+  "pt-BR": {
+    title: "Entre em contato",
+    description: "Tire duvidas, envie sugestoes, relate bugs ou fale sobre parcerias. Respondemos em ate 1 dia.",
+    eyebrow: "Contato",
+    clearConversation: "Limpar conversa",
+    missingFields: "Preencha nome, email e mensagem para continuar.",
+    invalidEmail: "Informe um email valido para receber nossa resposta.",
+    sendError: "Nao foi possivel enviar sua mensagem.",
+    humanStatus: "Sua mensagem foi registrada e nosso time responde em ate 1 dia.",
+    fallbackStatus: "Mensagem enviada. Se necessario, o time responde em ate 1 dia.",
+    unexpectedError: "Erro inesperado ao enviar a mensagem.",
+    conversationCleared: "Conversa limpa. Voce pode iniciar uma nova mensagem agora.",
+    name: "Nome",
+    namePlaceholder: "Seu nome",
+    email: "Email",
+    emailPlaceholder: "seu@email.com",
+    loadingHistory: "Carregando conversa recente...",
+    emptyHint: "Pergunte como usar o OCR, relate um problema ou deixe uma sugestao. Respondemos em pt-BR.",
+    you: "Voce",
+    message: "Mensagem",
+    messagePlaceholder: "Explique sua duvida, problema ou sugestao...",
+    consent: "Ao enviar, voce concorda em receber retorno por email em ate 1 dia.",
+    sending: "Enviando...",
+    send: "Enviar mensagem",
+  },
+  en: {
+    title: "Contact us",
+    description: "Tell us your question, bug, or suggestion. We usually reply within 1 day.",
+    eyebrow: "Contact",
+    clearConversation: "Clear conversation",
+    missingFields: "Enter your name, email, and message to continue.",
+    invalidEmail: "Enter a valid email so we can reply.",
+    sendError: "Could not send your message.",
+    humanStatus: "Your message was recorded and our team usually replies within 1 day.",
+    fallbackStatus: "Message sent. Our team will reply within 1 day if needed.",
+    unexpectedError: "Unexpected error while sending the message.",
+    conversationCleared: "Conversation cleared. You can start a new message now.",
+    name: "Name",
+    namePlaceholder: "Your name",
+    email: "Email",
+    emailPlaceholder: "you@example.com",
+    loadingHistory: "Loading recent conversation...",
+    emptyHint: "Ask about OCR, report a problem, or leave feedback. We reply in English.",
+    you: "You",
+    message: "Message",
+    messagePlaceholder: "Describe your question, problem, or suggestion...",
+    consent: "By sending, you agree to receive a reply by email within 1 day.",
+    sending: "Sending...",
+    send: "Send message",
+  },
+} as const;
+
 export function SupportDesk({
   embedded = false,
-  title = "Entre em contato",
-  description = "Tire duvidas, envie sugestoes, relate bugs ou fale sobre parcerias. Respondemos em ate 1 dia.",
+  title,
+  description,
+  locale = "pt-BR",
 }: SupportDeskProps) {
+  const copy = SUPPORT_DESK_COPY[locale];
+  const resolvedTitle = title ?? copy.title;
+  const resolvedDescription = description ?? copy.description;
   const [auth, setAuth] = useState<AuthResponse | null>(null);
   const [browserId, setBrowserId] = useState("");
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -203,7 +262,7 @@ export function SupportDesk({
     const resolvedEmail = isAuthenticated ? authState.user?.email ?? "" : email.trim();
 
     if (!browserId || !message.trim() || (!isAuthenticated && (!resolvedName || !resolvedEmail))) {
-      setStatusMessage("Preencha nome, email e mensagem para continuar.");
+      setStatusMessage(copy.missingFields);
       return;
     }
 
@@ -231,10 +290,10 @@ export function SupportDesk({
       if (!response.ok) {
         const emailError = data.details?.fieldErrors?.email?.[0];
         if (emailError) {
-          throw new Error("Informe um email valido para receber nossa resposta.");
+          throw new Error(copy.invalidEmail);
         }
 
-        throw new Error(data.error || "Nao foi possivel enviar sua mensagem.");
+        throw new Error(data.error || copy.sendError);
       }
 
       setConversationId(data.conversationId);
@@ -244,9 +303,9 @@ export function SupportDesk({
       setMessage("");
       setStatusMessage(
         data.assistant.needsHuman
-          ? "Sua mensagem foi registrada e nosso time responde em ate 1 dia."
+          ? copy.humanStatus
           : data.assistant.source === "fallback"
-            ? "Mensagem enviada. Se necessario, o time responde em ate 1 dia."
+            ? copy.fallbackStatus
             : null,
       );
 
@@ -256,7 +315,7 @@ export function SupportDesk({
         return;
       }
     } catch (error) {
-      setStatusMessage(error instanceof Error ? error.message : "Erro inesperado ao enviar a mensagem.");
+      setStatusMessage(error instanceof Error ? error.message : copy.unexpectedError);
     } finally {
       setIsSubmitting(false);
     }
@@ -266,7 +325,7 @@ export function SupportDesk({
     setConversationId(null);
     setMessages([]);
     setMessage("");
-    setStatusMessage("Conversa limpa. Voce pode iniciar uma nova mensagem agora.");
+    setStatusMessage(copy.conversationCleared);
 
     try {
       window.localStorage.removeItem(STORAGE_KEY);
@@ -301,14 +360,14 @@ export function SupportDesk({
     <section className={embedded ? "support-desk support-desk-embedded" : "support-desk"}>
       <div className="support-desk-head">
         <div>
-          <p className="eyebrow">Contato</p>
-          <h3>{title}</h3>
+          <p className="eyebrow">{copy.eyebrow}</p>
+          <h3>{resolvedTitle}</h3>
         </div>
-        <p>{description}</p>
+        <p>{resolvedDescription}</p>
         {(messages.length > 0 || conversationId) && (
           <div className="support-head-actions">
             <button type="button" className="ghost-button support-clear-button" onClick={handleClearConversation}>
-              Limpar conversa
+              {copy.clearConversation}
             </button>
           </div>
         )}
@@ -322,33 +381,31 @@ export function SupportDesk({
       ) : (
         <div className="support-fields-grid">
           <label>
-            <span>Nome</span>
+            <span>{copy.name}</span>
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
               onFocus={revealFocusedField}
-              placeholder="Seu nome"
+              placeholder={copy.namePlaceholder}
             />
           </label>
           <label>
-            <span>Email</span>
+            <span>{copy.email}</span>
             <input
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               onFocus={revealFocusedField}
-              placeholder="seu@email.com"
+              placeholder={copy.emailPlaceholder}
             />
           </label>
         </div>
       )}
 
       <div ref={messagesRef} className="support-messages" aria-live="polite">
-        {isLoadingHistory && <p className="support-hint">Carregando conversa recente...</p>}
+        {isLoadingHistory && <p className="support-hint">{copy.loadingHistory}</p>}
         {!isLoadingHistory && messages.length === 0 && (
-          <p className="support-hint">
-            Pergunte como usar o OCR, relate um problema ou deixe uma sugestao. Respondemos em pt-BR.
-          </p>
+          <p className="support-hint">{copy.emptyHint}</p>
         )}
 
         {messages.map((entry, index) => (
@@ -357,7 +414,7 @@ export function SupportDesk({
             ref={index === messages.length - 1 && entry.role === "assistant" ? latestAssistantMessageRef : undefined}
             className={`support-message support-message-${entry.role}`}
           >
-            <strong>{entry.role === "assistant" ? "Scanlume" : "Voce"}</strong>
+            <strong>{entry.role === "assistant" ? "Scanlume" : copy.you}</strong>
             <p>{entry.body}</p>
           </article>
         ))}
@@ -365,21 +422,21 @@ export function SupportDesk({
 
       <form className="support-form" onSubmit={(event) => void handleSubmit(event)}>
         <label>
-          <span>Mensagem</span>
+          <span>{copy.message}</span>
           <textarea
             ref={textareaRef}
             rows={3}
             value={message}
             onChange={(event) => setMessage(event.target.value)}
             onFocus={revealFocusedField}
-            placeholder="Explique sua duvida, problema ou sugestao..."
+            placeholder={copy.messagePlaceholder}
           />
         </label>
 
         <div className="support-form-footer">
-          <small>Ao enviar, voce concorda em receber retorno por email em ate 1 dia.</small>
+          <small>{copy.consent}</small>
           <button className="solid-button" type="submit" disabled={!canSubmit}>
-            {isSubmitting ? "Enviando..." : "Enviar mensagem"}
+            {isSubmitting ? copy.sending : copy.send}
           </button>
         </div>
       </form>

@@ -1,3 +1,6 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
+
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -42,6 +45,10 @@ describe("Commercial page discovery and schema", () => {
     expect(entries).toContain("https://www.scanlume.com/api");
     expect(entries).toContain("https://www.scanlume.com/en/pricing");
     expect(entries).toContain("https://www.scanlume.com/en/api");
+  });
+
+  it("keeps an English account route available for checkout handoff", () => {
+    expect(existsSync(path.join(process.cwd(), "app/en/account/page.tsx"))).toBe(true);
   });
 
   it("exposes Q&A-oriented metadata for pricing and developer pages", () => {

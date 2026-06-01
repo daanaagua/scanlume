@@ -95,11 +95,17 @@ const PRICING_COPY = {
   },
 } as const;
 
-export function PricingPage({ locale = "pt-BR" }: { locale?: PricingLocale }) {
+type PricingPageProps = {
+  locale?: PricingLocale;
+  navigate?: (url: string) => void;
+};
+
+export function PricingPage({ locale = "pt-BR", navigate }: PricingPageProps) {
   const [activeCatalog, setActiveCatalog] = useState<"web" | "api">("web");
   const [pendingProduct, setPendingProduct] = useState<string | null>(null);
   const [account, setAccount] = useState<AccountResponse | null>(null);
   const [accountStatus, setAccountStatus] = useState<"loading" | "loaded" | "error">("loading");
+  const navigateTo = navigate ?? ((url: string) => window.location.assign(url));
 
   useEffect(() => {
     let isActive = true;
@@ -128,11 +134,12 @@ export function PricingPage({ locale = "pt-BR" }: { locale?: PricingLocale }) {
       setPendingProduct(product);
       const session = await createBillingCheckout(product);
       savePurchaseIntent({ product, source: "pricing", stage: "checkout" });
-      window.location.assign(session.checkoutUrl);
+      navigateTo(session.checkoutUrl);
     } catch (error) {
       if (error instanceof Error && error.message === "auth_required") {
         savePurchaseIntent({ product, source: "pricing", stage: "auth" });
-        window.location.assign(`/conta?flow=checkout&product=${encodeURIComponent(product)}`);
+        const accountPath = locale === "en" ? "/en/account" : "/conta";
+        navigateTo(`${accountPath}?flow=checkout&product=${encodeURIComponent(product)}`);
         return;
       }
       window.alert(copy.checkoutError);
