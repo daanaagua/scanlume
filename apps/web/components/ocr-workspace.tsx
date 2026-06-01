@@ -806,6 +806,11 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
             </svg>
             {isSubmitting ? "Reconhecendo..." : modeActionLabel}
           </button>
+          {isSubmitting && (
+            <p className="ocr-processing-hint" role="status">
+              Pode levar alguns segundos. Mantenha esta aba aberta.
+            </p>
+          )}
 
           {globalError && <p className="error-banner">{globalError}</p>}
         </div>

@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AuthControls } from "@/components/auth-controls";
@@ -16,10 +16,30 @@ vi.mock("@/lib/browser-id", () => ({
 }));
 
 afterEach(() => {
+  cleanup();
   fetchAccountMock.mockReset();
 });
 
 describe("AuthControls", () => {
+  it("uses a single accessible label for the anonymous login button", async () => {
+    fetchAccountMock.mockResolvedValueOnce({
+      viewer: { authenticated: false, user: null },
+      currentPlan: { id: "anonymous", label: "Teste gratis", shortLabel: "Teste", description: "", priceLabel: "Gratis", isPaid: false, isCurrent: true, comingSoon: false, entitlements: { dailyImages: 5, dailyCredits: 5, maxBatchFiles: 3, maxImageMb: 5, maxBatchTotalMb: 10 }, features: [] },
+      usage: { grantedCredits: 5, usedCredits: 0, remainingCredits: 5 },
+      usageToday: { usedImages: 0, usedCredits: 0, remainingImages: 5, remainingCredits: 5 },
+      billing: { status: "inactive", provider: null, billingEmail: null, currentPeriodStart: null, currentPeriodEnd: null, cancelAtPeriodEnd: false },
+      waitlist: { joined: false, count: 0, joinedAt: null, canJoin: true },
+      availablePlans: [],
+      notes: { replyWindow: "", subscriptions: "" },
+    });
+
+    render(<AuthControls />);
+
+    const loginButton = await screen.findByRole("button", { name: "Entrar" });
+
+    expect(loginButton).toHaveTextContent(/^Entrar$/);
+  });
+
   it("refreshes visible usage after a usage-refresh event", async () => {
     fetchAccountMock
       .mockResolvedValueOnce({

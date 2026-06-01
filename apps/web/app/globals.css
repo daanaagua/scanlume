@@ -1213,10 +1213,6 @@ main {
   min-height: 44px;
 }
 
-.label-short {
-  display: none;
-}
-
 .account-menu-shell {
   position: relative;
 }
@@ -3250,14 +3246,6 @@ main {
     white-space: nowrap;
   }
 
-  .label-full {
-    display: none;
-  }
-
-  .label-short {
-    display: inline;
-  }
-
   .waitlist-header-button {
     min-height: 38px;
     padding: 0 0.6rem;
@@ -3922,6 +3910,14 @@ body {
   background: #e5e7eb !important;
   color: #9ca3af !important;
   cursor: not-allowed !important;
+}
+
+.ocr-processing-hint {
+  margin: 0.55rem 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+  text-align: center;
 }
 
 .magic-wand-icon {

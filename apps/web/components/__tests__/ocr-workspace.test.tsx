@@ -1,5 +1,5 @@
 import userEvent from "@testing-library/user-event";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { OcrWorkspace } from "@/components/ocr-workspace";
@@ -57,6 +57,11 @@ beforeEach(() => {
       json: async () => authenticatedLimitsResponse,
     }),
   );
+  vi.stubGlobal("URL", {
+    ...URL,
+    createObjectURL: vi.fn(() => "blob:scanlume-preview"),
+    revokeObjectURL: vi.fn(),
+  });
 });
 
 afterEach(() => {
@@ -123,5 +128,31 @@ describe("OcrWorkspace", () => {
     expect(screen.getByRole("region", { name: /entrada de arquivos/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/Leitura OCR ao vivo/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Preview do resultado/i)).toBeInTheDocument();
+  });
+
+  it("sets a clear waiting expectation while OCR is running", async () => {
+    const fetchMock = vi.fn((url: string) => {
+      if (url.includes("/v1/limits")) {
+        return Promise.resolve({
+          json: async () => authenticatedLimitsResponse,
+        });
+      }
+
+      return new Promise(() => undefined);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+    render(<OcrWorkspace defaultMode="simple" priorityLayout />);
+
+    const input = document.querySelector("#scanlume-upload") as HTMLInputElement;
+    const file = new File(["scanlume"], "teste.png", { type: "image/png" });
+
+    await user.upload(input, file);
+    const startButton = screen.getByRole("button", { name: /Iniciar OCR simples/i });
+
+    await waitFor(() => expect(startButton).toBeEnabled());
+    await user.click(startButton);
+
+    expect(await screen.findByText(/Pode levar alguns segundos/i)).toBeInTheDocument();
   });
 });

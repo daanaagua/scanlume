@@ -127,6 +127,31 @@ export function BlogArticlePage({ post }: { post: BlogPost }) {
         </div>
       </section>
 
+      {post.relatedLinks.length > 0 && (
+        <section className="section-band muted-band">
+          <div className="container blog-related-band">
+            <div className="section-heading">
+              <p className="eyebrow">Links externos revisados</p>
+            </div>
+
+            <div className="related-grid">
+              {post.relatedLinks.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  className="related-card blog-related-card"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <strong>{link.label}</strong>
+                  <p>{link.description}</p>
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       <section className="section-band muted-band">
         <div className="container blog-related-band">
           <div className="section-heading">

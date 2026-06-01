@@ -32,7 +32,7 @@ export function PasswordResetRequest() {
           type="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          placeholder="voce@empresa.com"
+          placeholder="seu@email.com"
           autoComplete="email"
           required
         />

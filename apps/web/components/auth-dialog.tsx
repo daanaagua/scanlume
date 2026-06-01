@@ -164,7 +164,7 @@ export function AuthDialog({
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              placeholder="voce@empresa.com"
+              placeholder="seu@email.com"
               autoComplete={mode === "login" ? "email" : "username"}
               required
             />

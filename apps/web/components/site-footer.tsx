@@ -28,6 +28,9 @@ export function SiteFooter() {
                 <Link href={link.href}>{link.label}</Link>
               </li>
             ))}
+            <li>
+              <Link href="/api">API</Link>
+            </li>
           </ul>
         </div>
 

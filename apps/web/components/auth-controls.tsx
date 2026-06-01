@@ -100,8 +100,7 @@ export function AuthControls() {
     return (
       <>
         <button type="button" className="ghost-button auth-login-button" onClick={() => setIsAuthDialogOpen(true)}>
-          <span className="label-full">Entrar</span>
-          <span className="label-short">Entrar</span>
+          Entrar
         </button>
         <AuthDialog open={isAuthDialogOpen} onClose={() => setIsAuthDialogOpen(false)} />
       </>

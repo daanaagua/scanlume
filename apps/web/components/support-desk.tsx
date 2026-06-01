@@ -337,7 +337,7 @@ export function SupportDesk({
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               onFocus={revealFocusedField}
-              placeholder="voce@empresa.com"
+              placeholder="seu@email.com"
             />
           </label>
         </div>
