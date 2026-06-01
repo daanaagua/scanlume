@@ -710,7 +710,6 @@ export function OcrWorkspace({ defaultMode = "simple", priorityLayout = false }:
               <p className="eyebrow">Entrada</p>
               <div className="upload-panel-title-row">
                 <h3>{priorityLayout ? "Upload rapido" : "Escolha os arquivos"}</h3>
-                <span className="upload-credit-pill">{remainingCreditsLabel} credits</span>
               </div>
               <p className="upload-panel-summary">
                 {priorityLayout ? "Solte arquivos aqui para iniciar." : "JPG, PNG, screenshot ou PDF no modo formatado."}
