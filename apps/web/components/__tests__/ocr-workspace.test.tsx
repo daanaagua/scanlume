@@ -127,6 +127,32 @@ describe("OcrWorkspace", () => {
     expect(await screen.findByText(/Hoje \/ limite/i)).not.toBeNull();
   });
 
+  it("localizes the English usage board and free-trial rules", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        json: async () => ({
+          ...authenticatedLimitsResponse,
+          viewer: { authenticated: false, type: "anonymous", user: null },
+          plan: { id: "anonymous", label: "Teste gratis", shortLabel: "Teste" },
+          limits: { ...authenticatedLimitsResponse.limits, dailyImages: 5, dailyCredits: 5 },
+          usage: { usedImages: 0, usedCredits: 0, remainingImages: 5, remainingCredits: 5 },
+        }),
+      }),
+    );
+    const user = userEvent.setup();
+
+    render(<OcrWorkspace defaultMode="simple" locale="en" priorityLayout />);
+
+    expect(await screen.findByText(/Today \/ limit/i)).toBeInTheDocument();
+    expect(screen.getByText(/Anonymous credits/i)).toBeInTheDocument();
+    expect(screen.getByText(/Free trial/i)).toBeInTheDocument();
+    await user.hover(screen.getByRole("button", { name: /Understand free trial limits/i }));
+    expect(await screen.findByText(/How the free trial is calculated/i)).toBeInTheDocument();
+    expect(screen.getByText(/Simple OCR uses 1 credit per image/i)).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent(/Hoje \/ limite|Ver regras|Creditos anonimos|Como calculamos|Entrar agora|Teste gratis/i);
+  });
+
   it("uses the optical desk workspace frame while preserving upload scan and result regions", async () => {
     const { container } = render(<OcrWorkspace defaultMode="simple" priorityLayout />);
 

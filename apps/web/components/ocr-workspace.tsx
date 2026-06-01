@@ -141,6 +141,23 @@ type WorkspaceCopy = {
   modeBadgeFormatted: string;
   authenticatedFootnote: string;
   anonymousFootnote: string;
+  loginTitle: string;
+  loginBody: string;
+  signInNow: string;
+  todayLimit: string;
+  planLabel: string;
+  authenticatedCreditsLabel: string;
+  anonymousCreditsLabel: string;
+  costsLabel: string;
+  rulesAriaLabel: string;
+  viewRules: string;
+  trialRulesTitle: string;
+  balanceNow: (label: string) => string;
+  simpleCost: string;
+  formattedCost: string;
+  pdfCost: string;
+  displayPlanShortLabel: (plan: { id: string; shortLabel: string }) => string;
+  displayPlanLabel: (plan: { id: string; label: string }) => string;
 };
 
 type ProgressSummary = {
@@ -348,6 +365,23 @@ const WORKSPACE_COPY: Record<WorkspaceLocale, WorkspaceCopy> = {
     modeBadgeFormatted: "Texto formatado",
     authenticatedFootnote: "OCR simples = 1 credito. Texto formatado = 2 credits. PDF = 2 credits por pagina.",
     anonymousFootnote: "Teste anonimo: 5 credits. Conta gratis libera 50 credits totais.",
+    loginTitle: "Entre para transformar o teste em conta gratuita",
+    loginBody: "Usuarios conectados recebem 50 credits totais e acompanham o saldo direto na conta.",
+    signInNow: "Entrar agora",
+    todayLimit: "Hoje / limite",
+    planLabel: "Plano",
+    authenticatedCreditsLabel: "Creditos",
+    anonymousCreditsLabel: "Creditos anonimos",
+    costsLabel: "Custos",
+    rulesAriaLabel: "Entender limites do teste gratis",
+    viewRules: "Ver regras",
+    trialRulesTitle: "Como calculamos o teste gratis",
+    balanceNow: (label) => `Saldo atual: ${label} credits.`,
+    simpleCost: `${SIMPLE_MODE_LABEL} consome 1 credito por imagem.`,
+    formattedCost: `${FORMATTED_MODE_LABEL} consome 2 credits por imagem.`,
+    pdfCost: "PDF consome 2 credits por pagina processada.",
+    displayPlanShortLabel: (plan) => plan.shortLabel,
+    displayPlanLabel: (plan) => plan.label,
   },
   en: {
     toolEyebrow: "Main tool",
@@ -433,6 +467,43 @@ const WORKSPACE_COPY: Record<WorkspaceLocale, WorkspaceCopy> = {
     modeBadgeFormatted: "Formatted Text",
     authenticatedFootnote: "Simple OCR = 1 credit. Formatted Text = 2 credits. PDF = 2 credits per page.",
     anonymousFootnote: "Anonymous trial: 5 credits. A free account unlocks 50 total credits.",
+    loginTitle: "Sign in to turn the trial into a free account",
+    loginBody: "Signed-in users receive 50 total credits and can track the balance in the account page.",
+    signInNow: "Sign in now",
+    todayLimit: "Today / limit",
+    planLabel: "Plan",
+    authenticatedCreditsLabel: "Credits",
+    anonymousCreditsLabel: "Anonymous credits",
+    costsLabel: "Costs",
+    rulesAriaLabel: "Understand free trial limits",
+    viewRules: "View rules",
+    trialRulesTitle: "How the free trial is calculated",
+    balanceNow: (label) => `Current balance: ${label} credits.`,
+    simpleCost: "Simple OCR uses 1 credit per image.",
+    formattedCost: "Formatted Text uses 2 credits per image.",
+    pdfCost: "PDF uses 2 credits per processed page.",
+    displayPlanShortLabel: (plan) => {
+      if (plan.id === "anonymous") {
+        return "Trial";
+      }
+      if (plan.id === "free") {
+        return "Free";
+      }
+      return plan.shortLabel.replace(/Teste/gi, "Trial").replace(/Gratis/gi, "Free");
+    },
+    displayPlanLabel: (plan) => {
+      if (plan.id === "anonymous") {
+        return "Free trial";
+      }
+      if (plan.id === "free") {
+        return "Free account";
+      }
+      return plan.label
+        .replace(/Teste gratis/gi, "Free trial")
+        .replace(/Conta gratuita/gi, "Free account")
+        .replace(/mensal/gi, "monthly")
+        .replace(/anual/gi, "yearly");
+    },
   },
 };
 
@@ -1024,7 +1095,9 @@ export function OcrWorkspace({ defaultMode = "simple", locale = "pt-BR", priorit
   const budgetUsed = limits?.budget.totalCostRmb ?? 0;
   const budgetLimit = limits?.limits.hardBudgetRmb ?? DISPLAY_DAILY_BUDGET_BRL;
   const budgetUsagePercent = clamp((budgetUsed / Math.max(budgetLimit, 1)) * 100, 0, 100);
-  const budgetUsageLabel = `${brlFormatter.format(budgetUsed)} / ${brlFormatter.format(budgetLimit)}`;
+  const budgetUsageLabel = locale === "en"
+    ? `${budgetUsed.toFixed(2)} / ${budgetLimit.toFixed(2)}`
+    : `${brlFormatter.format(budgetUsed)} / ${brlFormatter.format(budgetLimit)}`;
   const maxImageMb = limits?.limits.maxImageMb ?? 5;
   const maxBatchTotalMb = limits?.limits.maxBatchTotalMb ?? 20;
   const maxBatchFiles = limits?.limits.maxBatchFiles ?? 10;
@@ -1489,34 +1562,34 @@ export function OcrWorkspace({ defaultMode = "simple", locale = "pt-BR", priorit
             {!limits.viewer.authenticated && (
               <div className="login-promo sr-only">
                 <div className="login-promo-copy">
-                  <strong>Entre para transformar o teste em conta gratuita</strong>
-                  <small>Usuarios conectados recebem 50 credits totais e acompanham o saldo direto na conta.</small>
+                  <strong>{copy.loginTitle}</strong>
+                  <small>{copy.loginBody}</small>
                 </div>
                 <button type="button" className="solid-button" onClick={() => setIsAuthDialogOpen(true)}>
-                  Entrar agora
+                  {copy.signInNow}
                 </button>
               </div>
             )}
 
             <div className="status-board sr-only">
               <div className="budget-status-card status-compact-card">
-                <span>Hoje / limite</span>
+                <span>{copy.todayLimit}</span>
                 <strong>{budgetUsageLabel}</strong>
                 <div className="mini-progress-track" aria-hidden="true">
                   <div className="mini-progress-fill" style={{ width: `${budgetUsagePercent}%` }} />
                 </div>
               </div>
               <div className="status-compact-card">
-                <span>Plano</span>
-                <strong>{limits.plan.shortLabel}</strong>
-                <small>{limits.plan.label}</small>
+                <span>{copy.planLabel}</span>
+                <strong>{copy.displayPlanShortLabel(limits.plan)}</strong>
+                <small>{copy.displayPlanLabel(limits.plan)}</small>
               </div>
               <div className="status-compact-card">
-                <span>{limits.viewer.authenticated ? "Creditos" : "Creditos anonimos"}</span>
+                <span>{limits.viewer.authenticated ? copy.authenticatedCreditsLabel : copy.anonymousCreditsLabel}</span>
                 <strong>{remainingCreditsLabel}</strong>
               </div>
               <div className="status-compact-card status-help-card">
-                <span>Custos</span>
+                <span>{copy.costsLabel}</span>
                 <div
                   className="workspace-help-shell"
                   onMouseEnter={() => setIsPricingHintOpen(true)}
@@ -1525,19 +1598,19 @@ export function OcrWorkspace({ defaultMode = "simple", locale = "pt-BR", priorit
                   <button
                     type="button"
                     className="workspace-help-button workspace-help-text-button"
-                    aria-label="Entender limites do teste gratis"
+                    aria-label={copy.rulesAriaLabel}
                     aria-expanded={isPricingHintOpen}
                     onClick={() => setIsPricingHintOpen((current) => !current)}
                   >
-                    Ver regras
+                    {copy.viewRules}
                   </button>
                   {isPricingHintOpen && (
                     <div className="workspace-help-popover is-open" role="tooltip">
-                      <strong>Como calculamos o teste gratis</strong>
-                      <span>Saldo atual: {remainingCreditsLabel} credits.</span>
-                      <span>{SIMPLE_MODE_LABEL} consome 1 credito por imagem.</span>
-                      <span>{FORMATTED_MODE_LABEL} consome 2 credits por imagem.</span>
-                      <span>PDF consome 2 credits por pagina processada.</span>
+                      <strong>{copy.trialRulesTitle}</strong>
+                      <span>{copy.balanceNow(remainingCreditsLabel)}</span>
+                      <span>{copy.simpleCost}</span>
+                      <span>{copy.formattedCost}</span>
+                      <span>{copy.pdfCost}</span>
                     </div>
                   )}
                 </div>
@@ -1547,7 +1620,7 @@ export function OcrWorkspace({ defaultMode = "simple", locale = "pt-BR", priorit
           </div>
         )}
       </div>
-      <AuthDialog open={isAuthDialogOpen} onClose={() => setIsAuthDialogOpen(false)} defaultMode="register" />
+      <AuthDialog open={isAuthDialogOpen} onClose={() => setIsAuthDialogOpen(false)} defaultMode="register" locale={locale} />
     </section>
   );
 }

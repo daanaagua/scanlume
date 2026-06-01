@@ -110,4 +110,34 @@ describe("AccountPanel", () => {
     expect(await screen.findByText(/Compra confirmada para API Growth/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Abrir documentacao da API/i })).toBeInTheDocument();
   });
+
+  it("renders the checkout handoff and account cards in English", async () => {
+    window.history.pushState({}, "", "/en/account?flow=checkout&product=web_starter_monthly");
+    savePurchaseIntent({ product: "web_starter_monthly", stage: "auth", source: "pricing" });
+
+    fetchAccountMock.mockResolvedValue({
+      viewer: { authenticated: false, user: null },
+      currentPlan: { id: "anonymous", label: "Teste gratis", shortLabel: "Teste", description: "Teste anonimo com 5 creditos.", priceLabel: "Gratis", isPaid: false, isCurrent: true, comingSoon: false, entitlements: { dailyImages: 5, dailyCredits: 5, maxBatchFiles: 3, maxImageMb: 5, maxBatchTotalMb: 20 }, features: ["5 creditos iniciais"] },
+      usage: { grantedCredits: 5, usedCredits: 0, remainingCredits: 5 },
+      usageToday: { usedImages: 0, usedCredits: 0, remainingImages: 5, remainingCredits: 5 },
+      api: { remainingCredits: 0, effectiveTier: null, keys: [] },
+      billing: { status: "inactive", provider: null, billingEmail: null, currentPeriodStart: null, currentPeriodEnd: null, cancelAtPeriodEnd: false },
+      waitlist: { joined: false, count: 2, joinedAt: null, canJoin: true },
+      availablePlans: [
+        { id: "free", label: "Conta gratuita", shortLabel: "Gratis", description: "Conta com 50 creditos totais.", priceLabel: "Gratis", isPaid: false, isCurrent: false, comingSoon: false, entitlements: { dailyImages: 100, dailyCredits: 50, maxBatchFiles: 10, maxImageMb: 5, maxBatchTotalMb: 20 }, features: ["50 creditos totais"] },
+      ],
+      notes: { replyWindow: "Respondemos em ate 1 dia.", subscriptions: "Assinaturas anuais estao habilitadas." },
+    });
+
+    render(<AccountPanel locale="en" />);
+
+    await screen.findByRole("heading", { name: /My account/i });
+    expect(screen.getByRole("button", { name: /Sign in to continue with Starter monthly/i })).toBeInTheDocument();
+    expect(screen.getByText(/Purchase flow/i)).toBeInTheDocument();
+    expect(screen.getByText(/Continue your Starter monthly purchase/i)).toBeInTheDocument();
+    expect(screen.getByText(/Current plan/i)).toBeInTheDocument();
+    expect(screen.getByText(/Free trial/i)).toBeInTheDocument();
+    expect(screen.getByText(/5 credits remaining/i)).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent(/Minha conta|Fluxo de compra|Entrar ou criar conta|Teste gratis|Conta gratuita|creditos totais/i);
+  });
 });

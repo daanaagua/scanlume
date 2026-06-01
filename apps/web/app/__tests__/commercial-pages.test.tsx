@@ -45,10 +45,21 @@ describe("Commercial page discovery and schema", () => {
     expect(entries).toContain("https://www.scanlume.com/api");
     expect(entries).toContain("https://www.scanlume.com/en/pricing");
     expect(entries).toContain("https://www.scanlume.com/en/api");
+    expect(entries).toContain("https://www.scanlume.com/en/blog");
+    expect(entries).toContain("https://www.scanlume.com/en/about");
+    expect(entries).toContain("https://www.scanlume.com/en/contact");
+    expect(entries).toContain("https://www.scanlume.com/en/privacy");
+    expect(entries).toContain("https://www.scanlume.com/en/terms");
   });
 
   it("keeps an English account route available for checkout handoff", () => {
     expect(existsSync(path.join(process.cwd(), "app/en/account/page.tsx"))).toBe(true);
+  });
+
+  it("keeps English trust and blog routes available", () => {
+    for (const route of ["about", "contact", "privacy", "terms", "blog"]) {
+      expect(existsSync(path.join(process.cwd(), `app/en/${route}/page.tsx`))).toBe(true);
+    }
   });
 
   it("exposes Q&A-oriented metadata for pricing and developer pages", () => {

@@ -7,7 +7,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const contentReviewedAt = new Date("2026-04-24");
   const trustRoutes = ["/sobre", "/metodo-e-evidencia", "/contato", "/privacidade", "/termos"] as const;
   const commercialRoutes = ["/precos", "/api"] as const;
-  const englishRoutes = ["/en", "/en/image-to-text", "/en/pricing", "/en/api"] as const;
+  const englishRoutes = [
+    "/en",
+    "/en/image-to-text",
+    "/en/pricing",
+    "/en/api",
+    "/en/blog",
+    "/en/about",
+    "/en/contact",
+    "/en/privacy",
+    "/en/terms",
+  ] as const;
 
   return [
     {

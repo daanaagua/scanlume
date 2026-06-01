@@ -22,12 +22,17 @@ export function SiteFooter({ locale = "pt-BR" }: { locale?: FooterLocale }) {
     : NAV_LINKS;
   const trustLinks = isEnglish
     ? [
-        { href: "/sobre", label: "About" },
-        { href: "/contato", label: "Contact" },
-        { href: "/privacidade", label: "Privacy" },
-        { href: "/termos", label: "Terms" },
+        { href: "/en/about", label: "About" },
+        { href: "/en/contact", label: "Contact" },
+        { href: "/en/privacy", label: "Privacy" },
+        { href: "/en/terms", label: "Terms" },
       ]
     : TRUST_LINKS;
+  const englishResourceLinks = [
+    { href: "/en/blog", label: "English updates" },
+    { href: "/en/image-to-text", label: "OCR workflow" },
+    { href: "/en/pricing", label: "Plans and credits" },
+  ];
 
   return (
     <footer className="site-footer">
@@ -86,11 +91,11 @@ export function SiteFooter({ locale = "pt-BR" }: { locale?: FooterLocale }) {
         </div>
 
         <div>
-          <p className="footer-kicker">{isEnglish ? "Portuguese blog" : "Do blog"}</p>
+          <p className="footer-kicker">{isEnglish ? "Resources" : "Do blog"}</p>
           <ul className="footer-links">
-            {BLOG_POSTS.map((post) => (
-              <li key={post.slug}>
-                <Link href={`${BLOG_PATH}/${post.slug}`}>{post.title}</Link>
+            {(isEnglish ? englishResourceLinks : BLOG_POSTS.map((post) => ({ href: `${BLOG_PATH}/${post.slug}`, label: post.title }))).map((link) => (
+              <li key={link.href}>
+                <Link href={link.href}>{link.label}</Link>
               </li>
             ))}
           </ul>

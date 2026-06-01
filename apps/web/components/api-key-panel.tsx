@@ -1,3 +1,5 @@
+import type { ClientLocale } from "@/lib/client-locale";
+
 type ApiData = {
   remainingCredits: number;
   effectiveTier: string | null;
@@ -18,23 +20,50 @@ type ApiData = {
 
 type Props = {
   api: ApiData;
+  locale?: ClientLocale;
   onCreateKey: () => void;
   onRegenerateKey: (id: string) => void;
   onRevokeKey: (id: string) => void;
 };
 
-export function ApiKeyPanel({ api, onCreateKey, onRegenerateKey, onRevokeKey }: Props) {
+const API_KEY_PANEL_COPY = {
+  "pt-BR": {
+    remaining: "API credits restantes",
+    numberLocale: "pt-BR",
+    currentTier: (tier: string) => `Tier atual: ${tier}`,
+    noPack: "Sem API pack ativo.",
+    expires: (tier: string, date: string) => `${tier} expira em ${date}`,
+    create: "Criar API key",
+    regenerate: "Regenerar",
+    revoke: "Revogar",
+  },
+  en: {
+    remaining: "API credits remaining",
+    numberLocale: "en-US",
+    currentTier: (tier: string) => `Current tier: ${tier}`,
+    noPack: "No active API pack.",
+    expires: (tier: string, date: string) => `${tier} expires on ${date}`,
+    create: "Create API key",
+    regenerate: "Regenerate",
+    revoke: "Revoke",
+  },
+} as const;
+
+export function ApiKeyPanel({ api, locale = "pt-BR", onCreateKey, onRegenerateKey, onRevokeKey }: Props) {
+  const copy = API_KEY_PANEL_COPY[locale];
+  const dateLocale = locale === "en" ? "en-US" : "pt-BR";
+
   return (
     <article className="account-card">
-      <span>API credits restantes</span>
-      <strong>{api.remainingCredits.toLocaleString("pt-BR")}</strong>
-      <p>{api.effectiveTier ? `Tier atual: ${api.effectiveTier}` : "Sem API pack ativo."}</p>
+      <span>{copy.remaining}</span>
+      <strong>{api.remainingCredits.toLocaleString(copy.numberLocale)}</strong>
+      <p>{api.effectiveTier ? copy.currentTier(api.effectiveTier) : copy.noPack}</p>
       {api.packs?.map((pack) => (
-        <small key={pack.id}>{pack.tier} expira em {new Date(pack.expiresAt).toLocaleDateString("pt-BR")}</small>
+        <small key={pack.id}>{copy.expires(pack.tier, new Date(pack.expiresAt).toLocaleDateString(dateLocale))}</small>
       ))}
       <div className="hero-actions">
         <button type="button" className="solid-button" onClick={onCreateKey}>
-          Criar API key
+          {copy.create}
         </button>
       </div>
       <ul>
@@ -42,8 +71,8 @@ export function ApiKeyPanel({ api, onCreateKey, onRegenerateKey, onRevokeKey }: 
           <li key={key.id}>
             <strong>{key.label}</strong> ••••{key.lastFour}
             <div className="hero-actions">
-              <button type="button" className="ghost-button" onClick={() => onRegenerateKey(key.id)}>Regenerar</button>
-              <button type="button" className="ghost-button" onClick={() => onRevokeKey(key.id)}>Revogar</button>
+              <button type="button" className="ghost-button" onClick={() => onRegenerateKey(key.id)}>{copy.regenerate}</button>
+              <button type="button" className="ghost-button" onClick={() => onRevokeKey(key.id)}>{copy.revoke}</button>
             </div>
           </li>
         ))}

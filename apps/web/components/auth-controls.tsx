@@ -48,6 +48,25 @@ const AUTH_CONTROLS_COPY = {
   },
 } as const;
 
+function formatAccountPlanLabel(plan: Pick<AccountResponse["currentPlan"], "id" | "label">, locale: ClientLocale) {
+  if (locale !== "en") {
+    return plan.label;
+  }
+
+  if (plan.id === "anonymous") {
+    return "Free trial";
+  }
+  if (plan.id === "free") {
+    return "Free account";
+  }
+
+  return plan.label
+    .replace(/Teste gratis/gi, "Free trial")
+    .replace(/Conta gratuita/gi, "Free account")
+    .replace(/mensal/gi, "monthly")
+    .replace(/anual/gi, "yearly");
+}
+
 export function AuthControls({ locale }: { locale?: ClientLocale } = {}) {
   const pathname = usePathname();
   const resolvedLocale = resolveClientLocale(locale, pathname);
@@ -156,6 +175,8 @@ export function AuthControls({ locale }: { locale?: ClientLocale } = {}) {
     ? copy.waitlistJoinedTooltip(account.waitlist.count)
     : copy.waitlistOpenTooltip(account.waitlist.count);
   const accountHref = isEnglish ? "/en/account" : "/conta";
+  const supportHref = isEnglish ? "/en/contact" : "/contato";
+  const planLabel = formatAccountPlanLabel(account.currentPlan, resolvedLocale);
 
   return (
     <div ref={menuRef} className="auth-controls account-menu-shell">
@@ -169,7 +190,7 @@ export function AuthControls({ locale }: { locale?: ClientLocale } = {}) {
 
         <span className="account-trigger-copy">
           <strong>{firstName}</strong>
-          <small>{account.currentPlan.label}</small>
+          <small>{planLabel}</small>
         </span>
 
         <span className="account-usage-pill">{remainingCredits}/{grantedCredits} {copy.credits}</span>
@@ -178,7 +199,7 @@ export function AuthControls({ locale }: { locale?: ClientLocale } = {}) {
       {isMenuOpen && (
         <div className="account-dropdown">
           <div className="account-dropdown-head">
-            <strong>{account.currentPlan.label}</strong>
+            <strong>{planLabel}</strong>
             <span>{account.viewer.user.email}</span>
           </div>
 
@@ -203,7 +224,7 @@ export function AuthControls({ locale }: { locale?: ClientLocale } = {}) {
 
           <div className="account-dropdown-links">
             <Link href={accountHref} onClick={() => setIsMenuOpen(false)}>{copy.accountLink}</Link>
-            <Link href="/contato" onClick={() => setIsMenuOpen(false)}>{copy.supportLink}</Link>
+            <Link href={supportHref} onClick={() => setIsMenuOpen(false)}>{copy.supportLink}</Link>
           </div>
 
           <button

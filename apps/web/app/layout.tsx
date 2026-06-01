@@ -5,6 +5,7 @@ import Script from "next/script";
 import { JsonLd } from "@/components/json-ld";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { HtmlLangSync } from "@/components/html-lang-sync";
 import { SupportWidget } from "@/components/support-widget";
 import {
   DEFAULT_KEYWORDS,
@@ -83,6 +84,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={`${bodyFont.variable} ${displayFont.variable}`}>
+        <HtmlLangSync />
         <JsonLd
           data={{
             "@context": "https://schema.org",

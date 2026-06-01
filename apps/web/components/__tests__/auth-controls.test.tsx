@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AuthControls } from "@/components/auth-controls";
@@ -83,6 +83,29 @@ describe("AuthControls", () => {
 
     expect(await screen.findByRole("heading", { name: "Sign in to your account" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Continue with Google" })).toBeInTheDocument();
+  });
+
+  it("localizes authenticated English account menu links and plan labels", async () => {
+    fetchAccountMock.mockResolvedValueOnce({
+      viewer: { authenticated: true, user: { id: "u1", email: "jam@scanlume.com", name: "Jam", avatarUrl: null, emailVerified: true, emailVerifiedAt: null, hasPassword: false, authProviders: ["google"] } },
+      currentPlan: { id: "free", label: "Conta gratuita", shortLabel: "Gratis", description: "", priceLabel: "Gratis", isPaid: false, isCurrent: true, comingSoon: false, entitlements: { dailyImages: 100, dailyCredits: 50, maxBatchFiles: 10, maxImageMb: 5, maxBatchTotalMb: 20 }, features: [] },
+      usage: { grantedCredits: 50, usedCredits: 0, remainingCredits: 50 },
+      usageToday: { usedImages: 0, usedCredits: 0, remainingImages: 100, remainingCredits: 50 },
+      billing: { status: "inactive", provider: null, billingEmail: null, currentPeriodStart: null, currentPeriodEnd: null, cancelAtPeriodEnd: false },
+      waitlist: { joined: true, count: 2, joinedAt: null, canJoin: false },
+      availablePlans: [],
+      notes: { replyWindow: "", subscriptions: "" },
+    });
+
+    render(<AuthControls locale="en" />);
+
+    expect(await screen.findByText("50/50 credits")).toBeInTheDocument();
+    expect(screen.getByText("Free account")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Jam/ }));
+
+    expect(await screen.findByRole("link", { name: "My account" })).toHaveAttribute("href", "/en/account");
+    expect(screen.getByRole("link", { name: "Contact support" })).toHaveAttribute("href", "/en/contact");
+    expect(document.body).not.toHaveTextContent(/Conta gratuita|Falar com suporte/i);
   });
 
   it("refreshes visible usage after a usage-refresh event", async () => {
