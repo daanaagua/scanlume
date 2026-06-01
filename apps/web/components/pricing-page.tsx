@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import {
@@ -73,11 +72,11 @@ export function PricingPage() {
   const activePaidPlanId = account?.viewer.authenticated && account.currentPlan.isPaid ? account.currentPlan.id : null;
 
   return (
-    <div className="container pricing-shell" style={{ display: "grid", gap: "2rem" }}>
-      <section>
-        <p className="eyebrow">Precos</p>
-        <h1>Planos Web e API para Scanlume</h1>
-        <p>Escolha entre uso no navegador ou integracao via API, com credits separados para cada produto e um caminho de compra mais direto.</p>
+    <div className="container pricing-shell">
+      <section className="tool-first-intro">
+        <p className="eyebrow scanlume-signal-label">Precos</p>
+        <h1>Planos Simples</h1>
+        <p>Escolha entre o uso direto no navegador ou integracao automatizada via API.</p>
       </section>
 
       <section className="pricing-catalog">
@@ -97,46 +96,46 @@ export function PricingPage() {
 
               return (
                 <article key={plan.id} className={`pricing-offer${("recommended" in plan && plan.recommended) ? " is-recommended" : ""}`}>
-                <div className="pricing-offer-head pricing-offer-head-vertical">
-                  <span className="pricing-offer-kicker">{isCurrentPaidPlan ? "Plano atual" : ("recommended" in plan && plan.recommended) ? "Mais escolhido" : "Plano web"}</span>
-                  <h2>{plan.name}</h2>
-                  <div className="pricing-offer-price pricing-offer-price-vertical">
-                    <strong>{plan.price}</strong>
-                    <small>{plan.credits}</small>
+                  <div className="pricing-offer-head pricing-offer-head-vertical">
+                    <span className="pricing-offer-kicker">{isCurrentPaidPlan ? "Plano atual" : ("recommended" in plan && plan.recommended) ? "Mais escolhido" : "Plano web"}</span>
+                    <h2>{plan.name}</h2>
+                    <div className="pricing-offer-price pricing-offer-price-vertical">
+                      <strong>{plan.price}</strong>
+                      <small>{plan.credits}</small>
+                    </div>
+                    <p className="pricing-offer-annual">Plano anual: {plan.annualPrice} · {plan.annualCredits}</p>
                   </div>
-                  <p className="pricing-offer-annual">Plano anual: {plan.annualPrice} · {plan.annualCredits}</p>
-                </div>
 
-                <div className="pricing-offer-section">
-                  <span className="pricing-section-label">Recursos incluidos</span>
-                  <ul className="pricing-feature-list">
-                    {splitUsage(plan.usage).map((item) => (
-                      <li key={`${plan.id}-${item}`}>{item}</li>
-                    ))}
-                    {splitLimits(plan.limits).map((item) => (
-                      <li key={`${plan.id}-limit-${item}`}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
+                  <div className="pricing-offer-section">
+                    <span className="pricing-section-label">Recursos incluidos</span>
+                    <ul className="pricing-feature-list">
+                      {splitUsage(plan.usage).map((item) => (
+                        <li key={`${plan.id}-${item}`}>{item}</li>
+                      ))}
+                      {splitLimits(plan.limits).map((item) => (
+                        <li key={`${plan.id}-limit-${item}`}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
 
-                <div className="pricing-offer-actions">
-                  {accountStatus === "loading" ? (
-                    <span>Verificando plano...</span>
-                  ) : accountStatus === "error" ? (
-                    <span>Nao foi possivel verificar seu plano.</span>
-                  ) : isCurrentPaidPlan ? (
-                    <span>Plano atual</span>
-                  ) : (
-                    <>
-                      <button type="button" className="solid-button" onClick={() => void handleCheckout(`web_${plan.id}_monthly`)} disabled={pendingProduct === `web_${plan.id}_monthly`}>
-                        {pendingProduct === `web_${plan.id}_monthly` ? "Abrindo..." : "Assinar mensal"}
-                      </button>
-                      <button type="button" className="ghost-button" onClick={() => void handleCheckout(`web_${plan.id}_yearly`)} disabled={pendingProduct === `web_${plan.id}_yearly`}>
-                        {pendingProduct === `web_${plan.id}_yearly` ? "Abrindo..." : "Assinar anual"}
-                      </button>
-                    </>
-                  )}
-                </div>
+                  <div className="pricing-offer-actions">
+                    {accountStatus === "loading" ? (
+                      <span>Verificando plano...</span>
+                    ) : accountStatus === "error" ? (
+                      <span>Nao foi possivel verificar seu plano.</span>
+                    ) : isCurrentPaidPlan ? (
+                      <span>Plano atual</span>
+                    ) : (
+                      <>
+                        <button type="button" className="solid-button" onClick={() => void handleCheckout(`web_${plan.id}_monthly`)} disabled={pendingProduct === `web_${plan.id}_monthly`}>
+                          {pendingProduct === `web_${plan.id}_monthly` ? "Abrindo..." : "Assinar mensal"}
+                        </button>
+                        <button type="button" className="ghost-button" onClick={() => void handleCheckout(`web_${plan.id}_yearly`)} disabled={pendingProduct === `web_${plan.id}_yearly`}>
+                          {pendingProduct === `web_${plan.id}_yearly` ? "Abrindo..." : "Assinar anual"}
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </article>
               );
             })}
@@ -157,10 +156,9 @@ export function PricingPage() {
                 <div className="pricing-offer-section">
                   <span className="pricing-section-label">Recursos incluidos</span>
                   <ul className="pricing-feature-list">
-                    <li>{plan.rpm} agregados por conta</li>
-                    <li>Entrada suportada: {plan.inputs}</li>
-                    <li>Ideal para automacao, uso interno e integracoes OCR</li>
-                    <li>API keys por conta com saldo separado do web OCR</li>
+                    <li>{plan.rpm} agregados</li>
+                    <li>Entrada: {plan.inputs}</li>
+                    <li>Integracao OCR</li>
                   </ul>
                 </div>
 
@@ -180,53 +178,40 @@ export function PricingPage() {
               <div className="pricing-offer-section">
                 <span className="pricing-section-label">Recursos incluidos</span>
                 <ul className="pricing-feature-list">
-                  <li>Mais concorrencia e limites de conta sob medida</li>
-                  <li>Suporte dedicado e alinhamento comercial</li>
-                  <li>Rollout customizado para OCR em lote ou fluxos de parceiros</li>
+                  <li>Limites sob medida</li>
+                  <li>Suporte dedicado</li>
+                  <li>OCR em lote</li>
                 </ul>
-              </div>
-              <div className="pricing-offer-copy">
-                <p>Precisa de mais concorrencia, limites customizados ou suporte dedicado? Fale com o time.</p>
               </div>
             </article>
           </div>
         )}
       </section>
 
-      <section>
-        <h2>Como os credits funcionam</h2>
-        <div className="hero-bullets">
-          {CREDIT_EXPLAINER.map((item) => (
-            <span key={item}>{item}</span>
-          ))}
+      <section className="pricing-rules-section">
+        <div className="pricing-rules-card">
+          <h2>Como os credits funcionam</h2>
+          <div className="hero-bullets">
+            {CREDIT_EXPLAINER.map((item) => (
+              <span key={item}>{item}</span>
+            ))}
+          </div>
+        </div>
+
+        <div className="pricing-rules-card">
+          <h2>Regras de cobranca</h2>
+          <div className="hero-bullets">
+            {BILLING_DISCLOSURES.map((item) => (
+              <span key={item}>{item}</span>
+            ))}
+          </div>
         </div>
       </section>
 
-      <section>
-        <h2>Regras de cobranca</h2>
-        <div className="hero-bullets">
-          {BILLING_DISCLOSURES.map((item) => (
-            <span key={item}>{item}</span>
-          ))}
-        </div>
-      </section>
-
-      <section>
+      <section className="pricing-api-section">
         <h2>Exemplos da API de OCR para imagem</h2>
         <p>{API_INPUT_NOTE}</p>
         <CodeExampleTabs examples={API_CODE_EXAMPLES} />
-      </section>
-
-      <section>
-        <h2>Beta da API de OCR para PDF</h2>
-        <p>PDF OCR API ainda nao esta aberto ao publico. Vamos liberar o beta em uma fase seguinte, depois que a execucao assincrona estiver pronta para uso real.</p>
-        <div className="hero-actions">
-          <Link href="/contato" className="ghost-button">Entrar na lista do beta</Link>
-        </div>
-      </section>
-
-      <section>
-        <Link href="/api">Abrir pagina da API</Link>
       </section>
     </div>
   );

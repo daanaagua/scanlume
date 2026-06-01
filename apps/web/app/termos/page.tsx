@@ -9,20 +9,32 @@ export const metadata = buildMetadata({
 
 export default function TermsPage() {
   return (
-    <section className="section-band legal-band">
-      <div className="container legal-copy">
-        <p className="eyebrow">Termos</p>
-        <h1>Uso justo para manter o OCR rapido e sustentavel.</h1>
-        <p>
-          O acesso anonimo existe para validar o produto e permitir testes sem login, mas cada usuario fica sujeito a limites diarios, limites por arquivo e controle de budget global.
-        </p>
-        <p>
-          O Scanlume pode bloquear requsicoes que indiquem abuso, automacao agressiva ou tentativas de contornar limites por IP, browser id ou desafio anti-bot.
-        </p>
-        <p>
-          A equipe pode ajustar formatos, limites e fluxos de exportacao conforme a evolucao do produto. O suporte a DOCX fica planejado para uma fase posterior.
-        </p>
-      </div>
-    </section>
+    <>
+      <section className="tool-first-home">
+        <div className="container">
+          <div className="tool-first-intro">
+            <p className="eyebrow scanlume-signal-label">Termos</p>
+            <h1>Uso justo e sustentabilidade</h1>
+            <p>
+              Nossos termos foram desenhados para garantir um servico estavel, rapido e acessivel para todos.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="section-band">
+        <div className="container legal-copy">
+          <p>
+            O acesso anonimo existe para validar o produto e permitir testes sem login, mas cada usuario fica sujeito a limites diarios, limites por arquivo e controle de budget global.
+          </p>
+          <p>
+            O Scanlume pode bloquear requisicoes que indiquem abuso, automacao agressiva ou tentativas de contornar limites por IP, browser id ou desafio anti-bot.
+          </p>
+          <p>
+            A equipe pode ajustar formatos, limites e fluxos de exportacao conforme a evolucao do produto. O suporte a DOCX fica planejado para uma fase posterior.
+          </p>
+        </div>
+      </section>
+    </>
   );
 }

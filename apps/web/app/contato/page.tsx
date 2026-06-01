@@ -10,23 +10,25 @@ export const metadata = buildMetadata({
 
 export default function ContactPage() {
   return (
-    <section className="section-band legal-band">
+    <section className="tool-first-home">
       <div className="container contact-page-grid">
-        <div className="legal-copy">
-          <p className="eyebrow">Contato</p>
-          <h1>Fale com o time sobre OCR, bugs, sugestoes e parceria.</h1>
+        <div className="tool-first-intro">
+          <p className="eyebrow scanlume-signal-label">Contato</p>
+          <h1>Fale com o time</h1>
           <p>
-            Use este canal para tirar duvidas de uso, relatar problemas de reconhecimento, sugerir melhorias de formato ou iniciar conversas comerciais.
+            Tire duvidas de uso, relate problemas de reconhecimento ou sugira melhorias de formato diretamente para nossa equipe.
           </p>
-          <p>
-            Se voce estiver logado com email ou Google, nome e email sao preenchidos automaticamente. Para esta fase, respondemos em ate 1 dia.
-          </p>
+          <div className="tool-first-pills" aria-label="Informacoes de suporte">
+            <span>Retorno em ate 1 dia</span>
+            <span>Bugs e sugestoes</span>
+            <span>Suporte direto</span>
+          </div>
         </div>
 
         <SupportDesk
           embedded
           title="Entre em contato"
-          description="Explique sua duvida, bug ou ideia. O time responde em ate 1 dia e registra tudo para acompanhamento."
+          description="Explique sua duvida ou ideia. Responderemos o mais breve possivel."
         />
       </div>
     </section>

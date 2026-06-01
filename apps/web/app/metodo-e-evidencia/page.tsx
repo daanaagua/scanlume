@@ -77,23 +77,19 @@ export default function EvidencePage() {
         }}
       />
 
-      <section className="section-band legal-band">
-        <div className="container legal-copy">
-          <p className="eyebrow">Metodo e evidencia</p>
-          <h1>Como o Scanlume transforma testes reais em copy util.</h1>
-          <p>
-            Esta pagina existe para deixar explicito o que e teste, o que e revisao e o que continua sendo limite operacional. A ideia e facilitar leitura humana e citacao por sistemas que precisam de sinais claros.
-          </p>
-          <p>
-            Os guias de blog usam screenshots, PDFs e comparativos reais. Quando ha incerteza, a pagina e o texto dizem isso de forma direta em vez de esconder a ambiguidade.
-          </p>
-          <div className="hero-actions">
-            <Link href="/blog" className="solid-button large-button">
-              Ver guias
-            </Link>
-            <Link href="/contato" className="ghost-button large-button">
-              Falar com o time
-            </Link>
+      <section className="tool-first-home">
+        <div className="container">
+          <div className="tool-first-intro">
+            <p className="eyebrow scanlume-signal-label">Metodo e evidencia</p>
+            <h1>Qualidade baseada em fatos reais</h1>
+            <p>
+              Explicamos de forma direta o que validamos, o que revisamos e onde a revisao humana continua sendo fundamental.
+            </p>
+            <div className="tool-first-pills" aria-label="Recursos principais">
+              <span>Testes reais</span>
+              <span>Limites honestos</span>
+              <span>Sinais claros</span>
+            </div>
           </div>
         </div>
       </section>
@@ -102,7 +98,7 @@ export default function EvidencePage() {
         <div className="container">
           <div className="section-heading">
             <p className="eyebrow">Sinais editoriais</p>
-            <h2>Quatro coisas que procuramos deixar sempre visiveis.</h2>
+            <h2>Quatro pilares de transparencia no nosso conteudo.</h2>
           </div>
 
           <div className="check-grid">
@@ -130,7 +126,7 @@ export default function EvidencePage() {
         <div className="container">
           <div className="section-heading">
             <p className="eyebrow">Como validamos</p>
-            <h2>O metodo cabe em poucos passos e nao tenta parecer mais amplo do que e.</h2>
+            <h2>O processo de validacao do produto.</h2>
           </div>
 
           <div className="timeline-grid">
@@ -166,6 +162,12 @@ export default function EvidencePage() {
                 <p>{item.answer}</p>
               </article>
             ))}
+          </div>
+
+          <div className="hero-actions">
+            <Link href="/" className="solid-button large-button">
+              Testar OCR agora
+            </Link>
           </div>
         </div>
       </section>

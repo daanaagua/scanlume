@@ -57,10 +57,9 @@ export default function PricingRoute() {
         <div className="container">
           <div className="section-heading">
             <p className="eyebrow">Antes da compra</p>
-            <h2>Escolha plano com menos achismo e menos retrabalho.</h2>
+            <h2>Dois guias curtos para decidir com calma.</h2>
             <p>
-              Estes guias respondem duas duvidas que travam a conversao: quando o fluxo web basta e quando a API faz
-              mais sentido, e quando o modo simples ja resolve versus quando vale subir para texto formatado.
+              Use os links abaixo apenas se ainda estiver em duvida entre web, API, modo simples e texto formatado.
             </p>
           </div>
 

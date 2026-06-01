@@ -120,125 +120,117 @@ export function ToolLanding({ slug }: { slug: ToolPageSlug }) {
 
       {workspaceSection}
 
-      <section className="section-band muted-band">
+      <section className="tool-helper-section">
         <div className="container">
-          <div className="section-heading">
-            <p className="eyebrow">Quando usar</p>
-            <h2>{page.useCasesHeading}</h2>
-            <p>{page.useCasesLead}</p>
-          </div>
-
-          <div className="check-grid">
-            {page.useCases.map((item) => (
-              <div key={item.title} className="check-card">
-                <strong>{item.title}</strong>
-                <p>{item.body}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="section-band">
-        <div className="container blog-faq-band">
-          <div className="section-heading">
-            <p className="eyebrow">Rotas complementares</p>
-            <h2>Use links mais proximos da intencao para reforcar a pagina certa.</h2>
-            <p>
-              Cada atalho abaixo cobre um recorte diferente do mesmo problema e ajuda a concentrar a navegacao entre
-              formato, idioma, contexto de uso e destino final do texto.
-            </p>
-          </div>
-
-          <div className="faq-list">
-            {page.contextualLinks.map((item) => (
-              <article key={item.href} className="faq-item">
-                <strong>
-                  <Link href={item.href}>{item.label}</Link>
-                </strong>
-                <p>{item.body}</p>
+          <div className="tool-helper-grid">
+            <div className="tool-helper-col">
+              <article className="helper-card">
+                <div className="helper-card-header">
+                  <span className="helper-eyebrow">Como funciona</span>
+                  <h2>{page.stepsHeading}</h2>
+                  <p className="helper-lead">{page.stepsLead}</p>
+                </div>
+                <div className="helper-timeline">
+                  {page.steps.map((item, index) => (
+                    <div key={item.title} className="helper-timeline-item">
+                      <span className="timeline-number">{String(index + 1).padStart(2, "0")}</span>
+                      <div className="timeline-content">
+                        <strong>{item.title}</strong>
+                        <p>{item.body}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </article>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      <section className="section-band">
-        <div className="container">
-          <div className="section-heading">
-            <p className="eyebrow">Como funciona</p>
-            <h2>{page.stepsHeading}</h2>
-            <p>{page.stepsLead}</p>
-          </div>
-
-          <div className="timeline-grid">
-            {page.steps.map((item, index) => (
-              <article key={item.title} className="timeline-step">
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                <strong>{item.title}</strong>
-                <p>{item.body}</p>
+              <article className="helper-card">
+                <div className="helper-card-header">
+                  <span className="helper-eyebrow">Quando usar</span>
+                  <h2>{page.useCasesHeading}</h2>
+                  <p className="helper-lead">{page.useCasesLead}</p>
+                </div>
+                <div className="helper-usecases-grid">
+                  {page.useCases.map((item) => (
+                    <div key={item.title} className="helper-usecase-item">
+                      <strong>{item.title}</strong>
+                      <p>{item.body}</p>
+                    </div>
+                  ))}
+                </div>
               </article>
-            ))}
-          </div>
-        </div>
-      </section>
+            </div>
 
-      <section className="section-band muted-band">
-        <div className="container">
-          <div className="section-heading">
-            <p className="eyebrow">Paginas relacionadas</p>
-            <h2>Continue por paginas de apoio sem dispersar a rota principal.</h2>
-          </div>
-
-          <div className="related-grid">
-            {relatedPages.map(([key, entry]) => (
-              <Link key={key} href={`/${key}`} className="related-card">
-                <span>{entry.eyebrow}</span>
-                <strong>{entry.h1}</strong>
-                <p>{entry.lead}</p>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="section-band">
-        <div className="container blog-related-band">
-          <div className="section-heading">
-            <p className="eyebrow">Do blog</p>
-            <h2>Quer contexto antes do upload? Leia os guias de OCR.</h2>
-            <p>
-              Publicamos comparativos, benchmarks e updates de produto para explicar quando o OCR funciona melhor, quando usar PDF no modo formatado e como escolher a exportacao certa.
-            </p>
-            <p>
-              A pagina de <Link href={EVIDENCE_PATH}>metodo e evidencia</Link> resume como validamos os exemplos e quando a revisao humana ainda entra no fluxo.
-            </p>
-            <div className="hero-actions">
-              <Link href={BLOG_PATH} className="ghost-button large-button">
-                Abrir blog
-              </Link>
+            <div className="tool-helper-col">
+              <article className="helper-card">
+                <div className="helper-card-header">
+                  <span className="helper-eyebrow">FAQ</span>
+                  <h2>{page.faqHeading}</h2>
+                </div>
+                <div className="helper-faq-wrapper">
+                  <FaqList items={page.faq} />
+                </div>
+              </article>
             </div>
           </div>
 
-          <div className="related-grid">
-            {featuredPosts.map((post) => (
-              <Link key={post.slug} href={`${BLOG_PATH}/${post.slug}`} className="related-card blog-related-card">
-                <span>{post.category}</span>
-                <strong>{post.title}</strong>
-                <p>{post.excerpt}</p>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+          <div className="tool-resources-panel">
+            <div className="resources-header">
+              <span className="helper-eyebrow">Navegacao e Apoio</span>
+              <h2>Recursos complementares de OCR</h2>
+            </div>
 
-      <section className="section-band muted-band">
-        <div className="container">
-          <div className="section-heading">
-            <p className="eyebrow">FAQ</p>
-            <h2>{page.faqHeading}</h2>
+            <div className="resources-grid">
+              <div className="resources-col">
+                <h3>Rotas complementares</h3>
+                <div className="resources-links">
+                  {page.contextualLinks.map((item) => (
+                    <article key={item.href} className="resource-link-item">
+                      <Link href={item.href} className="resource-link-title">
+                        {item.label}
+                      </Link>
+                      <p className="resource-link-desc">{item.body}</p>
+                    </article>
+                  ))}
+                </div>
+              </div>
+
+              <div className="resources-col">
+                <h3>Paginas relacionadas</h3>
+                <div className="resources-links">
+                  {relatedPages.map(([key, entry]) => (
+                    <article key={key} className="resource-link-item">
+                      <Link href={`/${key}`} className="resource-link-title">
+                        {entry.h1}
+                      </Link>
+                      <p className="resource-link-desc">{entry.lead}</p>
+                    </article>
+                  ))}
+                </div>
+              </div>
+
+              <div className="resources-col">
+                <h3>Do blog</h3>
+                <div className="resources-links">
+                  {featuredPosts.map((post) => (
+                    <article key={post.slug} className="resource-link-item">
+                      <Link href={`${BLOG_PATH}/${post.slug}`} className="resource-link-title">
+                        {post.title}
+                      </Link>
+                      <p className="resource-link-desc">{post.excerpt}</p>
+                    </article>
+                  ))}
+                  <div className="blog-extra-info">
+                    <p className="resource-link-desc">
+                      A pagina de <Link href={EVIDENCE_PATH}>metodo e evidencia</Link> resume como validamos os exemplos.
+                    </p>
+                    <Link href={BLOG_PATH} className="blog-compact-link">
+                      Abrir blog completo &rarr;
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <FaqList items={page.faq} />
         </div>
       </section>
     </>

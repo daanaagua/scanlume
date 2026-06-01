@@ -12,16 +12,20 @@ export const metadata = buildMetadata({
 export default function AboutPage() {
   return (
     <>
-      <section className="section-band legal-band">
-        <div className="container legal-copy">
-          <p className="eyebrow">Sobre</p>
-          <h1>Scanlume foi criado para facilitar OCR em pt-BR com um fluxo objetivo.</h1>
-          <p>
-            A primeira fase foca no mercado brasileiro e em transformar screenshots, JPG e PNG em texto editavel com uma experiencia leve, sem login obrigatorio e sem etapas desnecessarias.
-          </p>
-          <p>
-            O produto trabalha com dois modos: um fluxo de texto puro, rapido e barato; e um fluxo formatado para preservar a estrutura principal de leitura.
-          </p>
+      <section className="tool-first-home">
+        <div className="container">
+          <div className="tool-first-intro">
+            <p className="eyebrow scanlume-signal-label">Sobre o Scanlume</p>
+            <h1>OCR simples e objetivo</h1>
+            <p>
+              Criado para facilitar a extracao de texto em pt-BR com um fluxo focado no usuario e livre de friccoes.
+            </p>
+            <div className="tool-first-pills" aria-label="Recursos principais">
+              <span>Sem login</span>
+              <span>Modos simplificado e formatado</span>
+              <span>Foco em screenshots e PDF</span>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -29,18 +33,10 @@ export default function AboutPage() {
         <div className="container">
           <div className="section-heading">
             <p className="eyebrow">Quem responde pelo produto</p>
-            <h2>Um produto pequeno, com escopo claro e paginas de confianca abertas.</h2>
+            <h2>Escopo claro e compromisso com a transparencia.</h2>
             <p>
-              Scanlume ainda esta em fase inicial, mas a operacao ja deixa claro o publico-alvo, as rotas de contato e os documentos que sustentam a relacao com o usuario.
+              O Scanlume foi desenhado para resolver tarefas cotidianas de OCR de forma direta, sem etapas desnecessarias e sem promessas exageradas.
             </p>
-            <div className="hero-actions">
-              <Link href="/contato" className="solid-button large-button">
-                Falar com o time
-              </Link>
-              <Link href="/privacidade" className="ghost-button large-button">
-                Ler privacidade
-              </Link>
-            </div>
           </div>
 
           <div className="check-grid">
@@ -68,9 +64,9 @@ export default function AboutPage() {
         <div className="container">
           <div className="section-heading">
             <p className="eyebrow">Como avaliamos qualidade</p>
-            <h2>As promessas do site saem de testes, comparativos e revisao manual.</h2>
+            <h2>Qualidade baseada em testes e revisao manual.</h2>
             <p>
-              Antes de transformar um aprendizado em copy de produto, olhamos para o comportamento do OCR em benchmark real, diferentes formatos de arquivo e destinos de exportacao.
+              Antes de sugerir copy de produto, avaliamos o comportamento real do OCR sob diferentes condicoes e formatos.
             </p>
           </div>
 
@@ -102,10 +98,10 @@ export default function AboutPage() {
       <section className="section-band muted-band">
         <div className="container">
           <div className="section-heading">
-            <p className="eyebrow">O que o produto faz e o que nao promete</p>
-            <h2>Preferimos clareza operacional a exagero de marketing.</h2>
+            <p className="eyebrow">O que fazemos e o que nao prometemos</p>
+            <h2>Clareza operacional acima de tudo.</h2>
             <p>
-              Isso ajuda o usuario a saber quando Scanlume e uma boa escolha e quando faz mais sentido melhorar o arquivo antes de rodar o OCR.
+              Prezamos pela transparencia para que voce saiba exatamente quando o Scanlume e a ferramenta certa para sua tarefa.
             </p>
           </div>
 
@@ -126,6 +122,12 @@ export default function AboutPage() {
               <strong>Como tirar melhor proveito</strong>
               <p>Recorte melhor a imagem, prefira screenshot ou PNG quando a origem for digital e use o modo formatado quando a estrutura visual importa.</p>
             </article>
+          </div>
+
+          <div className="hero-actions">
+            <Link href="/" className="solid-button large-button">
+              Comecar a usar o OCR
+            </Link>
           </div>
         </div>
       </section>

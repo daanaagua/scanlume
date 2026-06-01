@@ -88,34 +88,33 @@ export default function ApiPage() {
           ],
         }}
       />
-      <section className="section-band legal-band">
-        <div className="container" style={{ display: "grid", gap: "1.5rem" }}>
-          <div>
-            <p className="eyebrow">Developer API</p>
-            <h1>Integre o OCR do Scanlume em apps, automacoes e processos internos.</h1>
-            <p>Compre API credits, gere chaves na sua conta e use os exemplos abaixo para iniciar a integracao.</p>
-            <p>{API_INPUT_NOTE}</p>
-          </div>
-          <CodeExampleTabs examples={API_CODE_EXAMPLES} />
-          <div className="hero-card" style={{ display: "grid", gap: "0.75rem" }}>
-            <p className="card-label">Leituras de apoio</p>
-            <h2>Antes de integrar, resolva duas decisoes comuns.</h2>
+      <section className="tool-first-home">
+        <div className="container tool-first-home-inner">
+          <div className="tool-first-intro">
+            <p className="eyebrow scanlume-signal-label">Developer API</p>
+            <h1>API do Scanlume</h1>
             <p>
-              Se duvida ainda e processo e nao codigo, estes guias ajudam a decidir quando ficar no navegador, quando
-              partir para API e como escolher o modo mais adequado para cada arquivo.
+              Integre o OCR do Scanlume em apps, automacoes e processos internos.
             </p>
-            <div className="hero-actions">
-              <Link href="/blog/quando-usar-ocr-no-navegador-vs-api" className="ghost-button">
-                Navegador ou API?
-              </Link>
-              <Link href="/blog/ocr-simples-vs-texto-formatado" className="ghost-button">
-                OCR simples ou formatado?
-              </Link>
+            <p>{API_INPUT_NOTE}</p>
+            <div className="tool-first-pills" aria-label="Recursos da API">
+              <span>Alta velocidade</span>
+              <span>Retorno estruturado</span>
+              <span>Base64 data URL</span>
             </div>
+            <Link href="/blog/quando-usar-ocr-no-navegador-vs-api" className="blog-compact-link">
+              Navegador ou API?
+            </Link>
           </div>
+
+          <div className="api-code-shell">
+            <CodeExampleTabs examples={API_CODE_EXAMPLES} />
+          </div>
+
           <div className="hero-actions">
-            <Link href="/precos" className="solid-button large-button">Ver planos</Link>
-            <Link href="/conta" className="ghost-button large-button">Abrir conta</Link>
+            <Link href="/precos" className="solid-button large-button">
+              Ver planos
+            </Link>
           </div>
         </div>
       </section>
